@@ -132,8 +132,8 @@ main{padding:14px}
    Isi dua baris di bawah untuk memakai database Supabase sungguhan.
    Jika dibiarkan kosong, aplikasi berjalan dalam mode demo (data di memori).
    ===================================================================== */
-const SUPABASE_URL = "";
-const SUPABASE_ANON_KEY = "";
+const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 const sb = LIVE ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
