@@ -145,7 +145,43 @@ const sb = LIVE ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layanan',pelanggan:'pelanggan',
  shift:'shift',jadwal:'jadwal_kerja',pesanan:'pesanan',item:'pesanan_item',absensi:'absensi',izin:'izin',
  komisi:'komisi',bonus:'bonus',aturan_bonus:'aturan_bonus',gaji:'gaji',kasbon:'kasbon',
- kategori_pengeluaran:'kategori_pengeluaran',pengeluaran:'pengeluaran',kas:'kas',target:'target'};
+ kategori_pengeluaran:'kategori_pengeluaran',pengeluaran:'pengeluaran',kas:'kas',target:'target',
+ hak_akses:'hak_akses'};
+
+/* ------------------ MODUL & MESIN HAK AKSES ------------------ */
+const MODUL=[
+ ['dash','Dashboard'],['order','Order & Kasir'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
+ ['jadwal','Jadwal Kerja'],['shift','Shift Kerja'],['karyawan','Karyawan'],['jabatan','Jabatan'],
+ ['cabang','Cabang'],['absensi','Absensi'],['izin','Izin & Cuti'],['kasbon','Kasbon'],
+ ['kas','Kas'],['pengeluaran','Pengeluaran'],['komisi','Komisi'],['bonus','Bonus'],['gaji','Penggajian'],
+ ['laporan','Laporan'],['aturan_bonus','Aturan Bonus'],['target','Target'],
+ ['kategori_pengeluaran','Kategori Biaya'],['pengaturan','Profil Usaha'],['akses','Hak Akses & Peran']];
+const AKSI=[['lihat','Lihat'],['tambah','Tambah'],['ubah','Ubah'],['hapus','Hapus']];
+const LINGKUP=[['semua','Semua cabang'],['cabang','Cabang sendiri'],['sendiri','Data sendiri']];
+
+/* Owner dan admin selalu penuh; sisanya mengikuti tabel hak_akses. */
+function boleh(modul,aksi='lihat'){
+  if(!ME) return false;
+  if(ME.role==='owner'||ME.role==='admin') return true;
+  const h=DB.hak_akses.find(x=>x.jabatan_id===ME.jabatan_id&&x.modul===modul);
+  return h?!!h[aksi]:false;
+}
+function lingkupSaya(){
+  if(!ME) return 'cabang';
+  if(ME.role==='owner'||ME.role==='admin') return 'semua';
+  return get('jabatan',ME.jabatan_id)?.lingkup||'cabang';
+}
+/* Saring baris yang di luar cabang pengguna (cadangan tampilan; RLS tetap penjaga utamanya) */
+function dalamLingkup(r){
+  const L=lingkupSaya(); if(L==='semua') return true;
+  if(r.cabang_id!==undefined&&r.cabang_id!==null) return r.cabang_id===ME.cabang_id;
+  if(r.karyawan_id!==undefined&&r.karyawan_id!==null){
+    if(L==='sendiri') return r.karyawan_id===ME.id;
+    return get('karyawan',r.karyawan_id)?.cabang_id===ME.cabang_id;
+  }
+  if(r.pesanan_id) return get('pesanan',r.pesanan_id)?.cabang_id===ME.cabang_id;
+  return true;
+}
 
 /* --------------------------- utilitas --------------------------- */
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
@@ -164,7 +200,7 @@ const nm=(t,id,f='nama')=>{const r=get(t,id);return r?r[f]:'-'};
 /* ------------------------- data (demo seed) ------------------------- */
 const DB={cabang:[],jabatan:[],karyawan:[],layanan:[],pelanggan:[],shift:[],jadwal:[],pesanan:[],item:[],
  absensi:[],izin:[],komisi:[],bonus:[],aturan_bonus:[],gaji:[],kasbon:[],kategori_pengeluaran:[],
- pengeluaran:[],kas:[],target:[]};
+ pengeluaran:[],kas:[],target:[],hak_akses:[]};
 
 const AKUN_DEMO={ 'owner@mahyra.id':{pw:'mahyra123',id:'k1'}, 'admin@mahyra.id':{pw:'mahyra123',id:'k2'},
                   'kasir@mahyra.id':{pw:'mahyra123',id:'k6'} };
@@ -173,12 +209,12 @@ function seedDemo(){
  DB.cabang=[{id:'cb1',kode:'PST',nama:'Mahyra Pusat',kota:'Bekasi',alamat:'Jl. Melati Raya No. 12',telepon:'021-8811223',jam_buka:'09:00',jam_tutup:'22:00',status:'aktif'},
   {id:'cb2',kode:'CKR',nama:'Mahyra Cikarang',kota:'Cikarang',alamat:'Ruko Grand Boulevard B5',telepon:'021-8899771',jam_buka:'10:00',jam_tutup:'22:00',status:'aktif'},
   {id:'cb3',kode:'BGR',nama:'Mahyra Bogor',kota:'Bogor',alamat:'Jl. Pajajaran No. 88',telepon:'0251-773311',jam_buka:'09:00',jam_tutup:'21:00',status:'aktif'}];
- DB.jabatan=[{id:'jb1',kode:'OWN',nama:'Owner',level:5,is_terapis:false,gaji_pokok_default:0,tunjangan_default:0,uang_makan_harian:0,persen_komisi:0},
-  {id:'jb2',kode:'ADM',nama:'Admin & Keuangan',level:3,is_terapis:false,gaji_pokok_default:3500000,tunjangan_default:500000,uang_makan_harian:20000,persen_komisi:0},
-  {id:'jb3',kode:'SPV',nama:'Kepala Cabang',level:4,is_terapis:false,gaji_pokok_default:4500000,tunjangan_default:750000,uang_makan_harian:25000,persen_komisi:2},
-  {id:'jb4',kode:'KSR',nama:'Kasir / Front Office',level:2,is_terapis:false,gaji_pokok_default:2800000,tunjangan_default:300000,uang_makan_harian:20000,persen_komisi:1},
-  {id:'jb5',kode:'TRP',nama:'Terapis',level:1,is_terapis:true,gaji_pokok_default:1500000,tunjangan_default:200000,uang_makan_harian:20000,persen_komisi:30},
-  {id:'jb6',kode:'TRS',nama:'Terapis Senior',level:2,is_terapis:true,gaji_pokok_default:2000000,tunjangan_default:300000,uang_makan_harian:20000,persen_komisi:35}];
+ DB.jabatan=[{id:'jb1',kode:'OWN',nama:'Owner',level:5,is_terapis:false,lingkup:'semua',gaji_pokok_default:0,tunjangan_default:0,uang_makan_harian:0,persen_komisi:0},
+  {id:'jb2',kode:'ADM',lingkup:'semua',nama:'Admin & Keuangan',level:3,is_terapis:false,gaji_pokok_default:3500000,tunjangan_default:500000,uang_makan_harian:20000,persen_komisi:0},
+  {id:'jb3',kode:'SPV',lingkup:'cabang',nama:'Kepala Cabang',level:4,is_terapis:false,gaji_pokok_default:4500000,tunjangan_default:750000,uang_makan_harian:25000,persen_komisi:2},
+  {id:'jb4',kode:'KSR',lingkup:'cabang',nama:'Kasir / Front Office',level:2,is_terapis:false,gaji_pokok_default:2800000,tunjangan_default:300000,uang_makan_harian:20000,persen_komisi:1},
+  {id:'jb5',kode:'TRP',lingkup:'sendiri',nama:'Terapis',level:1,is_terapis:true,gaji_pokok_default:1500000,tunjangan_default:200000,uang_makan_harian:20000,persen_komisi:30},
+  {id:'jb6',kode:'TRS',lingkup:'sendiri',nama:'Terapis Senior',level:2,is_terapis:true,gaji_pokok_default:2000000,tunjangan_default:300000,uang_makan_harian:20000,persen_komisi:35}];
  DB.karyawan=[{id:'k1',nik:'MHR-001',nama:'Siti Mahyra',jabatan_id:'jb1',cabang_id:'cb1',role:'owner',jenis_kelamin:'P',telepon:'0811223344',email:'owner@mahyra.id',user_id:'u1',tgl_masuk:'2019-03-01',gaji_pokok:0,tunjangan:0,persen_komisi:0,bank_nama:'BCA',bank_rekening:'1234567890',status:'aktif'},
   {id:'k2',nik:'MHR-002',nama:'Rina Andriani',jabatan_id:'jb2',cabang_id:'cb1',role:'admin',jenis_kelamin:'P',telepon:'0812334455',email:'admin@mahyra.id',user_id:'u2',tgl_masuk:'2021-06-14',gaji_pokok:3500000,tunjangan:500000,persen_komisi:0,bank_nama:'BRI',bank_rekening:'2233445566',status:'aktif'},
   {id:'k3',nik:'MHR-003',nama:'Dewi Lestari',jabatan_id:'jb6',cabang_id:'cb1',role:'terapis',jenis_kelamin:'P',telepon:'0813445566',email:'dewi@mahyra.id',user_id:'u3',tgl_masuk:'2020-02-10',gaji_pokok:2000000,tunjangan:300000,persen_komisi:35,bank_nama:'BCA',bank_rekening:'3344556677',status:'aktif'},
@@ -221,6 +257,15 @@ function seedDemo(){
   {id:'e2',nomor:'PG-0002',tanggal:today(),cabang_id:'cb1',kategori_id:'kp4',deskripsi:'Laundry handuk mingguan',nominal:320000,metode_bayar:'tunai',status:'menunggu'}];
  DB.kas=[{id:'ks1',tanggal:today(),cabang_id:'cb1',jenis:'masuk',kategori:'Modal awal kas',sumber:'manual',nominal:5000000,metode:'tunai',keterangan:'Saldo awal kas cabang'},
   {id:'ks2',tanggal:today(),cabang_id:'cb1',jenis:'keluar',kategori:'Minyak & Bahan Habis Pakai',sumber:'pengeluaran',nominal:850000,metode:'tunai',keterangan:'Minyak zaitun 5 liter + lulur'}];
+ DB.hak_akses=[];
+ DB.jabatan.forEach(j=>MODUL.forEach(([m])=>{
+   const pusat=['OWN','ADM'].includes(j.kode), spv=j.kode==='SPV', ksr=j.kode==='KSR';
+   const baca = pusat || spv || (ksr&&['dash','order','pelanggan','layanan','jadwal','absensi','kas','pengeluaran','laporan'].includes(m));
+   const tulis= pusat || (spv&&!['jabatan','cabang','pengaturan','akses','aturan_bonus'].includes(m))
+                      || (ksr&&['order','pelanggan','kas','pengeluaran'].includes(m));
+   const buang= pusat || (spv&&['order','pelanggan','jadwal','absensi','izin','pengeluaran'].includes(m));
+   DB.hak_akses.push({id:uid(),jabatan_id:j.id,modul:m,lihat:baca,tambah:tulis,ubah:tulis,hapus:buang});
+ }));
  DB.target=[{id:'t1',periode:periode(),cabang_id:'cb1',karyawan_id:null,target_omzet:60000000,target_order:700},
   {id:'t2',periode:periode(),cabang_id:'cb1',karyawan_id:'k3',target_omzet:0,target_order:100}];
  [['p1','k3','l2','selesai'],['p2','k4','l5','selesai'],['p3','k3','l3','selesai'],
@@ -332,9 +377,11 @@ const F={
  jabatan:{title:'Jabatan',sub:'Struktur jabatan, gaji acuan, dan komisi bawaan.',
   fields:[{k:'kode',l:'Kode'},{k:'nama',l:'Nama jabatan'},{k:'level',l:'Level',t:'num'},{k:'is_terapis',l:'Terhitung terapis',t:'bool'},
    {k:'gaji_pokok_default',l:'Gaji pokok acuan',t:'rp'},{k:'tunjangan_default',l:'Tunjangan acuan',t:'rp'},
-   {k:'uang_makan_harian',l:'Uang makan / hari',t:'rp'},{k:'persen_komisi',l:'Komisi (%)',t:'num'},{k:'deskripsi',l:'Uraian tugas',t:'area'}],
+   {k:'uang_makan_harian',l:'Uang makan / hari',t:'rp'},{k:'persen_komisi',l:'Komisi (%)',t:'num'},
+   {k:'lingkup',l:'Lingkup data',t:'sel',o:['semua','cabang','sendiri']},{k:'deskripsi',l:'Uraian tugas',t:'area'}],
   cols:[{k:'kode'},{k:'nama'},{k:'level'},{k:'gaji_pokok_default',l:'Gaji pokok',t:'rp'},{k:'tunjangan_default',l:'Tunjangan',t:'rp'},
-   {k:'komisi',l:'Komisi',fn:r=>r.persen_komisi+'%'}]},
+   {k:'komisi',l:'Komisi',fn:r=>r.persen_komisi+'%'},
+   {k:'lingkup',l:'Lingkup',fn:r=>`<span class="tag info">${cap(r.lingkup||'cabang')}</span>`}]},
  karyawan:{title:'Karyawan',sub:'Data staf dan terapis, sekaligus tempat membuat akun login terapis.',
   fields:[{k:'nik',l:'NIK'},{k:'nama',l:'Nama lengkap'},{k:'jabatan_id',l:'Jabatan',t:'ref',ref:'jabatan'},
    {k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},{k:'role',l:'Hak akses',t:'sel',o:['owner','admin','manajer','kasir','terapis']},
@@ -414,6 +461,8 @@ const F={
  kategori_pengeluaran:{title:'Kategori Pengeluaran',sub:'Pos biaya untuk pengelompokan laporan.',
   fields:[{k:'nama',l:'Nama kategori'},{k:'tipe',l:'Tipe',t:'sel',o:['operasional','sdm','aset','lainnya']}],
   cols:[{k:'nama'},{k:'tipe',t:'tag'}]},
+ hak_akses:{title:'Hak Akses & Peran',sub:'Atur apa yang boleh dilihat dan diubah tiap jabatan, serta seberapa luas datanya.',
+  fields:[],cols:[]},
  target:{title:'Target',sub:'Target omzet dan order per cabang maupun per terapis.',
   fields:[{k:'periode',l:'Periode (YYYY-MM)'},{k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},
    {k:'karyawan_id',l:'Terapis (opsional)',t:'ref',ref:'karyawan'},{k:'target_omzet',l:'Target omzet',t:'rp'},
@@ -429,13 +478,17 @@ const MENU=[
  ['SDM',[['m_karyawan','⚇','Karyawan'],['m_jabatan','⚑','Jabatan'],['m_cabang','⌂','Cabang'],['m_absensi','✓','Absensi'],['izin','✎','Izin & Cuti'],['m_kasbon','◇','Kasbon']]],
  ['Keuangan',[['kas','₪','Kas'],['m_pengeluaran','↓','Pengeluaran'],['m_komisi','%','Komisi'],['m_bonus','★','Bonus'],['gaji','▦','Penggajian']]],
  ['Analitik',[['laporan','▣','Laporan']]],
- ['Pengaturan',[['m_aturan_bonus','⚙','Aturan Bonus'],['m_target','◉','Target'],['m_kategori_pengeluaran','⊞','Kategori Biaya'],['pengaturan','⚒','Profil Usaha']]]
+ ['Pengaturan',[['m_aturan_bonus','⚙','Aturan Bonus'],['m_target','◉','Target'],['m_kategori_pengeluaran','⊞','Kategori Biaya'],['akses','⚿','Hak Akses & Peran'],['pengaturan','⚒','Profil Usaha']]]
 ];
 function buildSide(){
   side.innerHTML=`<div class="brand"><div class="mark"><img src="logo.png" alt="Mahyra Relaksia"></div><div><strong style="font-family:Fraunces,serif">Mahyra</strong>
     <div style="font-size:11px;color:#A9C9EA">Portal Office</div></div></div>`
-   +MENU.map(([g,it])=>`<div class="navgrp">${g}</div>`+it.map(([id,ic,l])=>
-     `<div class="nav" id="nv_${id}" onclick="go('${id}')"><span class="ic">${ic}</span>${l}</div>`).join('')).join('');
+   +MENU.map(([g,it])=>{
+      const isi=it.filter(([id])=>boleh(id.startsWith('m_')?id.slice(2):id,'lihat'));
+      if(!isi.length) return '';
+      return `<div class="navgrp">${g}</div>`+isi.map(([id,ic,l])=>
+        `<div class="nav" id="nv_${id}" onclick="go('${id}')"><span class="ic">${ic}</span>${l}</div>`).join('');
+     }).join('');
 }
 function go(p){ PAGE=p; SEARCH='';
   document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
@@ -451,7 +504,7 @@ function openForm(key,id){
    ${m.fields.map(f=>fieldHtml(f,r[f.k])).join('')}
    <div class="row" style="margin-top:8px"><button class="btn" onclick="saveForm()">Simpan</button>
      <button class="btn ghost" onclick="closeModal()">Batal</button>
-     ${id?`<button class="btn rose" style="margin-left:auto" onclick="delRow('${key}','${id}')">Hapus</button>`:''}</div>`;
+     ${id&&boleh(key,'hapus')?`<button class="btn rose" style="margin-left:auto" onclick="delRow('${key}','${id}')">Hapus</button>`:''}</div>`;
   modal.classList.add('on');
 }
 function fieldHtml(f,v){
@@ -483,12 +536,12 @@ function closeModal(){ modal.classList.remove('on'); }
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
 
 function renderModule(key){
-  const m=F[key]; let rows=DB[key];
+  const m=F[key]; let rows=DB[key].filter(dalamLingkup);
   if(SEARCH) rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(SEARCH.toLowerCase()));
   return `<div class="card"><div class="head"><h3>${m.title}</h3>
     <div class="row"><input placeholder="Cari…" style="width:180px" value="${esc(SEARCH)}" oninput="SEARCH=this.value;render()">
-      <button class="btn" onclick="openForm('${key}')">Tambah</button></div></div>
-    ${tableHtml(rows,m.cols,key,m.extra)}</div>`;
+      ${boleh(key,'tambah')?`<button class="btn" onclick="openForm('${key}')">Tambah</button>`:''}</div></div>
+    ${tableHtml(rows,m.cols,boleh(key,'ubah')?key:null,boleh(key,'ubah')?m.extra:null)}</div>`;
 }
 function tableHtml(rows,cols,key,extra){
   if(!rows.length) return `<div class="empty"><div class="disp">Belum ada data</div><div>Tambahkan entri pertama lewat tombol di atas.</div></div>`;
@@ -638,12 +691,26 @@ const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang
  kas:['Kas','Arus kas masuk dan keluar per cabang.'],
  gaji:['Penggajian','Gaji pokok + komisi + bonus − potongan, per periode.'],
  laporan:['Laporan','Penjualan, kinerja terapis, dan laba usaha.'],
- pengaturan:['Profil Usaha','Identitas usaha, kebijakan, dan hak akses.']};
+ pengaturan:['Profil Usaha','Identitas usaha, kebijakan, dan hak akses.'],
+ akses:['Hak Akses & Peran','Atur izin tiap jabatan dan seberapa luas data yang bisa dilihat.']};
 
 function render(){
   const key=PAGE.startsWith('m_')?PAGE.slice(2):null;
+  const modul=key||PAGE;
+  if(!boleh(modul,'lihat')){
+    pgTitle.textContent='Tidak ada akses'; pgSub.textContent='';
+    view.innerHTML=`<div class="card empty"><div class="disp">Halaman ini di luar hak akses Anda</div>
+      <div>Jabatan ${esc(nm('jabatan',ME.jabatan_id))} belum diberi izin membuka ${esc(modul)}.
+      Hubungi owner atau admin bila Anda memerlukannya.</div></div>`;
+    return;
+  }
   pgTitle.textContent=key?F[key].title:(JUDUL[PAGE]?.[0]||'');
   pgSub.textContent=key?F[key].sub:(JUDUL[PAGE]?.[1]||'');
+  if(PAGE==='akses'){
+    const p=document.getElementById('pilihJabatan');
+    if(p) AKSES_JBT=p.value;
+    if(!AKSES_JBT||!get('jabatan',AKSES_JBT)) AKSES_JBT=DB.jabatan[0]?.id||null;
+  }
   view.innerHTML=key?renderModule(key):(PAGES[PAGE]?PAGES[PAGE]():'<div class="card empty">Halaman belum tersedia</div>');
 }
 
@@ -806,7 +873,94 @@ pengaturan(){
       Jika baris hak akses merah atau uji tulis gagal, jalankan <strong>07_perbaiki_policy.sql</strong>.
       Jika muncul <em>permission denied</em>, jalankan <strong>06_perbaikan_grant.sql</strong>.</p>
     <div id="hasilDiag" style="margin-top:12px"></div></div>`;
+},
+akses(){
+  const jbt=DB.jabatan.slice().sort((a,b)=>(b.level||0)-(a.level||0));
+  const bisaUbah = ME.role==='owner'||ME.role==='admin';
+  const kunci = j => (j.kode==='OWN'||j.kode==='ADM');
+  return `<div class="grid g3">
+    ${stat('Jabatan terdaftar',jbt.length,'masing-masing punya izin sendiri')}
+    ${stat('Lingkup Anda',cap(lingkupSaya()),lingkupSaya()==='semua'?'melihat seluruh cabang':'terbatas '+nm('cabang',ME.cabang_id),'a')}
+    ${stat('Modul tersedia',MODUL.length,'bisa diatur per jabatan','g')}</div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="head"><h3>Lingkup data tiap jabatan</h3></div>
+    <p class="hint">Lingkup menentukan seberapa luas data yang terlihat. <strong>Semua cabang</strong> untuk pemilik dan admin pusat,
+      <strong>cabang sendiri</strong> untuk kepala cabang dan kasir, <strong>data sendiri</strong> untuk terapis.
+      Perubahan berlaku juga di sisi database, bukan hanya di tampilan.</p>
+    <div class="tw" style="margin-top:12px"><table><thead><tr><th>Jabatan</th><th>Peran setara</th><th>Lingkup data</th></tr></thead><tbody>
+      ${jbt.map(j=>`<tr><td><strong>${esc(j.nama)}</strong><div class="hint">${esc(j.kode||'')}</div></td>
+        <td>${j.is_terapis?'<span class="tag info">Terapis</span>':kunci(j)?'<span class="tag ok">Kantor pusat</span>':'<span class="tag warn">Kantor cabang</span>'}</td>
+        <td>${bisaUbah?`<select style="max-width:210px" onchange="setLingkup('${j.id}',this.value)">
+              ${LINGKUP.map(([v,l])=>`<option value="${v}" ${(j.lingkup||'cabang')===v?'selected':''}>${l}</option>`).join('')}
+            </select>`:cap(j.lingkup||'cabang')}</td></tr>`).join('')}
+    </tbody></table></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="head"><h3>Izin per modul</h3>
+      <div class="row"><select id="pilihJabatan" onchange="render()" style="width:220px">
+        ${jbt.map(j=>`<option value="${j.id}" ${j.id===AKSES_JBT?'selected':''}>${esc(j.nama)}</option>`).join('')}
+      </select>
+      ${bisaUbah?`<button class="btn ghost sm" onclick="terapkanPreset('kosong')">Kosongkan</button>
+        <button class="btn ghost sm" onclick="terapkanPreset('baca')">Lihat semua</button>
+        <button class="btn ghost sm" onclick="terapkanPreset('penuh')">Beri penuh</button>`:''}</div></div>
+    ${bisaUbah?'':'<p class="hint">Hanya owner dan admin yang dapat mengubah izin.</p>'}
+    <div class="tw" style="margin-top:8px"><table><thead><tr><th>Modul</th>
+      ${AKSI.map(([,l])=>`<th style="text-align:center">${l}</th>`).join('')}</tr></thead><tbody>
+      ${MODUL.map(([m,label])=>{
+        const h=izinBaris(AKSES_JBT,m);
+        return `<tr><td><strong>${esc(label)}</strong><div class="hint">${m}</div></td>
+          ${AKSI.map(([a])=>`<td style="text-align:center">
+            <input type="checkbox" style="width:18px;height:18px;accent-color:var(--jade);cursor:pointer"
+              ${h[a]?'checked':''} ${bisaUbah?'':'disabled'}
+              onchange="setIzin('${m}','${a}',this.checked)"></td>`).join('')}
+        </tr>`}).join('')}
+    </tbody></table></div>
+    <p class="hint" style="margin-top:12px">Mencentang <strong>Tambah</strong>, <strong>Ubah</strong>, atau <strong>Hapus</strong>
+      otomatis menyalakan <strong>Lihat</strong>, karena orang tidak bisa mengubah apa yang tidak bisa dibukanya.</p>
+  </div>
+
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Ringkasan per jabatan</h3></div>
+    ${tableHtml(jbt.map(j=>({nama:j.nama,lingkup:cap(j.lingkup||'cabang'),
+      lihat:MODUL.filter(([m])=>izinBaris(j.id,m).lihat).length+' / '+MODUL.length,
+      tulis:MODUL.filter(([m])=>izinBaris(j.id,m).ubah).length+' modul',
+      hapus:MODUL.filter(([m])=>izinBaris(j.id,m).hapus).length+' modul'})),
+      [{k:'nama',l:'Jabatan'},{k:'lingkup',l:'Lingkup data'},{k:'lihat',l:'Bisa dilihat'},
+       {k:'tulis',l:'Bisa diubah'},{k:'hapus',l:'Bisa dihapus'}])}</div>`;
 }};
+
+/* ----------------------- pengelolaan izin ----------------------- */
+let AKSES_JBT=null;
+function izinBaris(jabatanId,modul){
+  return DB.hak_akses.find(x=>x.jabatan_id===jabatanId&&x.modul===modul)
+      || {jabatan_id:jabatanId,modul,lihat:false,tambah:false,ubah:false,hapus:false};
+}
+async function setIzin(modul,aksi,nilai){
+  const lama=izinBaris(AKSES_JBT,modul);
+  const baru={...lama,id:lama.id||uid(),[aksi]:nilai};
+  if(nilai&&aksi!=='lihat') baru.lihat=true;              // tidak bisa mengubah tanpa melihat
+  if(!nilai&&aksi==='lihat'){ baru.tambah=false; baru.ubah=false; baru.hapus=false; }
+  const hasil=await simpan('hak_akses',baru);
+  if(!hasil) return;
+  render(); toast('Izin '+modul+' diperbarui');
+}
+async function terapkanPreset(jenis){
+  for(const [m] of MODUL){
+    const lama=izinBaris(AKSES_JBT,m);
+    const nilai = jenis==='penuh' ? {lihat:true,tambah:true,ubah:true,hapus:true}
+                : jenis==='baca'  ? {lihat:true,tambah:false,ubah:false,hapus:false}
+                :                   {lihat:false,tambah:false,ubah:false,hapus:false};
+    await simpan('hak_akses',{...lama,id:lama.id||uid(),jabatan_id:AKSES_JBT,modul:m,...nilai});
+  }
+  render(); toast('Izin jabatan diperbarui');
+}
+async function setLingkup(jabatanId,nilai){
+  const j=get('jabatan',jabatanId);
+  const hasil=await simpan('jabatan',{...j,lingkup:nilai});
+  if(!hasil) return;
+  render(); toast('Lingkup '+j.nama+' menjadi '+nilai);
+}
 
 /* Pemeriksaan koneksi & hak akses ke Supabase */
 async function diagnosa(){
