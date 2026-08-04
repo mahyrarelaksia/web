@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mahyra Relaksia — Portal Office</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -17,7 +19,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 #login{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(130% 100% at 10% 0%,#8FC6EC 0%,#4C8FD6 42%,#1F4C86 100%)}
 .card-login{background:var(--paper);border-radius:24px;padding:32px;width:100%;max-width:420px;box-shadow:0 24px 60px rgba(20,52,100,.28)}
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-.mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(150deg,#8FC6EC,#2F6FBF 60%,#1F4C86);color:#fff;display:grid;place-items:center;font-family:Fraunces,serif;font-size:20px;box-shadow:0 6px 16px rgba(47,111,191,.3)}
+.mark{width:46px;height:46px;border-radius:14px;background:#fff;border:1px solid #E4EBF5;display:grid;place-items:center;overflow:hidden;padding:3px;box-shadow:0 6px 16px rgba(47,111,191,.16);flex:none}
+.mark img{width:100%;height:100%;object-fit:contain;display:block}
+aside .mark{background:rgba(255,255,255,.94);border-color:rgba(255,255,255,.55)}
 .tagline{color:var(--muted);font-size:13px;margin-bottom:20px}
 #app{display:none;min-height:100vh}
 .shell{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
@@ -94,7 +98,7 @@ main{padding:14px}
 
 <div id="login">
   <div class="card-login">
-    <div class="brand"><div class="mark">M</div>
+    <div class="brand"><div class="mark"><img src="logo.png" alt="Mahyra Relaksia"></div>
       <div><h2 style="font-size:20px">Mahyra Relaksia</h2><div class="hint">Portal Office</div></div></div>
     <p class="tagline">Masuk dengan email dan kata sandi kantor.</p>
     <div class="err" id="loginErr"></div>
@@ -145,7 +149,7 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
  kategori_pengeluaran:'kategori_pengeluaran',pengeluaran:'pengeluaran',kas:'kas',target:'target'};
 
 /* --------------------------- utilitas --------------------------- */
-const uid=()=>Math.random().toString(36).slice(2,10);
+const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
 const rp=n=>'Rp '+(Number(n)||0).toLocaleString('id-ID');
 const today=()=>new Date().toISOString().slice(0,10);
 const periode=()=>today().slice(0,7);
@@ -245,8 +249,17 @@ async function muatSemua(){
     if(error) console.warn('Gagal memuat',TBL[k],error.message); else DB[k]=data||[];
   }
 }
+const GENERATED={item:['subtotal'],izin:['jumlah_hari']};
+function bersihkan(key,row){
+  const r={...row}; (GENERATED[key]||[]).forEach(f=>delete r[f]);
+  if(key==='absensi') ['jam_masuk','jam_pulang'].forEach(f=>{
+    if(/^\d{2}:\d{2}$/.test(r[f]||'')) r[f]=String(r.tanggal).slice(0,10)+'T'+r[f]+':00';
+  });
+  Object.keys(r).forEach(k=>{ if(r[k]==='') r[k]=null; });
+  return r;
+}
 async function simpan(key,row){
-  if(LIVE){ const {data,error}=await sb.from(TBL[key]).upsert(row).select().single();
+  if(LIVE){ const {data,error}=await sb.from(TBL[key]).upsert(bersihkan(key,row)).select().single();
     if(error){toast('Gagal menyimpan: '+error.message);return null}
     const i=DB[key].findIndex(x=>x.id===data.id); i>=0?DB[key][i]=data:DB[key].push(data); return data; }
   const i=DB[key].findIndex(x=>x.id===row.id); i>=0?DB[key][i]=row:DB[key].push(row); return row;
@@ -399,7 +412,7 @@ const MENU=[
  ['Pengaturan',[['m_aturan_bonus','⚙','Aturan Bonus'],['m_target','◉','Target'],['m_kategori_pengeluaran','⊞','Kategori Biaya'],['pengaturan','⚒','Profil Usaha']]]
 ];
 function buildSide(){
-  side.innerHTML=`<div class="brand"><div class="mark">M</div><div><strong style="font-family:Fraunces,serif">Mahyra</strong>
+  side.innerHTML=`<div class="brand"><div class="mark"><img src="logo.png" alt="Mahyra Relaksia"></div><div><strong style="font-family:Fraunces,serif">Mahyra</strong>
     <div style="font-size:11px;color:#A9C9EA">Portal Office</div></div></div>`
    +MENU.map(([g,it])=>`<div class="navgrp">${g}</div>`+it.map(([id,ic,l])=>
      `<div class="nav" id="nv_${id}" onclick="go('${id}')"><span class="ic">${ic}</span>${l}</div>`).join('')).join('');
