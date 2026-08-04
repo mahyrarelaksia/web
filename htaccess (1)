@@ -1,0 +1,56 @@
+# =====================================================================
+# MAHYRA RELAKSIA — konfigurasi Apache
+# Taruh berkas ini di folder yang sama dengan office.html & terapis.html
+# Hasil: /office dan /terapis (tanpa .html)
+# =====================================================================
+
+Options -Indexes +FollowSymLinks
+DirectoryIndex index.html
+
+RewriteEngine On
+# Ganti "/" jika situs berada di subfolder, misal RewriteBase /erp/
+RewriteBase /
+
+# 1. Paksa HTTPS
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+# 2. Alamat lama ber-.html dialihkan ke versi bersih
+RewriteCond %{THE_REQUEST} \s/+(.+?)\.html[\s?] [NC]
+RewriteRule ^ /%1 [R=301,L,NE]
+
+# 3. /office  ->  office.html
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.html -f
+RewriteRule ^(.+?)/?$ $1.html [L]
+
+# 4. Halaman kesalahan
+ErrorDocument 404 /index.html
+
+# 5. Keamanan dasar
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(self), camera=(self), microphone=()"
+</IfModule>
+
+# Sembunyikan berkas sensitif (SQL, Edge Function, panduan)
+<FilesMatch "\.(sql|ts|md|env|log)$">
+  Require all denied
+</FilesMatch>
+
+# 6. Cache & kompresi
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript image/svg+xml
+</IfModule>
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType image/png "access plus 30 days"
+  # HTML jangan di-cache lama supaya pembaruan aplikasi langsung terlihat
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>

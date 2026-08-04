@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mahyra Relaksia — Portal Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--jade:#2F6FBF;--jade-2:#4C8FD6;--sky:#7FBCE8;--deep:#1F4C86;--mist:#F2F6FC;--paper:#fff;
+--ink:#1E3356;--muted:#7A8CA8;--line:#E4EBF5;--amber:#D9A05C;--rose:#BC8298;--ok:#4A9E85;--warn:#C08A4A;--bad:#C0707E;
+--r:18px;--sh:0 1px 2px rgba(31,64,120,.05),0 10px 30px rgba(31,64,120,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;background:var(--mist);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.disp{font-family:Fraunces,Georgia,serif;font-weight:600;letter-spacing:-.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+#login{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(130% 100% at 10% 0%,#8FC6EC 0%,#4C8FD6 42%,#1F4C86 100%)}
+.card-login{background:var(--paper);border-radius:24px;padding:32px;width:100%;max-width:420px;box-shadow:0 24px 60px rgba(20,52,100,.28)}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(150deg,#8FC6EC,#2F6FBF 60%,#1F4C86);color:#fff;display:grid;place-items:center;font-family:Fraunces,serif;font-size:20px;box-shadow:0 6px 16px rgba(47,111,191,.3)}
+.tagline{color:var(--muted);font-size:13px;margin-bottom:20px}
+#app{display:none;min-height:100vh}
+.shell{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+aside{background:linear-gradient(178deg,#4C8FD6 0%,#2F6FBF 45%,#1F4C86 100%);color:#DCEAF8;padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow:auto}
+aside .brand{color:#fff;padding:0 8px 14px}
+.navgrp{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#A9C9EA;margin:16px 10px 6px}
+.nav{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:12px;cursor:pointer;font-size:13.5px}
+.nav:hover{background:rgba(255,255,255,.13);color:#fff}
+.nav.on{background:#fff;color:var(--jade);font-weight:600}
+.nav .ic{width:18px;text-align:center}
+main{padding:22px;max-width:1400px;width:100%}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.topbar h1{font-size:26px}.topbar p{color:var(--muted);font-size:13px;margin-top:2px}
+.who{display:flex;align-items:center;gap:10px;background:var(--paper);padding:8px 12px;border-radius:14px;box-shadow:var(--sh)}
+.av{width:36px;height:36px;border-radius:12px;background:linear-gradient(150deg,#7FBCE8,#2F6FBF);color:#fff;display:grid;place-items:center;font-weight:600;flex:none}
+.mobbar{display:none}
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--paper);border-radius:var(--r);box-shadow:var(--sh);padding:16px}
+.stat{position:relative;padding-left:18px}
+.stat:before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:3px;border-radius:3px;background:linear-gradient(180deg,#7FBCE8,#2F6FBF)}
+.stat.a:before{background:var(--amber)}.stat.r:before{background:var(--rose)}.stat.g:before{background:var(--ok)}
+.stat .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.stat .val{font-family:Fraunces,serif;font-size:24px;margin-top:4px}
+.stat .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.head h3{font-size:17px}
+.btn{border:0;background:var(--jade);color:#fff;padding:10px 17px;border-radius:12px;font-weight:600;cursor:pointer;font-size:13px}
+.btn:hover{background:var(--jade-2)}
+.btn.ghost{background:transparent;color:var(--jade);border:1px solid var(--line)}
+.btn.ghost:hover{background:var(--mist)}
+.btn.amber{background:var(--amber)}.btn.rose{background:var(--rose)}.btn.sm{padding:6px 10px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--jade-2);outline-offset:-1px;border-color:transparent}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.field{margin-bottom:12px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-x:auto}
+.tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;background:var(--mist);color:var(--muted)}
+.tag.ok{background:#E4F4EE;color:var(--ok)}.tag.warn{background:#FBF1E1;color:var(--warn)}
+.tag.bad{background:#FAEAEC;color:var(--bad)}.tag.info{background:#E8F1FC;color:#2F6FBF}
+.rp{font-variant-numeric:tabular-nums;font-weight:600}
+.empty{text-align:center;padding:36px 16px;color:var(--muted)}
+.empty .disp{font-size:18px;color:var(--ink);margin-bottom:6px}
+.bar{height:7px;border-radius:7px;background:var(--mist);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#7FBCE8,#2F6FBF);border-radius:7px}
+.modal{position:fixed;inset:0;background:rgba(23,52,96,.45);backdrop-filter:blur(3px);display:none;place-items:center;padding:16px;z-index:50}
+.modal.on{display:grid}
+.sheet{background:var(--paper);border-radius:22px;width:100%;max-width:620px;max-height:88vh;overflow:auto;padding:22px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.hint{font-size:12px;color:var(--muted)}
+.err{background:#FAEAEC;color:var(--bad);padding:9px 12px;border-radius:10px;font-size:13px;margin-bottom:12px;display:none}
+.err.on{display:block}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:99}
+.toast.on{opacity:1}
+.list-item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.list-item:last-child{border-bottom:0}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--jade);margin-top:6px;flex:none}
+@media(max-width:900px){.shell{grid-template-columns:1fr}
+aside{position:fixed;left:-260px;width:250px;z-index:60;transition:.22s}
+aside.open{left:0;box-shadow:0 0 0 100vmax rgba(0,0,0,.4)}
+main{padding:14px}
+.mobbar{display:flex;align-items:center;gap:10px;background:var(--jade);color:#fff;padding:11px 14px;position:sticky;top:0;z-index:20}
+.mobbar button{background:rgba(255,255,255,.15);border:0;color:#fff;padding:7px 11px;border-radius:9px;cursor:pointer}
+.g4,.g3,.g2{grid-template-columns:1fr 1fr}.topbar h1{font-size:21px}}
+@media(max-width:520px){.g4,.g3,.g2{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="card-login">
+    <div class="brand"><div class="mark">M</div>
+      <div><h2 style="font-size:20px">Mahyra Relaksia</h2><div class="hint">Portal Office</div></div></div>
+    <p class="tagline">Masuk dengan email dan kata sandi kantor.</p>
+    <div class="err" id="loginErr"></div>
+    <div class="field"><label for="em">Email</label><input id="em" type="email" placeholder="admin@mahyra.id" autocomplete="username"></div>
+    <div class="field"><label for="pw">Kata sandi</label><input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')masuk()"></div>
+    <button class="btn" style="width:100%" id="btnLogin" onclick="masuk()">Masuk</button>
+    <p class="hint" id="demoNote" style="margin-top:14px"></p>
+  </div>
+</div>
+
+<div id="app">
+  <div class="mobbar"><button onclick="document.querySelector('aside').classList.toggle('open')">☰</button>
+    <strong style="font-family:Fraunces,serif">Office</strong></div>
+  <div class="shell">
+    <aside id="side"></aside>
+    <main>
+      <div class="topbar">
+        <div><h1 id="pgTitle">Dashboard</h1><p id="pgSub"></p></div>
+        <div class="who"><div class="av" id="meAv">M</div>
+          <div><div style="font-weight:600" id="meName"></div><div class="hint" id="meRole"></div></div>
+          <button class="btn ghost sm" onclick="keluar()">Keluar</button></div>
+      </div>
+      <div id="view"></div>
+    </main>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+/* =====================================================================
+   MAHYRA RELAKSIA — PORTAL OFFICE
+   Isi dua baris di bawah untuk memakai database Supabase sungguhan.
+   Jika dibiarkan kosong, aplikasi berjalan dalam mode demo (data di memori).
+   ===================================================================== */
+const SUPABASE_URL = "";
+const SUPABASE_ANON_KEY = "";
+
+const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+const sb = LIVE ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+/* nama tabel di Supabase untuk tiap kunci lokal */
+const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layanan',pelanggan:'pelanggan',
+ shift:'shift',jadwal:'jadwal_kerja',pesanan:'pesanan',item:'pesanan_item',absensi:'absensi',izin:'izin',
+ komisi:'komisi',bonus:'bonus',aturan_bonus:'aturan_bonus',gaji:'gaji',kasbon:'kasbon',
+ kategori_pengeluaran:'kategori_pengeluaran',pengeluaran:'pengeluaran',kas:'kas',target:'target'};
+
+/* --------------------------- utilitas --------------------------- */
+const uid=()=>Math.random().toString(36).slice(2,10);
+const rp=n=>'Rp '+(Number(n)||0).toLocaleString('id-ID');
+const today=()=>new Date().toISOString().slice(0,10);
+const periode=()=>today().slice(0,7);
+const jam=()=>new Date().toTimeString().slice(0,5);
+const tgl=d=>d?new Date(String(d).slice(0,10)+'T00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400)};
+const cap=s=>String(s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+const sum=(a,f)=>a.reduce((x,y)=>x+(Number(typeof f==='function'?f(y):y[f])||0),0);
+const get=(t,id)=>DB[t].find(x=>x.id===id);
+const nm=(t,id,f='nama')=>{const r=get(t,id);return r?r[f]:'-'};
+
+/* ------------------------- data (demo seed) ------------------------- */
+const DB={cabang:[],jabatan:[],karyawan:[],layanan:[],pelanggan:[],shift:[],jadwal:[],pesanan:[],item:[],
+ absensi:[],izin:[],komisi:[],bonus:[],aturan_bonus:[],gaji:[],kasbon:[],kategori_pengeluaran:[],
+ pengeluaran:[],kas:[],target:[]};
+
+const AKUN_DEMO={ 'owner@mahyra.id':{pw:'mahyra123',id:'k1'}, 'admin@mahyra.id':{pw:'mahyra123',id:'k2'},
+                  'kasir@mahyra.id':{pw:'mahyra123',id:'k6'} };
+
+function seedDemo(){
+ DB.cabang=[{id:'cb1',kode:'PST',nama:'Mahyra Pusat',kota:'Bekasi',alamat:'Jl. Melati Raya No. 12',telepon:'021-8811223',jam_buka:'09:00',jam_tutup:'22:00',status:'aktif'},
+  {id:'cb2',kode:'CKR',nama:'Mahyra Cikarang',kota:'Cikarang',alamat:'Ruko Grand Boulevard B5',telepon:'021-8899771',jam_buka:'10:00',jam_tutup:'22:00',status:'aktif'},
+  {id:'cb3',kode:'BGR',nama:'Mahyra Bogor',kota:'Bogor',alamat:'Jl. Pajajaran No. 88',telepon:'0251-773311',jam_buka:'09:00',jam_tutup:'21:00',status:'aktif'}];
+ DB.jabatan=[{id:'jb1',kode:'OWN',nama:'Owner',level:5,is_terapis:false,gaji_pokok_default:0,tunjangan_default:0,uang_makan_harian:0,persen_komisi:0},
+  {id:'jb2',kode:'ADM',nama:'Admin & Keuangan',level:3,is_terapis:false,gaji_pokok_default:3500000,tunjangan_default:500000,uang_makan_harian:20000,persen_komisi:0},
+  {id:'jb3',kode:'SPV',nama:'Kepala Cabang',level:4,is_terapis:false,gaji_pokok_default:4500000,tunjangan_default:750000,uang_makan_harian:25000,persen_komisi:2},
+  {id:'jb4',kode:'KSR',nama:'Kasir / Front Office',level:2,is_terapis:false,gaji_pokok_default:2800000,tunjangan_default:300000,uang_makan_harian:20000,persen_komisi:1},
+  {id:'jb5',kode:'TRP',nama:'Terapis',level:1,is_terapis:true,gaji_pokok_default:1500000,tunjangan_default:200000,uang_makan_harian:20000,persen_komisi:30},
+  {id:'jb6',kode:'TRS',nama:'Terapis Senior',level:2,is_terapis:true,gaji_pokok_default:2000000,tunjangan_default:300000,uang_makan_harian:20000,persen_komisi:35}];
+ DB.karyawan=[{id:'k1',nik:'MHR-001',nama:'Siti Mahyra',jabatan_id:'jb1',cabang_id:'cb1',role:'owner',jenis_kelamin:'P',telepon:'0811223344',email:'owner@mahyra.id',user_id:'u1',tgl_masuk:'2019-03-01',gaji_pokok:0,tunjangan:0,persen_komisi:0,bank_nama:'BCA',bank_rekening:'1234567890',status:'aktif'},
+  {id:'k2',nik:'MHR-002',nama:'Rina Andriani',jabatan_id:'jb2',cabang_id:'cb1',role:'admin',jenis_kelamin:'P',telepon:'0812334455',email:'admin@mahyra.id',user_id:'u2',tgl_masuk:'2021-06-14',gaji_pokok:3500000,tunjangan:500000,persen_komisi:0,bank_nama:'BRI',bank_rekening:'2233445566',status:'aktif'},
+  {id:'k3',nik:'MHR-003',nama:'Dewi Lestari',jabatan_id:'jb6',cabang_id:'cb1',role:'terapis',jenis_kelamin:'P',telepon:'0813445566',email:'dewi@mahyra.id',user_id:'u3',tgl_masuk:'2020-02-10',gaji_pokok:2000000,tunjangan:300000,persen_komisi:35,bank_nama:'BCA',bank_rekening:'3344556677',status:'aktif'},
+  {id:'k4',nik:'MHR-004',nama:'Ayu Puspita',jabatan_id:'jb5',cabang_id:'cb1',role:'terapis',jenis_kelamin:'P',telepon:'0814556677',email:'ayu@mahyra.id',user_id:'u4',tgl_masuk:'2023-08-01',gaji_pokok:1500000,tunjangan:200000,persen_komisi:30,bank_nama:'Mandiri',bank_rekening:'4455667788',status:'aktif'},
+  {id:'k5',nik:'MHR-005',nama:'Bagas Prakoso',jabatan_id:'jb5',cabang_id:'cb2',role:'terapis',jenis_kelamin:'L',telepon:'0815667788',email:'',user_id:null,tgl_masuk:'2024-01-15',gaji_pokok:1500000,tunjangan:200000,persen_komisi:30,bank_nama:'BNI',bank_rekening:'5566778899',status:'aktif'},
+  {id:'k6',nik:'MHR-006',nama:'Nurul Hidayah',jabatan_id:'jb4',cabang_id:'cb1',role:'kasir',jenis_kelamin:'P',telepon:'0816778899',email:'kasir@mahyra.id',user_id:'u6',tgl_masuk:'2024-05-02',gaji_pokok:2800000,tunjangan:300000,persen_komisi:1,bank_nama:'BCA',bank_rekening:'6677889900',status:'aktif'}];
+ DB.layanan=[{id:'l1',kode:'L01',nama:'Pijat Tradisional 60 Menit',kategori:'Pijat',durasi_menit:60,harga:90000,komisi_persen:30,aktif:true},
+  {id:'l2',kode:'L02',nama:'Pijat Tradisional 90 Menit',kategori:'Pijat',durasi_menit:90,harga:130000,komisi_persen:30,aktif:true},
+  {id:'l3',kode:'L03',nama:'Refleksi Kaki 45 Menit',kategori:'Refleksi',durasi_menit:45,harga:70000,komisi_persen:30,aktif:true},
+  {id:'l4',kode:'L04',nama:'Totok Wajah',kategori:'Perawatan',durasi_menit:45,harga:85000,komisi_persen:35,aktif:true},
+  {id:'l5',kode:'L05',nama:'Lulur + Pijat 120 Menit',kategori:'Paket',durasi_menit:120,harga:200000,komisi_persen:32,aktif:true},
+  {id:'l6',kode:'L06',nama:'Kerokan / Kop Angin',kategori:'Terapi',durasi_menit:30,harga:50000,komisi_persen:30,aktif:true},
+  {id:'l7',kode:'L08',nama:'Pijat Ibu Hamil',kategori:'Khusus',durasi_menit:60,harga:120000,komisi_persen:35,aktif:true}];
+ DB.pelanggan=[{id:'p1',kode:'P-0001',nama:'Hendra Wijaya',telepon:'0856112233',jenis_kelamin:'L',member:true,poin:24,total_kunjungan:12,catatan:'Tekanan kuat, fokus punggung'},
+  {id:'p2',kode:'P-0002',nama:'Maria Ulfa',telepon:'0857223344',jenis_kelamin:'P',member:true,poin:15,total_kunjungan:8,catatan:'Alergi minyak kayu putih'},
+  {id:'p3',kode:'P-0003',nama:'Tono Sugiarto',telepon:'0858334455',jenis_kelamin:'L',member:false,poin:4,total_kunjungan:3,catatan:'Refleksi kaki saja'}];
+ DB.shift=[{id:'s1',nama:'Pagi',jam_masuk:'09:00',jam_pulang:'17:00',toleransi_menit:10},
+  {id:'s2',nama:'Siang',jam_masuk:'13:00',jam_pulang:'21:00',toleransi_menit:10},
+  {id:'s3',nama:'Malam',jam_masuk:'15:00',jam_pulang:'23:00',toleransi_menit:10}];
+ DB.jadwal=[{id:'j1',karyawan_id:'k3',cabang_id:'cb1',shift_id:'s1',tanggal:today(),libur:false},
+  {id:'j2',karyawan_id:'k4',cabang_id:'cb1',shift_id:'s2',tanggal:today(),libur:false},
+  {id:'j3',karyawan_id:'k5',cabang_id:'cb2',shift_id:'s1',tanggal:today(),libur:false}];
+ DB.absensi=[{id:'a1',karyawan_id:'k3',cabang_id:'cb1',shift_id:'s1',tanggal:today(),jam_masuk:'08:52',jam_pulang:'',status:'hadir',menit_telat:0},
+  {id:'a2',karyawan_id:'k4',cabang_id:'cb1',shift_id:'s2',tanggal:today(),jam_masuk:'13:18',jam_pulang:'',status:'telat',menit_telat:8}];
+ DB.izin=[{id:'i1',karyawan_id:'k4',jenis:'sakit',tgl_mulai:today(),tgl_selesai:today(),alasan:'Demam, ada surat dokter',status:'menunggu'},
+  {id:'i2',karyawan_id:'k5',jenis:'cuti',tgl_mulai:'2026-08-12',tgl_selesai:'2026-08-14',alasan:'Acara keluarga di kampung',status:'menunggu'}];
+ DB.bonus=[{id:'b1',karyawan_id:'k3',jenis:'kehadiran',periode:periode(),deskripsi:'Kehadiran penuh',nominal:300000,status:'disetujui',dibayar:false},
+  {id:'b2',karyawan_id:'k4',jenis:'rating',periode:periode(),deskripsi:'Rating rata-rata 4.9',nominal:250000,status:'disetujui',dibayar:false}];
+ DB.aturan_bonus=[{id:'ab1',nama:'Bonus Kehadiran Penuh',jenis:'kehadiran',syarat:'Hadir penuh tanpa alpa & telat',target:26,nominal:300000,aktif:true},
+  {id:'ab2',nama:'Bonus Target 60 Order',jenis:'target',syarat:'Minimal 60 order sebulan',target:60,nominal:500000,aktif:true},
+  {id:'ab3',nama:'Bonus Target 100 Order',jenis:'target',syarat:'Minimal 100 order sebulan',target:100,nominal:1000000,aktif:true},
+  {id:'ab4',nama:'Bonus Rating 4.8+',jenis:'rating',syarat:'Rata-rata rating min. 4.8',target:4.8,nominal:250000,aktif:true},
+  {id:'ab5',nama:'Bonus Lembur Weekend',jenis:'lembur',syarat:'Shift tambahan Sabtu/Minggu',target:1,nominal:75000,aktif:true}];
+ DB.kasbon=[{id:'kb1',karyawan_id:'k4',tanggal:'2026-07-20',nominal:1000000,cicilan:250000,sisa:750000,keperluan:'Biaya sekolah anak',status:'disetujui'}];
+ DB.kategori_pengeluaran=[{id:'kp1',nama:'Sewa Tempat',tipe:'operasional'},{id:'kp2',nama:'Listrik & Air',tipe:'operasional'},
+  {id:'kp3',nama:'Minyak & Bahan Habis Pakai',tipe:'operasional'},{id:'kp4',nama:'Laundry Handuk',tipe:'operasional'},
+  {id:'kp5',nama:'Gaji & Tunjangan',tipe:'sdm'},{id:'kp6',nama:'Marketing & Promosi',tipe:'operasional'},
+  {id:'kp7',nama:'Perlengkapan & Aset',tipe:'aset'},{id:'kp8',nama:'Lain-lain',tipe:'lainnya'}];
+ DB.pengeluaran=[{id:'e1',nomor:'PG-0001',tanggal:today(),cabang_id:'cb1',kategori_id:'kp3',deskripsi:'Minyak zaitun 5 liter + lulur',nominal:850000,metode_bayar:'tunai',status:'disetujui'},
+  {id:'e2',nomor:'PG-0002',tanggal:today(),cabang_id:'cb1',kategori_id:'kp4',deskripsi:'Laundry handuk mingguan',nominal:320000,metode_bayar:'tunai',status:'menunggu'}];
+ DB.kas=[{id:'ks1',tanggal:today(),cabang_id:'cb1',jenis:'masuk',kategori:'Modal awal kas',sumber:'manual',nominal:5000000,metode:'tunai',keterangan:'Saldo awal kas cabang'},
+  {id:'ks2',tanggal:today(),cabang_id:'cb1',jenis:'keluar',kategori:'Minyak & Bahan Habis Pakai',sumber:'pengeluaran',nominal:850000,metode:'tunai',keterangan:'Minyak zaitun 5 liter + lulur'}];
+ DB.target=[{id:'t1',periode:periode(),cabang_id:'cb1',karyawan_id:null,target_omzet:60000000,target_order:700},
+  {id:'t2',periode:periode(),cabang_id:'cb1',karyawan_id:'k3',target_omzet:0,target_order:100}];
+ [['p1','k3','l2','selesai'],['p2','k4','l5','selesai'],['p3','k3','l3','selesai'],
+  ['p1','k4','l1','berjalan'],['p2','k3','l4','menunggu']].forEach(([pel,ter,lay,st],n)=>{
+   const l=get('layanan',lay);
+   const o={id:'o'+n,nomor:'MHR-PST-'+today().slice(2).replace(/-/g,'')+'-'+String(n+1).padStart(4,'0'),
+    tanggal:today(),jam:['10:15','11:40','13:05','15:20','16:45'][n],cabang_id:'cb1',pelanggan_id:pel,kasir_id:'k6',
+    status:st==='selesai'?'selesai':'berjalan',subtotal:l.harga,diskon:0,total:l.harga,
+    metode_bayar:['tunai','qris','transfer','tunai','qris'][n],status_bayar:st==='selesai'?'lunas':'belum'};
+   DB.pesanan.push(o);
+   const kom=Math.round(l.harga*l.komisi_persen/100);
+   DB.item.push({id:'it'+n,pesanan_id:o.id,layanan_id:lay,terapis_id:ter,ruangan:'Room '+(n+1),qty:1,harga:l.harga,
+    durasi:l.durasi_menit,subtotal:l.harga,komisi:kom,status:st,rating:st==='selesai'?[5,5,4,null,null][n]:null});
+   if(st==='selesai'){
+    DB.komisi.push({id:'km'+n,karyawan_id:ter,item_id:'it'+n,tanggal:today(),periode:periode(),dasar:l.harga,persen:l.komisi_persen,nominal:kom,dibayar:false});
+    DB.kas.push({id:'kso'+n,tanggal:today(),cabang_id:'cb1',jenis:'masuk',kategori:'Penjualan layanan',sumber:'pesanan',ref_id:o.id,nominal:l.harga,metode:o.metode_bayar,keterangan:'Pesanan '+o.nomor});
+   }});
+}
+
+/* ---------------------- lapisan penyimpanan ---------------------- */
+async function muatSemua(){
+  if(!LIVE) return;
+  for(const k in TBL){
+    const {data,error}=await sb.from(TBL[k]).select('*');
+    if(error) console.warn('Gagal memuat',TBL[k],error.message); else DB[k]=data||[];
+  }
+}
+async function simpan(key,row){
+  if(LIVE){ const {data,error}=await sb.from(TBL[key]).upsert(row).select().single();
+    if(error){toast('Gagal menyimpan: '+error.message);return null}
+    const i=DB[key].findIndex(x=>x.id===data.id); i>=0?DB[key][i]=data:DB[key].push(data); return data; }
+  const i=DB[key].findIndex(x=>x.id===row.id); i>=0?DB[key][i]=row:DB[key].push(row); return row;
+}
+async function hapus(key,id){
+  if(LIVE){ const {error}=await sb.from(TBL[key]).delete().eq('id',id); if(error) return toast('Gagal hapus: '+error.message); }
+  DB[key]=DB[key].filter(x=>x.id!==id);
+}
+
+/* ---------------------------- LOGIN ---------------------------- */
+let ME=null, PAGE='dash', SEARCH='';
+document.getElementById('demoNote').textContent = LIVE ? 'Terhubung ke Supabase.' :
+  'Mode demo — coba admin@mahyra.id / mahyra123';
+
+async function masuk(){
+  const email=em.value.trim().toLowerCase(), pass=pw.value, err=loginErr;
+  btnLogin.disabled=true; btnLogin.textContent='Memeriksa…'; err.classList.remove('on');
+  try{
+    if(LIVE){
+      const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+      if(error) throw new Error('Email atau kata sandi salah.');
+      await muatSemua();
+      const k=DB.karyawan.find(x=>x.user_id===data.user.id);
+      if(!k) throw new Error('Akun ini belum ditautkan ke data karyawan. Hubungi admin.');
+      if(k.role==='terapis') throw new Error('Akun terapis. Gunakan Portal Terapis.');
+      if(k.status!=='aktif') throw new Error('Akun nonaktif. Hubungi admin.');
+      ME=k;
+    }else{
+      seedDemo();
+      const akun=AKUN_DEMO[email];
+      if(!akun||akun.pw!==pass) throw new Error('Email atau kata sandi salah.');
+      ME=get('karyawan',akun.id);
+    }
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+    meName.textContent=ME.nama; meRole.textContent=nm('jabatan',ME.jabatan_id); meAv.textContent=ME.nama[0];
+    buildSide(); go('dash');
+  }catch(e){ err.textContent=e.message; err.classList.add('on'); }
+  btnLogin.disabled=false; btnLogin.textContent='Masuk';
+}
+async function keluar(){ if(LIVE) await sb.auth.signOut(); location.reload(); }
+
+/* ============================ MODUL ============================ */
+const F={
+ cabang:{title:'Cabang',sub:'Daftar outlet beserta jam operasional.',
+  fields:[{k:'kode',l:'Kode cabang'},{k:'nama',l:'Nama cabang'},{k:'kota',l:'Kota'},{k:'alamat',l:'Alamat',t:'area'},
+   {k:'telepon',l:'Telepon'},{k:'jam_buka',l:'Jam buka',t:'time'},{k:'jam_tutup',l:'Jam tutup',t:'time'},
+   {k:'status',l:'Status',t:'sel',o:['aktif','nonaktif']}],
+  cols:[{k:'kode'},{k:'nama'},{k:'kota'},{k:'telepon'},{k:'jam',l:'Jam',fn:r=>r.jam_buka+'–'+r.jam_tutup},{k:'status',t:'tag'}]},
+ jabatan:{title:'Jabatan',sub:'Struktur jabatan, gaji acuan, dan komisi bawaan.',
+  fields:[{k:'kode',l:'Kode'},{k:'nama',l:'Nama jabatan'},{k:'level',l:'Level',t:'num'},{k:'is_terapis',l:'Terhitung terapis',t:'bool'},
+   {k:'gaji_pokok_default',l:'Gaji pokok acuan',t:'rp'},{k:'tunjangan_default',l:'Tunjangan acuan',t:'rp'},
+   {k:'uang_makan_harian',l:'Uang makan / hari',t:'rp'},{k:'persen_komisi',l:'Komisi (%)',t:'num'},{k:'deskripsi',l:'Uraian tugas',t:'area'}],
+  cols:[{k:'kode'},{k:'nama'},{k:'level'},{k:'gaji_pokok_default',l:'Gaji pokok',t:'rp'},{k:'tunjangan_default',l:'Tunjangan',t:'rp'},
+   {k:'komisi',l:'Komisi',fn:r=>r.persen_komisi+'%'}]},
+ karyawan:{title:'Karyawan',sub:'Data staf dan terapis, sekaligus tempat membuat akun login terapis.',
+  fields:[{k:'nik',l:'NIK'},{k:'nama',l:'Nama lengkap'},{k:'jabatan_id',l:'Jabatan',t:'ref',ref:'jabatan'},
+   {k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},{k:'role',l:'Hak akses',t:'sel',o:['owner','admin','manajer','kasir','terapis']},
+   {k:'jenis_kelamin',l:'Jenis kelamin',t:'sel',o:['L','P']},{k:'telepon',l:'Telepon'},{k:'email',l:'Email'},
+   {k:'alamat',l:'Alamat',t:'area'},{k:'tgl_masuk',l:'Tanggal masuk',t:'date'},{k:'gaji_pokok',l:'Gaji pokok',t:'rp'},
+   {k:'tunjangan',l:'Tunjangan',t:'rp'},{k:'persen_komisi',l:'Komisi (%)',t:'num'},{k:'bank_nama',l:'Bank'},
+   {k:'bank_rekening',l:'No. rekening'},{k:'status',l:'Status',t:'sel',o:['aktif','nonaktif','cuti_panjang']}],
+  cols:[{k:'nik'},{k:'nama'},{k:'jab',l:'Jabatan',fn:r=>nm('jabatan',r.jabatan_id)},
+   {k:'cab',l:'Cabang',fn:r=>nm('cabang',r.cabang_id)},{k:'role',t:'tag'},
+   {k:'akun',l:'Akun login',fn:r=>r.user_id?`<span class="tag ok">${esc(r.email||'aktif')}</span>`:'<span class="tag warn">Belum ada</span>'},
+   {k:'status',t:'tag'}],
+  extra:r=>`<button class="btn ${r.user_id?'ghost':'amber'} sm" onclick="formAkun('${r.id}')">${r.user_id?'Ubah akun':'Buat akun'}</button>`},
+ layanan:{title:'Layanan & Tarif',sub:'Menu perawatan, durasi, harga, dan komisi terapis.',
+  fields:[{k:'kode',l:'Kode'},{k:'nama',l:'Nama layanan'},{k:'kategori',l:'Kategori',t:'sel',o:['Pijat','Refleksi','Perawatan','Paket','Terapi','Khusus']},
+   {k:'durasi_menit',l:'Durasi (menit)',t:'num'},{k:'harga',l:'Harga',t:'rp'},{k:'komisi_persen',l:'Komisi (%)',t:'num'},
+   {k:'deskripsi',l:'Deskripsi',t:'area'},{k:'aktif',l:'Ditampilkan di kasir',t:'bool'}],
+  cols:[{k:'kode'},{k:'nama'},{k:'kategori'},{k:'dur',l:'Durasi',fn:r=>r.durasi_menit+' mnt'},{k:'harga',t:'rp'},
+   {k:'kom',l:'Komisi',fn:r=>r.komisi_persen+'%'}]},
+ pelanggan:{title:'Pelanggan',sub:'Riwayat kunjungan, poin member, dan catatan preferensi.',
+  fields:[{k:'kode',l:'Kode member'},{k:'nama',l:'Nama'},{k:'telepon',l:'Telepon'},{k:'jenis_kelamin',l:'Jenis kelamin',t:'sel',o:['L','P']},
+   {k:'member',l:'Member',t:'bool'},{k:'alamat',l:'Alamat',t:'area'},{k:'catatan',l:'Catatan terapi',t:'area'}],
+  cols:[{k:'kode'},{k:'nama'},{k:'telepon'},{k:'total_kunjungan',l:'Kunjungan'},{k:'poin'},
+   {k:'mem',l:'Status',fn:r=>r.member?'<span class="tag ok">Member</span>':'<span class="tag">Umum</span>'}]},
+ shift:{title:'Shift Kerja',sub:'Pola jam kerja dan toleransi keterlambatan.',
+  fields:[{k:'nama',l:'Nama shift'},{k:'jam_masuk',l:'Jam masuk',t:'time'},{k:'jam_pulang',l:'Jam pulang',t:'time'},
+   {k:'toleransi_menit',l:'Toleransi telat (menit)',t:'num'}],
+  cols:[{k:'nama'},{k:'jam_masuk',l:'Masuk'},{k:'jam_pulang',l:'Pulang'},{k:'tol',l:'Toleransi',fn:r=>r.toleransi_menit+' mnt'}]},
+ jadwal:{title:'Jadwal Kerja',sub:'Penempatan shift harian tiap terapis.',
+  fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'tanggal',l:'Tanggal',t:'date'},
+   {k:'shift_id',l:'Shift',t:'ref',ref:'shift'},{k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},
+   {k:'libur',l:'Hari libur',t:'bool'},{k:'catatan',l:'Catatan',t:'area'}],
+  cols:[{k:'tanggal',t:'date'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},
+   {k:'sh',l:'Shift',fn:r=>nm('shift',r.shift_id)},{k:'cab',l:'Cabang',fn:r=>nm('cabang',r.cabang_id)},
+   {k:'st',l:'Status',fn:r=>r.libur?'<span class="tag warn">Libur</span>':'<span class="tag ok">Masuk</span>'}]},
+ absensi:{title:'Absensi',sub:'Rekap kehadiran seluruh karyawan.',
+  fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'tanggal',l:'Tanggal',t:'date'},
+   {k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},{k:'shift_id',l:'Shift',t:'ref',ref:'shift'},
+   {k:'jam_masuk',l:'Jam masuk',t:'time'},{k:'jam_pulang',l:'Jam pulang',t:'time'},
+   {k:'status',l:'Status',t:'sel',o:['hadir','telat','izin','sakit','cuti','alpa','libur']},
+   {k:'menit_telat',l:'Menit telat',t:'num'},{k:'catatan',l:'Catatan',t:'area'}],
+  cols:[{k:'tanggal',t:'date'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'jam_masuk',l:'Masuk'},
+   {k:'jam_pulang',l:'Pulang'},{k:'tl',l:'Telat',fn:r=>r.menit_telat?r.menit_telat+' mnt':'—'},{k:'status',t:'tag'}]},
+ kasbon:{title:'Kasbon',sub:'Pinjaman karyawan dan cicilan potong gaji.',
+  fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'tanggal',l:'Tanggal',t:'date'},
+   {k:'nominal',l:'Nominal pinjaman',t:'rp'},{k:'cicilan',l:'Cicilan per bulan',t:'rp'},{k:'sisa',l:'Sisa',t:'rp'},
+   {k:'keperluan',l:'Keperluan',t:'area'},{k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
+  cols:[{k:'tanggal',t:'date'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'nominal',t:'rp'},
+   {k:'cicilan',t:'rp'},{k:'sisa',t:'rp'},{k:'status',t:'tag'}]},
+ bonus:{title:'Bonus',sub:'Pemberian bonus per periode; otomatis masuk slip gaji.',
+  fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'jenis',l:'Jenis bonus',t:'sel',o:['target','kehadiran','rating','lembur','referral','manual']},
+   {k:'periode',l:'Periode (YYYY-MM)'},{k:'deskripsi',l:'Keterangan'},{k:'nominal',l:'Nominal',t:'rp'},
+   {k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
+  cols:[{k:'periode'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'jenis',t:'tag'},{k:'deskripsi'},
+   {k:'nominal',t:'rp'},{k:'status',t:'tag'}]},
+ aturan_bonus:{title:'Aturan Bonus',sub:'Skema insentif yang berlaku untuk terapis.',
+  fields:[{k:'nama',l:'Nama skema'},{k:'jenis',l:'Jenis',t:'sel',o:['target','kehadiran','rating','lembur','referral']},
+   {k:'syarat',l:'Syarat',t:'area'},{k:'target',l:'Target',t:'num'},{k:'nominal',l:'Nominal bonus',t:'rp'},{k:'aktif',l:'Aktif',t:'bool'}],
+  cols:[{k:'nama'},{k:'jenis',t:'tag'},{k:'syarat'},{k:'target'},{k:'nominal',t:'rp'},
+   {k:'ak',l:'Status',fn:r=>r.aktif?'<span class="tag ok">Aktif</span>':'<span class="tag">Nonaktif</span>'}]},
+ komisi:{title:'Komisi',sub:'Terbentuk otomatis saat terapis menyelesaikan order.',
+  fields:[{k:'karyawan_id',l:'Terapis',t:'ref',ref:'karyawan'},{k:'tanggal',l:'Tanggal',t:'date'},{k:'periode',l:'Periode'},
+   {k:'dasar',l:'Dasar hitung',t:'rp'},{k:'persen',l:'Persen',t:'num'},{k:'nominal',l:'Nominal',t:'rp'}],
+  cols:[{k:'tanggal',t:'date'},{k:'kry',l:'Terapis',fn:r=>nm('karyawan',r.karyawan_id)},{k:'dasar',l:'Omzet',t:'rp'},
+   {k:'ps',l:'Persen',fn:r=>r.persen+'%'},{k:'nominal',l:'Komisi',t:'rp'},
+   {k:'db',l:'Status',fn:r=>r.dibayar?'<span class="tag ok">Dibayar</span>':'<span class="tag warn">Belum</span>'}]},
+ pengeluaran:{title:'Pengeluaran',sub:'Kas keluar terbentuk begitu pengajuan disetujui.',
+  fields:[{k:'tanggal',l:'Tanggal',t:'date'},{k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},
+   {k:'kategori_id',l:'Kategori',t:'ref',ref:'kategori_pengeluaran'},{k:'deskripsi',l:'Keperluan'},
+   {k:'nominal',l:'Nominal',t:'rp'},{k:'metode_bayar',l:'Metode bayar',t:'sel',o:['tunai','transfer','qris','debit']},
+   {k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
+  cols:[{k:'tanggal',t:'date'},{k:'nomor'},{k:'kat',l:'Kategori',fn:r=>nm('kategori_pengeluaran',r.kategori_id)},
+   {k:'deskripsi'},{k:'nominal',t:'rp'},{k:'status',t:'tag'}],
+  after:async r=>{ if(r.status==='disetujui'&&!DB.kas.some(k=>k.ref_id===r.id))
+    await simpan('kas',{id:uid(),tanggal:r.tanggal,cabang_id:r.cabang_id,jenis:'keluar',
+      kategori:nm('kategori_pengeluaran',r.kategori_id),sumber:'pengeluaran',ref_id:r.id,
+      nominal:r.nominal,metode:r.metode_bayar,keterangan:r.deskripsi}); }},
+ kategori_pengeluaran:{title:'Kategori Pengeluaran',sub:'Pos biaya untuk pengelompokan laporan.',
+  fields:[{k:'nama',l:'Nama kategori'},{k:'tipe',l:'Tipe',t:'sel',o:['operasional','sdm','aset','lainnya']}],
+  cols:[{k:'nama'},{k:'tipe',t:'tag'}]},
+ target:{title:'Target',sub:'Target omzet dan order per cabang maupun per terapis.',
+  fields:[{k:'periode',l:'Periode (YYYY-MM)'},{k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},
+   {k:'karyawan_id',l:'Terapis (opsional)',t:'ref',ref:'karyawan'},{k:'target_omzet',l:'Target omzet',t:'rp'},
+   {k:'target_order',l:'Target order',t:'num'}],
+  cols:[{k:'periode'},{k:'cab',l:'Cabang',fn:r=>nm('cabang',r.cabang_id)},
+   {k:'kry',l:'Terapis',fn:r=>r.karyawan_id?nm('karyawan',r.karyawan_id):'— semua —'},
+   {k:'target_omzet',l:'Omzet',t:'rp'},{k:'target_order',l:'Order'}]}
+};
+
+const MENU=[
+ ['Ringkasan',[['dash','◈','Dashboard'],['order','◎','Order & Kasir']]],
+ ['Operasional',[['m_pelanggan','☺','Pelanggan'],['m_layanan','✦','Layanan & Tarif'],['m_jadwal','▤','Jadwal Kerja'],['m_shift','◔','Shift Kerja']]],
+ ['SDM',[['m_karyawan','⚇','Karyawan'],['m_jabatan','⚑','Jabatan'],['m_cabang','⌂','Cabang'],['m_absensi','✓','Absensi'],['izin','✎','Izin & Cuti'],['m_kasbon','◇','Kasbon']]],
+ ['Keuangan',[['kas','₪','Kas'],['m_pengeluaran','↓','Pengeluaran'],['m_komisi','%','Komisi'],['m_bonus','★','Bonus'],['gaji','▦','Penggajian']]],
+ ['Analitik',[['laporan','▣','Laporan']]],
+ ['Pengaturan',[['m_aturan_bonus','⚙','Aturan Bonus'],['m_target','◉','Target'],['m_kategori_pengeluaran','⊞','Kategori Biaya'],['pengaturan','⚒','Profil Usaha']]]
+];
+function buildSide(){
+  side.innerHTML=`<div class="brand"><div class="mark">M</div><div><strong style="font-family:Fraunces,serif">Mahyra</strong>
+    <div style="font-size:11px;color:#A9C9EA">Portal Office</div></div></div>`
+   +MENU.map(([g,it])=>`<div class="navgrp">${g}</div>`+it.map(([id,ic,l])=>
+     `<div class="nav" id="nv_${id}" onclick="go('${id}')"><span class="ic">${ic}</span>${l}</div>`).join('')).join('');
+}
+function go(p){ PAGE=p; SEARCH='';
+  document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
+  document.getElementById('nv_'+p)?.classList.add('on');
+  document.querySelector('aside').classList.remove('open'); render(); window.scrollTo(0,0); }
+
+/* ------------------------ form & tabel ------------------------ */
+let EDIT={mod:null,id:null};
+function openForm(key,id){
+  const m=F[key]; EDIT={mod:key,id}; const r=id?get(key,id):{};
+  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">${id?'Ubah':'Tambah'} ${m.title}</h3>
+   <p class="hint" style="margin-bottom:16px">${m.sub}</p>
+   ${m.fields.map(f=>fieldHtml(f,r[f.k])).join('')}
+   <div class="row" style="margin-top:8px"><button class="btn" onclick="saveForm()">Simpan</button>
+     <button class="btn ghost" onclick="closeModal()">Batal</button>
+     ${id?`<button class="btn rose" style="margin-left:auto" onclick="delRow('${key}','${id}')">Hapus</button>`:''}</div>`;
+  modal.classList.add('on');
+}
+function fieldHtml(f,v){
+  const id='f_'+f.k,t=f.t||'text';let inp;
+  if(t==='area')inp=`<textarea id="${id}" rows="2">${esc(v||'')}</textarea>`;
+  else if(t==='sel')inp=`<select id="${id}">${f.o.map(o=>`<option ${v===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  else if(t==='ref')inp=`<select id="${id}"><option value="">— pilih —</option>${DB[f.ref].map(o=>`<option value="${o.id}" ${v===o.id?'selected':''}>${esc(o.nama)}</option>`).join('')}</select>`;
+  else if(t==='bool')inp=`<select id="${id}"><option value="true" ${v?'selected':''}>Ya</option><option value="false" ${!v?'selected':''}>Tidak</option></select>`;
+  else if(t==='date')inp=`<input id="${id}" type="date" value="${v?String(v).slice(0,10):today()}">`;
+  else if(t==='time')inp=`<input id="${id}" type="time" value="${v||''}">`;
+  else if(t==='num'||t==='rp')inp=`<input id="${id}" type="number" value="${v??''}">`;
+  else inp=`<input id="${id}" value="${esc(v||'')}">`;
+  return `<div class="field"><label for="${id}">${f.l}</label>${inp}</div>`;
+}
+async function saveForm(){
+  const m=F[EDIT.mod]; const obj=EDIT.id?{...get(EDIT.mod,EDIT.id)}:{id:uid()};
+  m.fields.forEach(f=>{const el=document.getElementById('f_'+f.k);let v=el.value;
+    if(f.t==='bool')v=v==='true'; else if(f.t==='num'||f.t==='rp')v=Number(v)||0;
+    else if(f.t==='ref'&&v==='')v=null;
+    obj[f.k]=v;});
+  if(!EDIT.id&&EDIT.mod==='pengeluaran') obj.nomor='PG-'+String(DB.pengeluaran.length+1).padStart(4,'0');
+  await simpan(EDIT.mod,obj); await m.after?.(obj);
+  closeModal(); render(); toast('Data tersimpan');
+}
+async function delRow(key,id){ await hapus(key,id); closeModal(); render(); toast('Data dihapus'); }
+function closeModal(){ modal.classList.remove('on'); }
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
+
+function renderModule(key){
+  const m=F[key]; let rows=DB[key];
+  if(SEARCH) rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(SEARCH.toLowerCase()));
+  return `<div class="card"><div class="head"><h3>${m.title}</h3>
+    <div class="row"><input placeholder="Cari…" style="width:180px" value="${esc(SEARCH)}" oninput="SEARCH=this.value;render()">
+      <button class="btn" onclick="openForm('${key}')">Tambah</button></div></div>
+    ${tableHtml(rows,m.cols,key,m.extra)}</div>`;
+}
+function tableHtml(rows,cols,key,extra){
+  if(!rows.length) return `<div class="empty"><div class="disp">Belum ada data</div><div>Tambahkan entri pertama lewat tombol di atas.</div></div>`;
+  return `<div class="tw"><table><thead><tr>${cols.map(c=>`<th>${c.l||cap(c.k)}</th>`).join('')}${key?'<th></th>':''}</tr></thead><tbody>
+    ${rows.map(r=>`<tr>${cols.map(c=>`<td>${cellVal(r,c)}</td>`).join('')}
+      ${key?`<td style="text-align:right"><div class="row" style="justify-content:flex-end">
+        ${extra?extra(r):''}<button class="btn ghost sm" onclick="openForm('${key}','${r.id}')">Ubah</button></div></td>`:''}
+    </tr>`).join('')}</tbody></table></div>`;
+}
+function cellVal(r,c){ if(c.fn)return c.fn(r); const v=r[c.k];
+  if(c.t==='rp')return `<span class="rp">${rp(v)}</span>`; if(c.t==='date')return tgl(v);
+  if(c.t==='tag')return tagHtml(v); return esc(v??'-'); }
+function tagHtml(v){
+  const ok=['aktif','selesai','disetujui','hadir','lunas','dibayar','final','owner','admin'],
+        warn=['menunggu','berjalan','telat','draft','izin','cuti','manajer','kasir'],
+        bad=['ditolak','alpa','batal','nonaktif','belum'];
+  const c=ok.includes(v)?'ok':warn.includes(v)?'warn':bad.includes(v)?'bad':'info';
+  return `<span class="tag ${c}">${cap(v||'-')}</span>`;
+}
+const stat=(l,v,s,cls='')=>`<div class="card stat ${cls}"><div class="lbl">${l}</div><div class="val">${v}</div>${s?`<div class="sub">${s}</div>`:''}</div>`;
+
+/* ==================== AKUN LOGIN TERAPIS ==================== */
+function formAkun(karyawanId){
+  const k=get('karyawan',karyawanId);
+  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">${k.user_id?'Ubah':'Buat'} akun login</h3>
+   <p class="hint" style="margin-bottom:16px">Akun ini dipakai ${esc(k.nama)} untuk masuk ke Portal Terapis.</p>
+   <div class="err" id="akErr"></div>
+   <div class="field"><label>Karyawan</label><input value="${esc(k.nama)} · ${esc(nm('jabatan',k.jabatan_id))}" disabled></div>
+   <div class="field"><label for="ak_em">Email login</label><input id="ak_em" type="email" value="${esc(k.email||'')}" placeholder="nama@mahyra.id"></div>
+   <div class="field"><label for="ak_pw">Kata sandi ${k.user_id?'baru':''}</label>
+     <input id="ak_pw" type="text" value="${k.user_id?'':'mahyra'+Math.floor(1000+Math.random()*9000)}" placeholder="minimal 6 karakter"></div>
+   <p class="hint">Catat dan sampaikan kata sandi ini ke terapis. Minta mereka menggantinya setelah masuk pertama kali.</p>
+   <div class="row" style="margin-top:14px"><button class="btn" id="akBtn" onclick="simpanAkun('${karyawanId}')">${k.user_id?'Perbarui akun':'Buat akun'}</button>
+     <button class="btn ghost" onclick="closeModal()">Batal</button>
+     ${k.user_id?`<button class="btn rose" style="margin-left:auto" onclick="cabutAkun('${karyawanId}')">Cabut akses</button>`:''}</div>`;
+  modal.classList.add('on');
+}
+async function simpanAkun(karyawanId){
+  const k=get('karyawan',karyawanId), email=ak_em.value.trim().toLowerCase(), pass=ak_pw.value.trim(), err=akErr;
+  err.classList.remove('on');
+  if(!/^\S+@\S+\.\S+$/.test(email)){err.textContent='Format email belum benar.';err.classList.add('on');return}
+  if(!k.user_id&&pass.length<6){err.textContent='Kata sandi minimal 6 karakter.';err.classList.add('on');return}
+  akBtn.disabled=true; akBtn.textContent='Menyimpan…';
+  try{
+    if(LIVE){
+      const {data,error}=await sb.functions.invoke('kelola-akun',{body:{
+        aksi:k.user_id?'ubah':'buat', karyawan_id:k.id, email, password:pass||null, user_id:k.user_id||null}});
+      if(error) throw new Error(error.message);
+      if(data?.error) throw new Error(data.error);
+      await simpan('karyawan',{...k,email,user_id:data.user_id});
+    }else{
+      if(AKUN_DEMO[email]&&AKUN_DEMO[email].id!==k.id) throw new Error('Email sudah dipakai karyawan lain.');
+      await simpan('karyawan',{...k,email,user_id:k.user_id||'u_'+uid()});
+      AKUN_DEMO[email]={pw:pass,id:k.id};
+    }
+    closeModal(); render();
+    toast('Akun siap: '+email+(pass?' / '+pass:''));
+  }catch(e){ err.textContent=e.message; err.classList.add('on'); }
+  akBtn.disabled=false; akBtn.textContent='Simpan';
+}
+async function cabutAkun(karyawanId){
+  const k=get('karyawan',karyawanId);
+  if(LIVE){ const {error}=await sb.functions.invoke('kelola-akun',{body:{aksi:'hapus',user_id:k.user_id}});
+    if(error) return toast('Gagal mencabut akses: '+error.message); }
+  await simpan('karyawan',{...k,user_id:null});
+  closeModal(); render(); toast('Akses login dicabut');
+}
+
+/* ============================ HALAMAN ============================ */
+const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang.'],
+ order:['Order & Kasir','Buat transaksi baru dan pantau order berjalan.'],
+ izin:['Izin & Cuti','Pengajuan yang menunggu keputusan HRD.'],
+ kas:['Kas','Arus kas masuk dan keluar per cabang.'],
+ gaji:['Penggajian','Gaji pokok + komisi + bonus − potongan, per periode.'],
+ laporan:['Laporan','Penjualan, kinerja terapis, dan laba usaha.'],
+ pengaturan:['Profil Usaha','Identitas usaha, kebijakan, dan hak akses.']};
+
+function render(){
+  const key=PAGE.startsWith('m_')?PAGE.slice(2):null;
+  pgTitle.textContent=key?F[key].title:(JUDUL[PAGE]?.[0]||'');
+  pgSub.textContent=key?F[key].sub:(JUDUL[PAGE]?.[1]||'');
+  view.innerHTML=key?renderModule(key):(PAGES[PAGE]?PAGES[PAGE]():'<div class="card empty">Halaman belum tersedia</div>');
+}
+
+const PAGES={
+dash(){
+  const o=DB.pesanan.filter(x=>String(x.tanggal).slice(0,10)===today());
+  const sel=o.filter(x=>x.status==='selesai'), omzet=sum(sel,'total');
+  const masuk=sum(DB.kas.filter(k=>k.jenis==='masuk'),'nominal'), keluar=sum(DB.kas.filter(k=>k.jenis==='keluar'),'nominal');
+  const tg=DB.target.find(t=>t.periode===periode()&&!t.karyawan_id);
+  const pct=tg&&tg.target_omzet?Math.min(100,Math.round(omzet/tg.target_omzet*100)):0;
+  const terapis=DB.karyawan.filter(k=>k.role==='terapis');
+  const hadir=DB.absensi.filter(a=>String(a.tanggal).slice(0,10)===today()&&['hadir','telat'].includes(a.status)).length;
+  const kinerja=terapis.map(k=>({nama:k.nama,cabang:nm('cabang',k.cabang_id),
+    n:DB.item.filter(i=>i.terapis_id===k.id&&i.status==='selesai').length,
+    komisi:sum(DB.komisi.filter(c=>c.karyawan_id===k.id),'nominal')})).sort((a,b)=>b.komisi-a.komisi);
+  const antre=[...DB.izin.filter(i=>i.status==='menunggu').map(i=>[`Izin ${i.jenis} — ${nm('karyawan',i.karyawan_id)}`,'izin']),
+    ...DB.pengeluaran.filter(e=>e.status==='menunggu').map(e=>[`Pengeluaran ${rp(e.nominal)} — ${e.deskripsi}`,'m_pengeluaran']),
+    ...DB.kasbon.filter(k=>k.status==='menunggu').map(k=>[`Kasbon ${rp(k.nominal)} — ${nm('karyawan',k.karyawan_id)}`,'m_kasbon']),
+    ...DB.karyawan.filter(k=>k.role==='terapis'&&!k.user_id).map(k=>[`${k.nama} belum punya akun login`,'m_karyawan'])];
+  return `<div class="grid g4">
+    ${stat('Omzet hari ini',rp(omzet),sel.length+' order selesai')}
+    ${stat('Order berjalan',o.filter(x=>x.status==='berjalan').length,'sedang dikerjakan','a')}
+    ${stat('Saldo kas',rp(masuk-keluar),'masuk '+rp(masuk)+' · keluar '+rp(keluar),'g')}
+    ${stat('Terapis hadir',hadir+' / '+terapis.length,'absensi hari ini','r')}</div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><div class="head"><h3>Capaian target</h3><span class="tag info">${periode()}</span></div>
+      <div style="font-family:Fraunces,serif;font-size:30px">${pct}%</div><div class="bar"><i style="width:${pct}%"></i></div>
+      <p class="hint" style="margin-top:8px">${rp(omzet)} dari target ${rp(tg?.target_omzet||0)}</p>
+      <div style="margin-top:14px">${DB.cabang.map(c=>{
+        const om=sum(DB.pesanan.filter(p=>p.cabang_id===c.id&&p.status==='selesai'),'total');
+        return `<div class="list-item"><span class="dot"></span><div style="flex:1"><strong>${esc(c.nama)}</strong>
+          <div class="hint">${esc(c.kota||'')}</div></div><span class="rp">${rp(om)}</span></div>`}).join('')}</div></div>
+    <div class="card"><div class="head"><h3>Kinerja terapis</h3></div>
+      ${tableHtml(kinerja,[{k:'nama',l:'Terapis'},{k:'cabang'},{k:'n',l:'Order'},{k:'komisi',t:'rp'}])}</div></div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Order terbaru</h3>
+    <button class="btn ghost sm" onclick="go('order')">Lihat semua</button></div>
+    ${tableHtml(DB.pesanan.slice(-5).reverse().map(p=>({...p,pel:nm('pelanggan',p.pelanggan_id),cab:nm('cabang',p.cabang_id)})),
+      [{k:'nomor',l:'No. order'},{k:'jam'},{k:'pel',l:'Pelanggan'},{k:'cab',l:'Cabang'},{k:'total',t:'rp'},{k:'status',t:'tag'}])}</div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Perlu tindakan</h3></div>
+    ${antre.length?antre.map(([t,p])=>`<div class="list-item"><span class="dot" style="background:var(--amber)"></span>
+      <div style="flex:1">${esc(t)}</div><button class="btn ghost sm" onclick="go('${p}')">Tinjau</button></div>`).join('')
+      :'<div class="empty">Tidak ada antrean persetujuan. Semua beres.</div>'}</div>`;
+},
+order(){
+  const rows=DB.pesanan.map(p=>{const it=DB.item.filter(i=>i.pesanan_id===p.id);
+    return {...p,pel:nm('pelanggan',p.pelanggan_id),cab:nm('cabang',p.cabang_id),
+      lay:it.map(i=>nm('layanan',i.layanan_id)).join(', '),ter:it.map(i=>nm('karyawan',i.terapis_id)).join(', ')}}).reverse();
+  const hi=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today());
+  return `<div class="grid g4">
+    ${stat('Order hari ini',hi.length,'semua status')}
+    ${stat('Omzet hari ini',rp(sum(hi.filter(p=>p.status==='selesai'),'total')),'order selesai','g')}
+    ${stat('Sedang berjalan',hi.filter(p=>p.status==='berjalan').length,'terapis bekerja','a')}
+    ${stat('Rata-rata transaksi',rp(hi.length?sum(hi,'total')/hi.length:0),'per order','r')}</div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Daftar order</h3>
+    <button class="btn" onclick="formOrder()">Buat order</button></div>
+    ${tableHtml(rows,[{k:'nomor',l:'No. order'},{k:'tanggal',t:'date'},{k:'jam'},{k:'pel',l:'Pelanggan'},
+      {k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},{k:'total',t:'rp'},{k:'metode_bayar',l:'Bayar'},{k:'status',t:'tag'}])}</div>`;
+},
+izin(){
+  const rows=DB.izin.map(i=>({...i,kry:nm('karyawan',i.karyawan_id),
+    hari:Math.round((new Date(i.tgl_selesai)-new Date(i.tgl_mulai))/864e5)+1}));
+  const tunggu=rows.filter(r=>r.status==='menunggu');
+  return `<div class="grid g3">
+    ${stat('Menunggu keputusan',tunggu.length,'perlu ditinjau','a')}
+    ${stat('Disetujui',rows.filter(r=>r.status==='disetujui').length,'')}
+    ${stat('Ditolak',rows.filter(r=>r.status==='ditolak').length,'','r')}</div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Antrean persetujuan</h3></div>
+    ${tunggu.length?tunggu.map(r=>`<div class="list-item"><span class="dot" style="background:var(--amber)"></span>
+      <div style="flex:1"><strong>${esc(r.kry)}</strong> ${tagHtml(r.jenis)}
+        <div class="hint">${tgl(r.tgl_mulai)} s/d ${tgl(r.tgl_selesai)} · ${r.hari} hari</div>
+        <div style="margin-top:4px">${esc(r.alasan)}</div></div>
+      <div class="row"><button class="btn sm" onclick="putusIzin('${r.id}','disetujui')">Setujui</button>
+        <button class="btn ghost sm" onclick="putusIzin('${r.id}','ditolak')">Tolak</button></div></div>`).join('')
+      :'<div class="empty"><div class="disp">Antrean kosong</div><div>Semua pengajuan sudah diputuskan.</div></div>'}</div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Riwayat pengajuan</h3></div>
+    ${tableHtml(rows,[{k:'kry',l:'Karyawan'},{k:'jenis',t:'tag'},{k:'tgl_mulai',l:'Mulai',t:'date'},
+      {k:'tgl_selesai',l:'Selesai',t:'date'},{k:'hari',l:'Hari'},{k:'alasan'},{k:'status',t:'tag'}])}</div>`;
+},
+kas(){
+  const masuk=DB.kas.filter(k=>k.jenis==='masuk'), keluar=DB.kas.filter(k=>k.jenis==='keluar');
+  return `<div class="grid g3">
+    ${stat('Kas masuk',rp(sum(masuk,'nominal')),masuk.length+' transaksi','g')}
+    ${stat('Kas keluar',rp(sum(keluar,'nominal')),keluar.length+' transaksi','r')}
+    ${stat('Saldo kas',rp(sum(masuk,'nominal')-sum(keluar,'nominal')),'seluruh cabang')}</div>
+  <div class="grid g3" style="margin-top:14px">${DB.cabang.map(c=>{
+    const m=sum(DB.kas.filter(k=>k.cabang_id===c.id&&k.jenis==='masuk'),'nominal');
+    const l=sum(DB.kas.filter(k=>k.cabang_id===c.id&&k.jenis==='keluar'),'nominal');
+    return `<div class="card"><div class="hint">${esc(c.nama)}</div>
+      <div style="font-family:Fraunces,serif;font-size:22px;margin-top:4px">${rp(m-l)}</div>
+      <div class="hint">masuk ${rp(m)} · keluar ${rp(l)}</div></div>`}).join('')}</div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Buku kas</h3>
+    <button class="btn" onclick="formKas()">Catat kas manual</button></div>
+    ${tableHtml([...DB.kas].reverse().map(k=>({...k,cab:nm('cabang',k.cabang_id)})),
+      [{k:'tanggal',t:'date'},{k:'cab',l:'Cabang'},
+       {k:'jns',l:'Jenis',fn:r=>r.jenis==='masuk'?'<span class="tag ok">Masuk</span>':'<span class="tag bad">Keluar</span>'},
+       {k:'kategori'},{k:'keterangan'},{k:'metode'},{k:'nominal',t:'rp'}])}</div>`;
+},
+gaji(){
+  const rows=DB.gaji.filter(g=>g.periode===periode());
+  return `<div class="card"><div class="head"><h3>Periode ${periode()}</h3>
+    <div class="row"><button class="btn" onclick="hitungGaji()">Hitung ulang gaji</button>
+      ${rows.length?'<button class="btn amber" onclick="bayarGaji()">Tandai dibayar</button>':''}</div></div>
+    <p class="hint">Rumus: gaji pokok + tunjangan + uang makan (per hari hadir) + komisi + bonus − potongan absen − cicilan kasbon.</p>
+    ${rows.length?`<div style="margin-top:14px">${tableHtml(rows.map(g=>({...g,kry:nm('karyawan',g.karyawan_id),
+      jab:nm('jabatan',get('karyawan',g.karyawan_id)?.jabatan_id)})),
+      [{k:'kry',l:'Karyawan'},{k:'jab',l:'Jabatan'},{k:'hari_hadir',l:'Hadir'},{k:'gaji_pokok',l:'Pokok',t:'rp'},
+       {k:'tunjangan',t:'rp'},{k:'uang_makan',l:'U. makan',t:'rp'},{k:'total_komisi',l:'Komisi',t:'rp'},
+       {k:'total_bonus',l:'Bonus',t:'rp'},{k:'potongan_absen',l:'Pot. absen',t:'rp'},{k:'potongan_kasbon',l:'Kasbon',t:'rp'},
+       {k:'total_terima',l:'Diterima',t:'rp'},{k:'status',t:'tag'}])}
+      <div class="row" style="margin-top:12px;justify-content:flex-end"><strong>Total dibayarkan:
+        <span class="rp">${rp(sum(rows,'total_terima'))}</span></strong></div></div>`
+     :`<div class="empty"><div class="disp">Gaji belum dihitung</div><div>Tekan “Hitung ulang gaji” untuk menyusun slip periode ini.</div></div>`}</div>`;
+},
+laporan(){
+  const sel=DB.pesanan.filter(p=>p.status==='selesai');
+  const omzet=sum(sel,'total'), komisi=sum(DB.komisi,'nominal'),
+    biaya=sum(DB.pengeluaran.filter(e=>e.status==='disetujui'),'nominal'), gj=sum(DB.gaji,'total_terima');
+  const perLayanan=DB.layanan.map(l=>{const it=DB.item.filter(i=>i.layanan_id===l.id&&i.status==='selesai');
+    return {nama:l.nama,n:it.length,omzet:sum(it,'subtotal')}}).filter(x=>x.n).sort((a,b)=>b.omzet-a.omzet);
+  const perMetode=['tunai','transfer','qris','debit'].map(m=>({metode:cap(m),n:sel.filter(p=>p.metode_bayar===m).length,
+    total:sum(sel.filter(p=>p.metode_bayar===m),'total')}));
+  return `<div class="grid g4">
+    ${stat('Pendapatan',rp(omzet),sel.length+' order selesai','g')}
+    ${stat('Beban komisi',rp(komisi),'ke terapis','a')}
+    ${stat('Beban operasional',rp(biaya),'pengeluaran disetujui','r')}
+    ${stat('Laba berjalan',rp(omzet-komisi-biaya-gj),'setelah komisi, biaya & gaji')}</div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><div class="head"><h3>Layanan terlaris</h3></div>
+      ${tableHtml(perLayanan,[{k:'nama',l:'Layanan'},{k:'n',l:'Terjual'},{k:'omzet',t:'rp'}])}</div>
+    <div class="card"><div class="head"><h3>Metode pembayaran</h3></div>
+      ${tableHtml(perMetode,[{k:'metode'},{k:'n',l:'Transaksi'},{k:'total',t:'rp'}])}</div></div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Laba rugi berjalan</h3></div>
+    ${tableHtml([{pos:'Pendapatan layanan',n:omzet},{pos:'Komisi terapis',n:-komisi},{pos:'Gaji & tunjangan',n:-gj},
+      {pos:'Biaya operasional',n:-biaya},{pos:'Laba bersih',n:omzet-komisi-gj-biaya}],
+      [{k:'pos',l:'Pos'},{k:'n',l:'Nominal',fn:r=>`<span class="rp" style="color:${r.n<0?'var(--bad)':'var(--ok)'}">${rp(r.n)}</span>`}])}</div>`;
+},
+pengaturan(){
+  return `<div class="grid g2">
+    <div class="card"><h3 style="margin-bottom:12px">Identitas usaha</h3>
+      <div class="field"><label>Nama usaha</label><input value="Mahyra Relaksia"></div>
+      <div class="field"><label>Slogan</label><input value="Rileks, Pulih, Bugar"></div>
+      <div class="field"><label>Telepon</label><input value="0811-2233-4455"></div>
+      <div class="field"><label>Alamat pusat</label><textarea rows="2">Jl. Melati Raya No. 12, Bekasi</textarea></div>
+      <button class="btn" onclick="toast('Pengaturan tersimpan')">Simpan perubahan</button></div>
+    <div class="card"><h3 style="margin-bottom:12px">Kebijakan operasional</h3>
+      <div class="field"><label>Hari kerja per bulan</label><input type="number" value="26"></div>
+      <div class="field"><label>Tanggal gajian</label><input type="number" value="28"></div>
+      <div class="field"><label>Potongan telat per menit</label><input type="number" value="1000"></div>
+      <div class="field"><label>Radius absensi (meter)</label><input type="number" value="150"></div>
+      <button class="btn" onclick="toast('Kebijakan tersimpan')">Simpan perubahan</button></div></div>
+  <div class="card" style="margin-top:14px"><h3 style="margin-bottom:6px">Akun & hak akses</h3>
+    <p class="hint" style="margin-bottom:12px">Akun terapis dibuat dari menu Karyawan. Portal Office menolak login bertipe terapis, begitu pula sebaliknya.</p>
+    ${tableHtml(DB.karyawan.map(k=>({...k,jab:nm('jabatan',k.jabatan_id),cab:nm('cabang',k.cabang_id),
+      akun:k.user_id?`<span class="tag ok">${esc(k.email||'aktif')}</span>`:'<span class="tag warn">Belum ada</span>'})),
+      [{k:'nama'},{k:'jab',l:'Jabatan'},{k:'cab',l:'Cabang'},{k:'role',l:'Hak akses',t:'tag'},
+       {k:'akun',l:'Akun login',fn:r=>r.akun},{k:'status',t:'tag'}])}</div>`;
+}};
+
+/* --------------------------- aksi --------------------------- */
+async function putusIzin(id,st){
+  const i={...get('izin',id),status:st,approver_id:ME.id,tgl_approve:today()};
+  await simpan('izin',i);
+  if(st==='disetujui'){
+    const d=new Date(i.tgl_mulai), akhir=new Date(i.tgl_selesai);
+    while(d<=akhir){ const t=d.toISOString().slice(0,10);
+      if(!DB.absensi.some(a=>a.karyawan_id===i.karyawan_id&&String(a.tanggal).slice(0,10)===t))
+        await simpan('absensi',{id:uid(),karyawan_id:i.karyawan_id,cabang_id:get('karyawan',i.karyawan_id)?.cabang_id,
+          tanggal:t,status:i.jenis==='sakit'?'sakit':i.jenis==='cuti'?'cuti':'izin',menit_telat:0,catatan:i.alasan});
+      d.setDate(d.getDate()+1); }
+  }
+  render(); toast('Pengajuan '+st);
+}
+async function hitungGaji(){
+  if(LIVE){ const {error}=await sb.rpc('generate_gaji',{p_periode:periode()});
+    if(error) return toast('Gagal: '+error.message);
+    const {data}=await sb.from('gaji').select('*'); DB.gaji=data||[]; render(); return toast('Gaji dihitung'); }
+  const HK=26;
+  for(const k of DB.karyawan.filter(x=>x.status==='aktif')){
+    const hadir=DB.absensi.filter(a=>a.karyawan_id===k.id&&String(a.tanggal).startsWith(periode())&&['hadir','telat'].includes(a.status)).length;
+    const kom=sum(DB.komisi.filter(c=>c.karyawan_id===k.id&&c.periode===periode()),'nominal');
+    const bon=sum(DB.bonus.filter(b=>b.karyawan_id===k.id&&b.periode===periode()&&b.status==='disetujui'),'nominal');
+    const ksb=sum(DB.kasbon.filter(x=>x.karyawan_id===k.id&&x.status==='disetujui'&&x.sisa>0),'cicilan');
+    const um=(get('jabatan',k.jabatan_id)?.uang_makan_harian||0)*hadir;
+    const pot=hadir<HK?Math.round(k.gaji_pokok/HK)*(HK-hadir):0;
+    const lama=DB.gaji.find(g=>g.periode===periode()&&g.karyawan_id===k.id);
+    if(lama&&lama.status!=='draft') continue;
+    await simpan('gaji',{id:lama?.id||uid(),periode:periode(),karyawan_id:k.id,hari_kerja:HK,hari_hadir:hadir,
+      gaji_pokok:k.gaji_pokok,tunjangan:k.tunjangan,uang_makan:um,total_komisi:kom,total_bonus:bon,
+      potongan_absen:pot,potongan_kasbon:ksb,total_terima:k.gaji_pokok+k.tunjangan+um+kom+bon-pot-ksb,status:'draft'});
+  }
+  render(); toast('Gaji periode '+periode()+' dihitung');
+}
+async function bayarGaji(){
+  for(const g of DB.gaji.filter(x=>x.periode===periode())){
+    await simpan('gaji',{...g,status:'dibayar',tgl_bayar:today()});
+    await simpan('kas',{id:uid(),tanggal:today(),cabang_id:get('karyawan',g.karyawan_id)?.cabang_id,jenis:'keluar',
+      kategori:'Gaji & Tunjangan',sumber:'gaji',ref_id:g.id,nominal:g.total_terima,metode:'transfer',
+      keterangan:'Gaji '+g.periode+' — '+nm('karyawan',g.karyawan_id)});
+  }
+  for(const c of DB.komisi.filter(x=>x.periode===periode()&&!x.dibayar)) await simpan('komisi',{...c,dibayar:true});
+  for(const b of DB.bonus.filter(x=>x.periode===periode()&&!x.dibayar)) await simpan('bonus',{...b,dibayar:true});
+  render(); toast('Gaji ditandai dibayar dan tercatat di kas');
+}
+function formOrder(){
+  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Buat order</h3>
+   <p class="hint" style="margin-bottom:16px">Pilih pelanggan, layanan, dan terapis yang menangani.</p>
+   <div class="field"><label>Cabang</label><select id="o_cab">${DB.cabang.map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select></div>
+   <div class="field"><label>Pelanggan</label><select id="o_pel">${DB.pelanggan.map(p=>`<option value="${p.id}">${esc(p.nama)}</option>`).join('')}</select></div>
+   <div class="field"><label>Layanan</label><select id="o_lay">${DB.layanan.filter(l=>l.aktif).map(l=>`<option value="${l.id}">${esc(l.nama)} — ${rp(l.harga)}</option>`).join('')}</select></div>
+   <div class="field"><label>Terapis</label><select id="o_ter">${DB.karyawan.filter(k=>k.role==='terapis').map(k=>`<option value="${k.id}">${esc(k.nama)}</option>`).join('')}</select></div>
+   <div class="grid g2"><div class="field"><label>Ruangan</label><input id="o_room" value="Room 1"></div>
+     <div class="field"><label>Diskon</label><input id="o_disk" type="number" value="0"></div></div>
+   <div class="field"><label>Metode bayar</label><select id="o_bayar"><option>tunai</option><option>qris</option><option>transfer</option><option>debit</option></select></div>
+   <div class="field"><label>Catatan</label><textarea id="o_cat" rows="2" placeholder="Permintaan khusus pelanggan"></textarea></div>
+   <div class="row"><button class="btn" onclick="simpanOrder()">Simpan order</button>
+     <button class="btn ghost" onclick="closeModal()">Batal</button></div>`;
+  modal.classList.add('on');
+}
+async function simpanOrder(){
+  const l=get('layanan',o_lay.value), disk=Number(o_disk.value)||0, cab=get('cabang',o_cab.value);
+  const n=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()).length+1;
+  const p={id:uid(),nomor:'MHR-'+cab.kode+'-'+today().slice(2).replace(/-/g,'')+'-'+String(n).padStart(4,'0'),
+    tanggal:today(),jam:jam(),cabang_id:cab.id,pelanggan_id:o_pel.value,kasir_id:ME.id,status:'berjalan',
+    subtotal:l.harga,diskon:disk,total:l.harga-disk,metode_bayar:o_bayar.value,status_bayar:'belum',catatan:o_cat.value};
+  await simpan('pesanan',p);
+  await simpan('item',{id:uid(),pesanan_id:p.id,layanan_id:l.id,terapis_id:o_ter.value,ruangan:o_room.value,qty:1,
+    harga:l.harga,durasi:l.durasi_menit,subtotal:l.harga,komisi:Math.round((l.harga-disk)*l.komisi_persen/100),status:'menunggu'});
+  closeModal(); render(); toast('Order '+p.nomor+' dibuat');
+}
+function formKas(){
+  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:16px">Catat kas manual</h3>
+   <div class="field"><label>Tanggal</label><input type="date" id="k_tgl" value="${today()}"></div>
+   <div class="field"><label>Cabang</label><select id="k_cab">${DB.cabang.map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select></div>
+   <div class="field"><label>Jenis</label><select id="k_jns"><option value="masuk">Kas masuk</option><option value="keluar">Kas keluar</option></select></div>
+   <div class="field"><label>Kategori</label><input id="k_kat" placeholder="Modal, setoran, penarikan…"></div>
+   <div class="field"><label>Nominal</label><input type="number" id="k_nom"></div>
+   <div class="field"><label>Metode</label><select id="k_met"><option>tunai</option><option>transfer</option><option>qris</option></select></div>
+   <div class="field"><label>Keterangan</label><textarea id="k_ket" rows="2"></textarea></div>
+   <div class="row"><button class="btn" onclick="simpanKas()">Simpan</button>
+     <button class="btn ghost" onclick="closeModal()">Batal</button></div>`;
+  modal.classList.add('on');
+}
+async function simpanKas(){
+  const n=Number(k_nom.value); if(!n) return toast('Isi nominal');
+  await simpan('kas',{id:uid(),tanggal:k_tgl.value,cabang_id:k_cab.value,jenis:k_jns.value,
+    kategori:k_kat.value||'Lain-lain',sumber:'manual',nominal:n,metode:k_met.value,keterangan:k_ket.value,dibuat_oleh:ME.id});
+  closeModal(); render(); toast('Kas tercatat');
+}
+</script>
+</body>
+</html>
