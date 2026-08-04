@@ -802,8 +802,9 @@ pengaturan(){
        {k:'akun',l:'Akun login',fn:r=>r.akun},{k:'status',t:'tag'}])}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Diagnosa koneksi</h3>
     <button class="btn ghost sm" onclick="diagnosa()">Jalankan pemeriksaan</button></div>
-    <p class="hint">Menguji akses baca ke setiap tabel Supabase. Jika ada tabel bertanda GAGAL atau 0 baris padahal datanya ada,
-      jalankan <strong>05_perbaikan_akses.sql</strong> di SQL Editor.</p>
+    <p class="hint">Menguji sesi, peran, kemampuan menulis, dan akses baca ke setiap tabel.
+      Jika baris hak akses merah atau uji tulis gagal, jalankan <strong>07_perbaiki_policy.sql</strong>.
+      Jika muncul <em>permission denied</em>, jalankan <strong>06_perbaikan_grant.sql</strong>.</p>
     <div id="hasilDiag" style="margin-top:12px"></div></div>`;
 }};
 
@@ -818,6 +819,20 @@ async function diagnosa(){
   const {data:prof,error:e0}=await sb.rpc('profil_saya');
   const p=Array.isArray(prof)?prof[0]:prof;
   baris.push({item:'profil_saya()',hasil:e0?'GAGAL: '+e0.message:(p&&p.id?p.nama+' · role '+p.role:'kosong — belum ada data karyawan'),ok:!e0&&!!(p&&p.id)});
+
+  const {data:ak,error:e1}=await sb.rpc('cek_akses');
+  const a=Array.isArray(ak)?ak[0]:ak;
+  baris.push({item:'Hak akses (cek_akses)',
+    hasil: e1 ? 'GAGAL: '+e1.message+' — jalankan 07_perbaiki_policy.sql'
+         : !a ? 'kosong'
+         : (a.peran_kantor ? 'peran '+a.peran+' · status '+a.status+' · diakui sebagai peran kantor'
+                           : 'peran '+a.peran+' · status '+a.status+' · BELUM diakui sebagai peran kantor'),
+    ok: !e1 && !!(a && a.peran_kantor)});
+
+  const uji={id:crypto.randomUUID?crypto.randomUUID():uid(),kode:'ZZ-UJI',nama:'__uji tulis__',tipe:'lainnya'};
+  const {error:e2}=await sb.from('kategori_pengeluaran').insert({id:uji.id,nama:'__uji tulis__',tipe:'lainnya'});
+  baris.push({item:'Uji tulis (insert)',hasil:e2?'GAGAL: '+e2.message:'berhasil',ok:!e2});
+  if(!e2) await sb.from('kategori_pengeluaran').delete().eq('id',uji.id);
   for(const k of Object.keys(TBL)){
     const {count,error}=await sb.from(TBL[k]).select('*',{count:'exact',head:true});
     baris.push({item:TBL[k],hasil:error?'GAGAL: '+error.message:count+' baris',ok:!error});
