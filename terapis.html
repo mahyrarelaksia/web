@@ -99,13 +99,12 @@ main{padding:14px}
 <div id="login">
   <div class="card-login">
     <div class="brand"><div class="mark"><img src="logo.png" alt="Mahyra Relaksia"></div>
-      <div><h2 style="font-size:20px">Mahyra Relaksia</h2><div class="hint">Portal Terapis</div></div></div>
+      <div><h2 style="font-size:20px">Mahyra Relaksia</h2></div></div>
     <p class="tagline">Masuk dengan email dan kata sandi dari admin.</p>
     <div class="err" id="loginErr"></div>
     <div class="field"><label for="em">Email</label><input id="em" type="email" placeholder="nama@mahyra.id" autocomplete="username"></div>
     <div class="field"><label for="pw">Kata sandi</label><input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')masuk()"></div>
     <button class="btn" style="width:100%" id="btnLogin" onclick="masuk()">Masuk</button>
-    <p class="hint" id="demoNote" style="margin-top:14px"></p>
   </div>
 </div>
 
@@ -235,9 +234,21 @@ async function simpan(key,row){
 
 /* ------------------------- LOGIN ------------------------- */
 let ME=null, PAGE='dash';
-document.getElementById('demoNote').textContent = LIVE ? 'Terhubung ke Supabase. Akun dibuatkan admin lewat Portal Office.'
-  : 'Mode demo — coba dewi@mahyra.id / terapis123';
 
+/* Cari data karyawan milik akun yang baru login.
+   Urutan: RPC profil_saya() (bisa menautkan otomatis lewat email) -> muat tabel -> cocokkan manual. */
+async function ambilProfil(userId,email){
+  let k=null;
+  try{
+    const {data,error}=await sb.rpc('profil_saya');
+    if(!error&&data){ const r=Array.isArray(data)?data[0]:data; if(r&&r.id) k=r; }
+  }catch(e){ /* fungsi belum dipasang, lanjut cara biasa */ }
+  await muatSemua();
+  if(!k) k=DB.karyawan.find(x=>x.user_id===userId)
+        ||DB.karyawan.find(x=>String(x.email||'').toLowerCase()===email);
+  if(k&&!k.user_id){ const r=await simpan('karyawan',{...k,user_id:userId}); if(r) k=r; }
+  return k;
+}
 async function masuk(){
   const email=em.value.trim().toLowerCase(), pass=pw.value, err=loginErr;
   btnLogin.disabled=true; btnLogin.textContent='Memeriksa…'; err.classList.remove('on');
@@ -245,12 +256,12 @@ async function masuk(){
     if(LIVE){
       const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
       if(error) throw new Error('Email atau kata sandi salah.');
-      await muatSemua();
-      const k=DB.karyawan.find(x=>x.user_id===data.user.id);
-      if(!k) throw new Error('Akun belum ditautkan ke data karyawan. Hubungi admin.');
+      const k=await ambilProfil(data.user.id,email);
+      if(!k) throw new Error('Login berhasil, tetapi email ini belum terhubung ke data karyawan. Minta admin membuatkan akun lewat menu Karyawan di Portal Office.');
       if(k.role!=='terapis') throw new Error('Akun kantor. Gunakan Portal Office.');
       if(k.status!=='aktif') throw new Error('Akun nonaktif. Hubungi admin.');
       ME=k;
+      if(!DB.karyawan.some(x=>x.id===k.id)) DB.karyawan.push(k);
     }else{
       seedDemo(); const akun=AKUN_DEMO[email];
       if(!akun||akun.pw!==pass) throw new Error('Email atau kata sandi salah.');
