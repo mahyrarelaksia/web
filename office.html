@@ -243,10 +243,17 @@ function seedDemo(){
 /* ---------------------- lapisan penyimpanan ---------------------- */
 async function muatSemua(){
   if(!LIVE) return;
+  const galat=[];
   for(const k in TBL){
     const {data,error}=await sb.from(TBL[k]).select('*');
-    if(error) console.warn('Gagal memuat',TBL[k],error.message); else DB[k]=data||[];
+    if(error){ console.error('Gagal memuat '+TBL[k]+':',error); galat.push(TBL[k]+' ('+error.message+')'); }
+    else DB[k]=data||[];
   }
+  if(galat.length){
+    console.error('Tabel yang gagal dibaca:',galat);
+    toast('Sebagian tabel tidak bisa dibaca. Buka Pengaturan → Diagnosa koneksi.');
+  }
+  return galat;
 }
 const GENERATED={item:['subtotal'],izin:['jumlah_hari']};
 function bersihkan(key,row){
@@ -259,13 +266,15 @@ function bersihkan(key,row){
 }
 async function simpan(key,row){
   if(LIVE){ const {data,error}=await sb.from(TBL[key]).upsert(bersihkan(key,row)).select().single();
-    if(error){toast('Gagal menyimpan: '+error.message);return null}
+    if(error){ console.error('Gagal menyimpan ke '+TBL[key]+':',error,row);
+      toast('Gagal menyimpan ('+TBL[key]+'): '+error.message); return null; }
     const i=DB[key].findIndex(x=>x.id===data.id); i>=0?DB[key][i]=data:DB[key].push(data); return data; }
   const i=DB[key].findIndex(x=>x.id===row.id); i>=0?DB[key][i]=row:DB[key].push(row); return row;
 }
 async function hapus(key,id){
-  if(LIVE){ const {error}=await sb.from(TBL[key]).delete().eq('id',id); if(error) return toast('Gagal hapus: '+error.message); }
-  DB[key]=DB[key].filter(x=>x.id!==id);
+  if(LIVE){ const {error}=await sb.from(TBL[key]).delete().eq('id',id);
+    if(error){ console.error(error); toast('Gagal hapus: '+error.message); return false; } }
+  DB[key]=DB[key].filter(x=>x.id!==id); return true;
 }
 
 /* ---------------------------- LOGIN ---------------------------- */
@@ -464,10 +473,12 @@ async function saveForm(){
     else if(f.t==='ref'&&v==='')v=null;
     obj[f.k]=v;});
   if(!EDIT.id&&EDIT.mod==='pengeluaran') obj.nomor='PG-'+String(DB.pengeluaran.length+1).padStart(4,'0');
-  await simpan(EDIT.mod,obj); await m.after?.(obj);
+  const hasil=await simpan(EDIT.mod,obj);
+  if(!hasil) return;                       // pesan galat sudah tampil, jendela tetap terbuka
+  await m.after?.(hasil);
   closeModal(); render(); toast('Data tersimpan');
 }
-async function delRow(key,id){ await hapus(key,id); closeModal(); render(); toast('Data dihapus'); }
+async function delRow(key,id){ if(!await hapus(key,id)) return; closeModal(); render(); toast('Data dihapus'); }
 function closeModal(){ modal.classList.remove('on'); }
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
 
@@ -714,8 +725,32 @@ pengaturan(){
     ${tableHtml(DB.karyawan.map(k=>({...k,jab:nm('jabatan',k.jabatan_id),cab:nm('cabang',k.cabang_id),
       akun:k.user_id?`<span class="tag ok">${esc(k.email||'aktif')}</span>`:'<span class="tag warn">Belum ada</span>'})),
       [{k:'nama'},{k:'jab',l:'Jabatan'},{k:'cab',l:'Cabang'},{k:'role',l:'Hak akses',t:'tag'},
-       {k:'akun',l:'Akun login',fn:r=>r.akun},{k:'status',t:'tag'}])}</div>`;
+       {k:'akun',l:'Akun login',fn:r=>r.akun},{k:'status',t:'tag'}])}</div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Diagnosa koneksi</h3>
+    <button class="btn ghost sm" onclick="diagnosa()">Jalankan pemeriksaan</button></div>
+    <p class="hint">Menguji akses baca ke setiap tabel Supabase. Jika ada tabel bertanda GAGAL atau 0 baris padahal datanya ada,
+      jalankan <strong>05_perbaikan_akses.sql</strong> di SQL Editor.</p>
+    <div id="hasilDiag" style="margin-top:12px"></div></div>`;
 }};
+
+/* Pemeriksaan koneksi & hak akses ke Supabase */
+async function diagnosa(){
+  const el=document.getElementById('hasilDiag');
+  if(!LIVE){ el.innerHTML='<p class="hint">Aplikasi sedang berjalan dalam mode demo.</p>'; return; }
+  el.innerHTML='<p class="hint">Memeriksa…</p>';
+  const baris=[];
+  const {data:{user}}=await sb.auth.getUser();
+  baris.push({item:'Akun login',hasil:user?user.email:'tidak ada sesi',ok:!!user});
+  const {data:prof,error:e0}=await sb.rpc('profil_saya');
+  const p=Array.isArray(prof)?prof[0]:prof;
+  baris.push({item:'profil_saya()',hasil:e0?'GAGAL: '+e0.message:(p&&p.id?p.nama+' · role '+p.role:'kosong — belum ada data karyawan'),ok:!e0&&!!(p&&p.id)});
+  for(const k of Object.keys(TBL)){
+    const {count,error}=await sb.from(TBL[k]).select('*',{count:'exact',head:true});
+    baris.push({item:TBL[k],hasil:error?'GAGAL: '+error.message:count+' baris',ok:!error});
+  }
+  el.innerHTML=tableHtml(baris,[{k:'item',l:'Yang diperiksa'},
+    {k:'hasil',l:'Hasil',fn:r=>`<span class="tag ${r.ok?'ok':'bad'}">${esc(r.hasil)}</span>`}]);
+}
 
 /* --------------------------- aksi --------------------------- */
 async function putusIzin(id,st){
