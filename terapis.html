@@ -21,23 +21,40 @@ button,input,select,textarea{font:inherit;color:inherit}
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
 .mark{width:46px;height:46px;border-radius:14px;background:#fff;border:1px solid #E4EBF5;display:grid;place-items:center;overflow:hidden;padding:3px;box-shadow:0 6px 16px rgba(47,111,191,.16);flex:none}
 .mark img{width:100%;height:100%;object-fit:contain;display:block}
-aside .mark{background:rgba(255,255,255,.94);border-color:rgba(255,255,255,.55)}
+.appbar .mark{background:rgba(255,255,255,.96);border-color:rgba(255,255,255,.6);width:42px;height:42px}
 .tagline{color:var(--muted);font-size:13px;margin-bottom:20px}
-#app{display:none;min-height:100vh}
-.shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
-aside{background:linear-gradient(178deg,#4C8FD6 0%,#2F6FBF 45%,#1F4C86 100%);color:#DCEAF8;padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow:auto}
-aside .brand{color:#fff;padding:0 8px 14px}
-.navgrp{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#A9C9EA;margin:16px 10px 6px}
-.nav{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:12px;cursor:pointer;font-size:13.5px}
-.nav:hover{background:rgba(255,255,255,.13);color:#fff}
-.nav.on{background:#fff;color:var(--jade);font-weight:600}
-.nav .ic{width:18px;text-align:center}
-main{padding:22px;max-width:1100px;width:100%}
-.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px;flex-wrap:wrap}
-.topbar h1{font-size:26px}.topbar p{color:var(--muted);font-size:13px;margin-top:2px}
-.who{display:flex;align-items:center;gap:10px;background:var(--paper);padding:8px 12px;border-radius:14px;box-shadow:var(--sh)}
-.av{width:36px;height:36px;border-radius:12px;background:linear-gradient(150deg,#7FBCE8,#2F6FBF);color:#fff;display:grid;place-items:center;font-weight:600;flex:none}
-.mobbar{display:none}
+#app{display:none;min-height:100vh;max-width:620px;margin:0 auto;position:relative;
+ box-shadow:0 0 60px rgba(31,64,120,.08);background:var(--mist)}
+.appbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:14px 16px 16px;
+ background:linear-gradient(170deg,#4C8FD6,#2F6FBF 60%,#1F4C86);color:#fff;
+ border-radius:0 0 24px 24px;box-shadow:0 8px 24px rgba(31,76,134,.22)}
+.appbar .nama{font-weight:600;font-size:15px;line-height:1.25}
+.appbar .sub{font-size:11.5px;color:#DCEAF8}
+.av{width:38px;height:38px;border-radius:13px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);
+ color:#fff;display:grid;place-items:center;font-weight:600;flex:none}
+main{padding:16px 14px 116px;width:100%}
+.pagehead h1{font-size:22px}
+.pagehead p{color:var(--muted);font-size:12.5px;margin:2px 0 14px}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:620px;z-index:40;
+ display:grid;grid-template-columns:repeat(5,1fr);align-items:end;background:rgba(255,255,255,.96);
+ backdrop-filter:blur(8px);border-top:1px solid var(--line);
+ padding:9px 6px calc(9px + env(safe-area-inset-bottom));box-shadow:0 -8px 26px rgba(31,64,120,.09)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 2px;border-radius:14px;
+ cursor:pointer;color:#93A4BD;font-size:10.5px;font-weight:600;transition:.15s;-webkit-tap-highlight-color:transparent}
+.tab .ic{font-size:19px;line-height:1}
+.tab.on{color:var(--jade)}
+.tab.pusat{margin-top:-36px;color:var(--jade)}
+.tab.pusat .ic{width:64px;height:64px;border-radius:24px;display:grid;place-items:center;font-size:28px;color:#fff;
+ background:linear-gradient(150deg,#8FC6EC,#2F6FBF 62%,#1F4C86);border:4px solid #fff;
+ box-shadow:0 12px 26px rgba(47,111,191,.42);transition:.18s}
+.tab.pusat:active .ic{transform:scale(.94)}
+.tab.pusat.on .ic{box-shadow:0 14px 30px rgba(47,111,191,.55)}
+.menulist{display:grid;gap:6px;margin-top:6px}
+.menulist button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);
+ background:#fff;padding:13px 14px;border-radius:14px;cursor:pointer;font-weight:600;font-size:13.5px}
+.menulist button:hover{border-color:var(--jade-2);background:#F6FAFE}
+.menulist .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;
+ background:#E8F1FC;color:var(--jade);font-size:15px}
 .grid{display:grid;gap:14px}
 .g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
 .card{background:var(--paper);border-radius:var(--r);box-shadow:var(--sh);padding:16px}
@@ -83,14 +100,9 @@ tr:last-child td{border-bottom:0}.tw{overflow-x:auto}
 .modal{position:fixed;inset:0;background:rgba(23,52,96,.45);backdrop-filter:blur(3px);display:none;place-items:center;padding:16px;z-index:50}
 .modal.on{display:grid}
 .sheet{background:var(--paper);border-radius:22px;width:100%;max-width:460px;padding:22px}
-@media(max-width:900px){.shell{grid-template-columns:1fr}
-aside{position:fixed;left:-250px;width:230px;z-index:60;transition:.22s}
-aside.open{left:0;box-shadow:0 0 0 100vmax rgba(0,0,0,.4)}
-main{padding:14px}
-.mobbar{display:flex;align-items:center;gap:10px;background:var(--jade);color:#fff;padding:11px 14px;position:sticky;top:0;z-index:20}
-.mobbar button{background:rgba(255,255,255,.15);border:0;color:#fff;padding:7px 11px;border-radius:9px;cursor:pointer}
-.g4,.g3,.g2{grid-template-columns:1fr 1fr}.topbar h1{font-size:21px}}
-@media(max-width:520px){.g4,.g3,.g2{grid-template-columns:1fr}}
+@media(max-width:620px){#app{box-shadow:none}}
+.g4,.g3{grid-template-columns:1fr 1fr}
+@media(max-width:420px){.g4,.g3,.g2{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -109,20 +121,17 @@ main{padding:14px}
 </div>
 
 <div id="app">
-  <div class="mobbar"><button onclick="document.querySelector('aside').classList.toggle('open')">☰</button>
-    <strong style="font-family:Fraunces,serif">Terapis</strong></div>
-  <div class="shell">
-    <aside id="side"></aside>
-    <main>
-      <div class="topbar">
-        <div><h1 id="pgTitle">Beranda</h1><p id="pgSub"></p></div>
-        <div class="who"><div class="av" id="meAv">M</div>
-          <div><div style="font-weight:600" id="meName"></div><div class="hint" id="meRole"></div></div>
-          <button class="btn ghost sm" onclick="keluar()">Keluar</button></div>
-      </div>
-      <div id="view"></div>
-    </main>
-  </div>
+  <header class="appbar">
+    <div class="mark"><img src="logo.png" alt="Mahyra Relaksia"></div>
+    <div style="flex:1;min-width:0">
+      <div class="nama" id="meName"></div><div class="sub" id="meRole"></div></div>
+    <div class="av" id="meAv">M</div>
+  </header>
+  <main>
+    <div class="pagehead"><h1 id="pgTitle">Beranda</h1><p id="pgSub"></p></div>
+    <div id="view"></div>
+  </main>
+  <nav class="tabbar" id="tabbar"></nav>
 </div>
 
 <div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
@@ -276,22 +285,38 @@ async function masuk(){
 }
 async function keluar(){ if(LIVE) await sb.auth.signOut(); location.reload(); }
 
-const MENU=[
- ['Harian',[['dash','◈','Beranda'],['absen','✓','Absensi'],['kerja','◎','Kerjaan Saya'],['jadwal','▤','Jadwal Saya']]],
- ['Penghasilan',[['komisi','%','Komisi Saya'],['bonus','★','Bonus Saya'],['slip','▦','Slip Gaji']]],
- ['Pengajuan',[['izin','✎','Izin & Cuti'],['kasbon','◇','Kasbon']]],
- ['Akun',[['profil','☺','Profil Saya'],['sandi','⚿','Ganti Sandi']]]
-];
+/* Tab bawah ala aplikasi. Tombol Absen di tengah, ukurannya paling besar. */
+const TAB=[['dash','◈','Beranda'],['kerja','◎','Kerjaan'],['absen','✓','Absen'],['komisi','%','Komisi'],['menu','☰','Lainnya']];
+const MENU_LAIN=[['jadwal','▤','Jadwal Saya','Shift kerja Anda ke depan'],
+ ['bonus','★','Bonus Saya','Bonus dan skema yang bisa dikejar'],
+ ['slip','▦','Slip Gaji','Rincian penerimaan per periode'],
+ ['izin','✎','Izin & Cuti','Ajukan izin, sakit, cuti, tukar shift'],
+ ['kasbon','◇','Kasbon','Pinjaman dengan potong gaji'],
+ ['profil','☺','Profil Saya','Data kepegawaian Anda'],
+ ['sandi','⚿','Ganti Sandi','Perbarui kata sandi akun']];
+
 function buildSide(){
-  side.innerHTML=`<div class="brand"><div class="mark"><img src="logo.png" alt="Mahyra Relaksia"></div><div><strong style="font-family:Fraunces,serif">Mahyra</strong>
-    <div style="font-size:11px;color:#A9C9EA">Portal Terapis</div></div></div>`
-   +MENU.map(([g,it])=>`<div class="navgrp">${g}</div>`+it.map(([id,ic,l])=>
-     `<div class="nav" id="nv_${id}" onclick="go('${id}')"><span class="ic">${ic}</span>${l}</div>`).join('')).join('');
+  tabbar.innerHTML=TAB.map(([id,ic,l])=>{
+    const aksi = id==='menu' ? 'bukaMenu()' : `go('${id}')`;
+    return `<div class="tab ${id==='absen'?'pusat':''}" id="tb_${id}" onclick="${aksi}">
+      <span class="ic">${ic}</span><span>${l}</span></div>`;}).join('');
+}
+function bukaMenu(){
+  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:4px">Menu lainnya</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(ME.nama)} · ${esc(nm('jabatan',ME.jabatan_id))}</p>
+    <div class="menulist">${MENU_LAIN.map(([id,ic,l,s])=>
+      `<button onclick="closeModal();go('${id}')"><span class="ic">${ic}</span>
+        <span>${l}<br><span class="hint" style="font-weight:400">${s}</span></span></button>`).join('')}
+      <button onclick="keluar()" style="color:var(--bad);border-color:#F3DDE1">
+        <span class="ic" style="background:#FAEAEC;color:var(--bad)">⏻</span>Keluar dari akun</button></div>
+    <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`;
+  modal.classList.add('on');
 }
 function go(p){ PAGE=p;
-  document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
-  document.getElementById('nv_'+p)?.classList.add('on');
-  document.querySelector('aside').classList.remove('open'); render(); window.scrollTo(0,0); }
+  document.querySelectorAll('.tab').forEach(n=>n.classList.remove('on'));
+  const utama=document.getElementById('tb_'+p);
+  (utama||document.getElementById('tb_menu'))?.classList.add('on');
+  render(); window.scrollTo(0,0); }
 
 /* ------------------------ komponen ------------------------ */
 function tableHtml(rows,cols){
