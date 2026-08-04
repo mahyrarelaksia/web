@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mahyra Relaksia — Pijat & Terapi Panggilan ke Rumah</title>
+<meta name="description" content="Terapis bersertifikat datang ke rumah Anda membawa peralatan sendiri. Pijat tradisional, refleksi, perawatan ibu hamil dan pasca melahirkan. Bayar setelah sesi.">
+<meta property="og:title" content="Mahyra Relaksia — Home Wellness & Therapy">
+<meta property="og:description" content="Pijat dan terapi panggilan ke rumah oleh terapis bersertifikat.">
+<meta property="og:image" content="logo.png">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKEN ============ */
+:root{
+  --langit:#8FC6EC;      /* sayap atas logo */
+  --biru:#2F6FBF;        /* biru utama logo */
+  --laut:#1B4A82;        /* sayap bawah logo */
+  --malam:#0C1E36;       /* navy pekat, untuk bagian premium */
+  --emas:#C7A468;        /* champagne, aksen tipis */
+  --emas-2:#E4D3AF;
+  --gading:#FBF9F5;      /* latar hangat */
+  --kabut:#EEF4FA;       /* latar dingin */
+  --tinta:#16233A;
+  --redup:#6C7C93;
+  --garis:#E3E9F1;
+  --max:1180px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--gading);color:var(--tinta);font-family:Jost,system-ui,sans-serif;font-weight:300;
+ font-size:16.5px;line-height:1.72;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3,.disp{font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;line-height:1.12;letter-spacing:-.005em}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+.eyebrow{font-size:11px;letter-spacing:.28em;text-transform:uppercase;font-weight:500;color:var(--biru);
+ display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.eyebrow:before{content:"";width:26px;height:1px;background:var(--emas)}
+.eyebrow.tengah{justify-content:center}
+.eyebrow.terang{color:var(--emas-2)}
+h2.judul{font-size:clamp(30px,4.6vw,50px);margin-bottom:14px}
+.timbal{color:var(--redup);max-width:56ch}
+.tengah{text-align:center}.tengah .timbal{margin:0 auto}
+section{padding:92px 0}
+.emas{color:var(--emas)}
+
+/* ============ TOMBOL ============ */
+.tbl{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:Jost,sans-serif;
+ font-weight:500;font-size:14.5px;letter-spacing:.02em;padding:15px 28px;border-radius:999px;border:1px solid transparent;
+ cursor:pointer;transition:transform .2s,box-shadow .2s,background .2s,color .2s;background:none}
+.tbl-utama{background:linear-gradient(135deg,#4C8FD6,var(--biru) 55%,var(--laut));color:#fff;
+ box-shadow:0 10px 26px rgba(27,74,130,.28)}
+.tbl-utama:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(27,74,130,.36)}
+.tbl-garis{border-color:var(--garis);color:var(--tinta)}
+.tbl-garis:hover{border-color:var(--biru);color:var(--biru)}
+.tbl-emas{border-color:rgba(199,164,104,.5);color:var(--emas-2)}
+.tbl-emas:hover{background:var(--emas);border-color:var(--emas);color:var(--malam)}
+.tbl:focus-visible,a:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--biru);outline-offset:3px}
+
+/* ============ NAV ============ */
+header{position:fixed;inset:0 0 auto;z-index:60;transition:background .3s,box-shadow .3s,padding .3s;padding:14px 0}
+header.turun{background:rgba(251,249,245,.92);backdrop-filter:blur(14px);box-shadow:0 1px 0 var(--garis);padding:8px 0}
+.nav{display:flex;align-items:center;gap:26px}
+.merek{display:flex;align-items:center;gap:11px;flex:none}
+.merek img{width:44px;height:44px;object-fit:contain}
+.merek b{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;letter-spacing:.01em;display:block;line-height:1.05}
+.merek span{font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--redup)}
+.tautan{display:flex;gap:26px;margin-left:auto;font-size:14.5px}
+.tautan a{position:relative;padding:4px 0;color:var(--tinta)}
+.tautan a:after{content:"";position:absolute;left:0;right:100%;bottom:0;height:1px;background:var(--emas);transition:right .3s}
+.tautan a:hover:after{right:0}
+.buka-menu{display:none;background:none;border:1px solid var(--garis);border-radius:12px;padding:9px 12px;cursor:pointer}
+#panel{display:none}
+
+/* ============ HERO ============ */
+.hero{position:relative;padding:150px 0 84px;overflow:hidden}
+.hero:before{content:"";position:absolute;inset:-20% -30% auto -30%;height:150%;z-index:-2;
+ background:radial-gradient(60% 55% at 22% 18%,rgba(143,198,236,.42),transparent 62%),
+            radial-gradient(50% 50% at 88% 4%,rgba(47,111,191,.2),transparent 60%),
+            linear-gradient(180deg,var(--kabut),var(--gading) 72%)}
+.kupu{position:absolute;right:-9%;top:2%;width:min(760px,88vw);z-index:-1;opacity:.09;color:var(--laut);pointer-events:none}
+.hero-isi{display:grid;grid-template-columns:1.02fr .98fr;gap:60px;align-items:center}
+h1{font-size:clamp(40px,6.1vw,74px)}
+h1 em{font-style:italic;color:var(--biru)}
+.hero p.utama{font-size:18px;color:#44566F;max-width:44ch;margin:22px 0 30px}
+.hero-aksi{display:flex;gap:12px;flex-wrap:wrap}
+.jaminan{display:flex;gap:26px;margin-top:34px;padding-top:26px;border-top:1px solid var(--garis);flex-wrap:wrap}
+.jaminan div{font-size:13.5px;color:var(--redup);display:flex;align-items:center;gap:8px}
+.jaminan svg{color:var(--biru);flex:none}
+
+/* ============ KARTU PEMESAN (elemen tanda tangan) ============ */
+.pesan{background:#fff;border-radius:26px;padding:28px;position:relative;
+ box-shadow:0 30px 70px rgba(16,44,80,.16),0 2px 6px rgba(16,44,80,.05)}
+.pesan:before{content:"";position:absolute;inset:-1px;border-radius:27px;z-index:-1;
+ background:linear-gradient(150deg,var(--emas),transparent 42%,rgba(47,111,191,.5))}
+.pesan h3{font-size:26px;margin-bottom:3px}
+.pesan .ket{font-size:13px;color:var(--redup);margin-bottom:22px}
+.label{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--redup);
+ font-weight:500;display:block;margin-bottom:9px}
+.kolom{margin-bottom:19px}
+select{width:100%;font-family:Jost,sans-serif;font-size:15px;font-weight:400;color:var(--tinta);
+ padding:13px 15px;border:1px solid var(--garis);border-radius:14px;background:#fff;appearance:none;cursor:pointer;
+ background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%236C7C93' stroke-width='1.6'%3E%3Cpath d='M4 7l5 5 5-5'/%3E%3C/svg%3E");
+ background-repeat:no-repeat;background-position:right 14px center}
+select:hover{border-color:var(--langit)}
+.cip{display:flex;gap:8px}
+.cip button{flex:1;padding:12px 6px;border:1px solid var(--garis);border-radius:14px;background:#fff;cursor:pointer;
+ font-family:Jost,sans-serif;font-size:14px;font-weight:400;color:var(--tinta);transition:.18s;line-height:1.3}
+.cip button small{display:block;font-size:11px;color:var(--redup)}
+.cip button:hover{border-color:var(--langit)}
+.cip button.aktif{border-color:var(--biru);background:linear-gradient(160deg,#F3F8FD,#E9F2FB);color:var(--laut);font-weight:500}
+.cip button.aktif small{color:var(--biru)}
+.total{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+ padding:18px 0 6px;border-top:1px dashed var(--garis);margin-top:4px}
+.total .nom{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:500;color:var(--laut);
+ font-variant-numeric:tabular-nums}
+.pesan .tbl{width:100%;margin-top:12px}
+.kaki-pesan{font-size:12px;color:var(--redup);text-align:center;margin-top:12px}
+
+/* ============ PITA FAKTA ============ */
+.pita{background:var(--malam);color:#D8E4F2;padding:0}
+.pita .wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(216,228,242,.14)}
+.pita div{background:var(--malam);padding:34px 26px;text-align:center}
+.pita b{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:500;color:#fff;display:block}
+.pita span{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#8FA6C2}
+
+/* ============ KISI UMUM ============ */
+.kisi{display:grid;gap:20px;margin-top:44px}
+.k3{grid-template-columns:repeat(3,1fr)}
+.k4{grid-template-columns:repeat(4,1fr)}
+.kartu{background:#fff;border:1px solid var(--garis);border-radius:20px;padding:26px;transition:.24s}
+.kartu:hover{transform:translateY(-4px);border-color:rgba(47,111,191,.34);box-shadow:0 18px 40px rgba(16,44,80,.09)}
+.kartu h3{font-size:23px;margin-bottom:7px}
+.kartu p{font-size:14.5px;color:var(--redup)}
+
+/* layanan */
+#layanan{background:var(--kabut)}
+.lay{display:flex;flex-direction:column;gap:14px;height:100%}
+.lay .atas{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.lay .harga{font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--laut);white-space:nowrap;font-weight:500}
+.lay .harga small{display:block;font-family:Jost,sans-serif;font-size:11px;letter-spacing:.14em;
+ text-transform:uppercase;color:var(--redup);font-weight:400}
+.lay .durasi{margin-top:auto;padding-top:14px;border-top:1px solid var(--garis);font-size:12.5px;color:var(--redup);
+ display:flex;gap:8px;flex-wrap:wrap}
+.lay .durasi i{font-style:normal;border:1px solid var(--garis);border-radius:999px;padding:3px 11px}
+
+/* paket (bagian gelap) */
+#paket{background:var(--malam);color:#D8E4F2;position:relative;overflow:hidden}
+#paket h2.judul{color:#fff}
+#paket .timbal{color:#93A9C6}
+.paket{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:44px}
+.tier{border:1px solid rgba(216,228,242,.16);border-radius:22px;padding:32px 26px;position:relative;
+ display:flex;flex-direction:column;transition:.24s}
+.tier:hover{border-color:rgba(199,164,104,.5)}
+.tier.unggul{background:linear-gradient(170deg,rgba(47,111,191,.28),rgba(12,30,54,.2));
+ border-color:rgba(199,164,104,.62)}
+.tier .cap{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--emas);margin-bottom:14px}
+.tier h3{font-size:28px;color:#fff;margin-bottom:6px}
+.tier .biaya{font-family:'Cormorant Garamond',serif;font-size:40px;color:#fff;font-weight:500;margin:14px 0 4px}
+.tier .biaya sup{font-size:15px;font-family:Jost,sans-serif;color:#93A9C6;vertical-align:super;font-weight:300}
+.tier ul{list-style:none;margin:20px 0 26px;display:grid;gap:11px;font-size:14.5px;color:#C3D3E6}
+.tier li{display:flex;gap:10px;align-items:flex-start}
+.tier li:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--emas);margin-top:9px;flex:none}
+.tier .tbl{margin-top:auto}
+
+/* langkah */
+.langkah{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:48px;border-top:1px solid var(--garis)}
+.langkah article{padding:30px 26px 0;border-right:1px solid var(--garis);position:relative}
+.langkah article:last-child{border-right:0}
+.langkah article:before{content:"";position:absolute;top:-1px;left:0;width:34px;height:1px;background:var(--emas)}
+.langkah .no{font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--emas);letter-spacing:.1em;display:block;margin-bottom:12px}
+.langkah h3{font-size:21px;margin-bottom:8px}
+.langkah p{font-size:14.5px;color:var(--redup)}
+
+/* terapis */
+#terapis{background:var(--kabut)}
+.orang{background:#fff;border:1px solid var(--garis);border-radius:20px;padding:28px;text-align:center;transition:.24s}
+.orang:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(16,44,80,.09)}
+.mono{width:78px;height:78px;margin:0 auto 16px;border-radius:26px;display:grid;place-items:center;
+ font-family:'Cormorant Garamond',serif;font-size:31px;color:#fff;
+ background:linear-gradient(150deg,var(--langit),var(--biru) 58%,var(--laut));
+ box-shadow:0 12px 26px rgba(47,111,191,.28)}
+.orang h3{font-size:22px}
+.orang .peran{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--emas);margin:5px 0 12px}
+.orang p{font-size:14px;color:var(--redup)}
+.orang .tanda{margin-top:14px;padding-top:14px;border-top:1px solid var(--garis);font-size:13px;color:var(--laut)}
+
+/* testimoni */
+.kesan{background:#fff;border:1px solid var(--garis);border-radius:20px;padding:28px}
+.kesan p{font-family:'Cormorant Garamond',serif;font-size:20px;line-height:1.5;font-style:italic;color:#26364F}
+.kesan footer{margin-top:18px;padding-top:14px;border-top:1px solid var(--garis);font-size:13px;color:var(--redup)}
+.kesan footer b{font-weight:500;color:var(--tinta);font-style:normal;display:block;font-size:14.5px}
+.bintang{color:var(--emas);letter-spacing:3px;font-size:13px;margin-bottom:14px}
+
+/* area + faq */
+.dua{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start}
+.daftar-area{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
+.daftar-area span{border:1px solid var(--garis);border-radius:999px;padding:7px 16px;font-size:14px;background:#fff}
+.jam{margin-top:26px;border-left:2px solid var(--emas);padding-left:18px}
+.jam b{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:500;display:block}
+details{border-bottom:1px solid var(--garis)}
+summary{cursor:pointer;list-style:none;padding:19px 34px 19px 0;position:relative;font-size:16.5px;font-weight:400}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"+";position:absolute;right:6px;top:17px;font-size:21px;color:var(--biru);
+ transition:transform .25s;font-weight:300}
+details[open] summary:after{transform:rotate(45deg)}
+details p{padding:0 30px 20px 0;color:var(--redup);font-size:15px}
+
+/* ajakan penutup */
+.penutup{position:relative;overflow:hidden;background:linear-gradient(150deg,#4C8FD6,var(--biru) 46%,var(--laut));
+ color:#fff;text-align:center;border-radius:30px;padding:70px 30px;margin:0 24px}
+.penutup h2{font-size:clamp(30px,4.4vw,48px);color:#fff;margin-bottom:12px}
+.penutup p{color:#DCEAF8;max-width:48ch;margin:0 auto 28px}
+.penutup .kupu{opacity:.14;color:#fff;right:-14%;top:-32%}
+
+/* footer */
+footer.situs{background:var(--malam);color:#93A9C6;padding:66px 0 26px;margin-top:92px}
+.f-kisi{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:38px}
+footer.situs h4{font-family:Jost,sans-serif;font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+ color:#fff;font-weight:500;margin-bottom:16px}
+footer.situs a{display:block;padding:5px 0;font-size:14.5px;transition:color .2s}
+footer.situs a:hover{color:var(--emas-2)}
+.f-merek{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.f-merek img{width:46px;height:46px;background:#fff;border-radius:14px;padding:4px}
+.f-merek b{font-family:'Cormorant Garamond',serif;font-size:22px;color:#fff;font-weight:600;display:block;line-height:1.1}
+.f-merek span{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase}
+.f-bawah{margin-top:44px;padding-top:22px;border-top:1px solid rgba(216,228,242,.14);
+ display:flex;justify-content:space-between;gap:14px;font-size:13px;flex-wrap:wrap}
+
+/* tombol wa mengambang */
+.wa{position:fixed;right:20px;bottom:20px;z-index:70;display:flex;align-items:center;gap:10px;
+ background:#fff;border:1px solid var(--garis);border-radius:999px;padding:11px 20px 11px 12px;
+ box-shadow:0 14px 34px rgba(16,44,80,.18);font-size:14.5px;font-weight:400;transition:.22s}
+.wa:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(16,44,80,.24)}
+.wa i{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:none;
+ background:linear-gradient(150deg,var(--langit),var(--biru));color:#fff}
+
+/* gerak */
+.masuk{opacity:0;transform:translateY(22px)}
+.masuk.tampil{opacity:1;transform:none;transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1)}
+
+/* ============ RESPONSIF ============ */
+@media(max-width:980px){
+  .hero-isi,.dua{grid-template-columns:1fr;gap:44px}
+  .k4,.k3,.paket{grid-template-columns:1fr 1fr}
+  .langkah{grid-template-columns:1fr 1fr}
+  .langkah article:nth-child(2n){border-right:0}
+  .langkah article:nth-child(n+3){margin-top:26px;border-top:1px solid var(--garis)}
+  .f-kisi{grid-template-columns:1fr 1fr}
+  .kupu{top:auto;bottom:-8%;right:-30%;width:130vw}
+}
+@media(max-width:720px){
+  section{padding:66px 0}
+  .tautan{display:none}
+  .buka-menu{display:block;margin-left:auto}
+  #panel.on{display:block;position:fixed;inset:0;z-index:80;background:var(--gading);padding:26px 24px}
+  #panel a{display:block;font-family:'Cormorant Garamond',serif;font-size:30px;padding:13px 0;border-bottom:1px solid var(--garis)}
+  #panel .tutup{float:right;background:none;border:1px solid var(--garis);border-radius:12px;padding:9px 13px;cursor:pointer}
+  .k4,.k3,.paket,.langkah,.pita .wrap,.f-kisi{grid-template-columns:1fr}
+  .langkah article{border-right:0;border-top:1px solid var(--garis);margin-top:0;padding:26px 0 0}
+  .hero{padding-top:120px}
+  .penutup{margin:0 14px;padding:52px 22px}
+  .wa span{display:none}.wa{padding:10px;border-radius:50%}
+}
+@media(prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important;scroll-behavior:auto!important}
+  .masuk{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= NAV ================= -->
+<header id="atas">
+  <div class="wrap nav">
+    <a class="merek" href="#atas">
+      <img src="logo.png" alt="Logo Mahyra Relaksia">
+      <span><b>Mahyra Relaksia</b><span>Home Wellness &amp; Therapy</span></span>
+    </a>
+    <nav class="tautan">
+      <a href="#layanan">Layanan</a>
+      <a href="#paket">Paket</a>
+      <a href="#cara">Cara pesan</a>
+      <a href="#terapis">Terapis</a>
+      <a href="#tanya">Tanya jawab</a>
+    </nav>
+    <button class="buka-menu" onclick="panel.classList.add('on')" aria-label="Buka menu">☰</button>
+  </div>
+</header>
+
+<div id="panel">
+  <button class="tutup" onclick="panel.classList.remove('on')" aria-label="Tutup menu">✕</button>
+  <a href="#layanan" onclick="panel.classList.remove('on')">Layanan</a>
+  <a href="#paket" onclick="panel.classList.remove('on')">Paket</a>
+  <a href="#cara" onclick="panel.classList.remove('on')">Cara pesan</a>
+  <a href="#terapis" onclick="panel.classList.remove('on')">Terapis</a>
+  <a href="#tanya" onclick="panel.classList.remove('on')">Tanya jawab</a>
+  <a href="#pesan" onclick="panel.classList.remove('on')">Pesan sesi</a>
+</div>
+
+<!-- ================= HERO ================= -->
+<section class="hero" id="pesan">
+  <svg class="kupu" viewBox="0 0 200 170" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+    <path d="M100 84C88 40 62 14 34 18 14 21 10 43 18 62c11 26 44 34 68 30"/>
+    <path d="M100 84c12-44 38-70 66-66 20 3 24 25 16 44-11 26-44 34-68 30"/>
+    <path d="M100 88c-12 36-34 56-58 52-17-3-19-22-12-38 10-22 40-28 60-24"/>
+    <path d="M100 88c12 36 34 56 58 52 17-3 19-22 12-38-10-22-40-28-60-24"/>
+    <path d="M97 78c-3-18-9-30-18-38M103 78c3-18 9-30 18-38"/>
+  </svg>
+  <div class="wrap hero-isi">
+    <div class="masuk">
+      <p class="eyebrow">Pijat panggilan · Jabodetabek</p>
+      <h1>Pulih di rumah,<br>tanpa <em>keluar rumah.</em></h1>
+      <p class="utama">Terapis kami datang membawa matras, minyak, dan handuk bersih.
+        Anda tinggal menyiapkan ruang dan waktu — sisanya urusan kami.</p>
+      <div class="hero-aksi">
+        <a class="tbl tbl-utama" href="#layanan">Lihat layanan</a>
+        <a class="tbl tbl-garis" href="#cara">Cara pemesanan</a>
+      </div>
+      <div class="jaminan">
+        <div><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>Terapis bersertifikat</div>
+        <div><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Datang tepat waktu</div>
+        <div><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18h16M6 18V9l6-4 6 4v9"/><path d="M10 18v-4h4v4"/></svg>Bayar setelah sesi</div>
+      </div>
+    </div>
+
+    <!-- ELEMEN TANDA TANGAN: perancang sesi -->
+    <div class="pesan masuk" role="form" aria-label="Rancang sesi Anda">
+      <h3>Rancang sesi Anda</h3>
+      <p class="ket">Pilih dulu di sini, biar pesan WhatsApp-nya tersusun rapi.</p>
+
+      <div class="kolom">
+        <label class="label" for="fLayanan">Layanan</label>
+        <select id="fLayanan"></select>
+      </div>
+
+      <div class="kolom">
+        <span class="label">Durasi</span>
+        <div class="cip" id="fDurasi"></div>
+      </div>
+
+      <div class="kolom">
+        <label class="label" for="fArea">Area Anda</label>
+        <select id="fArea"></select>
+      </div>
+
+      <div class="kolom">
+        <label class="label" for="fWaktu">Waktu kedatangan</label>
+        <select id="fWaktu"></select>
+      </div>
+
+      <div class="total">
+        <span class="label" style="margin:0">Perkiraan biaya</span>
+        <span class="nom" id="fTotal">Rp 0</span>
+      </div>
+      <a class="tbl tbl-utama" id="fKirim" href="#" target="_blank" rel="noopener">Kirim lewat WhatsApp</a>
+      <p class="kaki-pesan">Tanpa biaya transportasi di dalam area layanan.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PITA FAKTA ================= -->
+<section class="pita" style="padding:0">
+  <div class="wrap">
+    <div><b>6 tahun</b><span>melayani panggilan</span></div>
+    <div><b>4,9 / 5</b><span>rata-rata penilaian</span></div>
+    <div><b>09.00–22.00</b><span>setiap hari</span></div>
+  </div>
+</section>
+
+<!-- ================= LAYANAN ================= -->
+<section id="layanan">
+  <div class="wrap">
+    <div class="tengah masuk">
+      <p class="eyebrow tengah">Layanan</p>
+      <h2 class="judul">Delapan perawatan, satu tujuan</h2>
+      <p class="timbal">Semua dikerjakan di rumah Anda. Harga di bawah sudah termasuk peralatan,
+        minyak, dan handuk bersih yang dibawa terapis.</p>
+    </div>
+    <div class="kisi k4" id="kisiLayanan"></div>
+  </div>
+</section>
+
+<!-- ================= PAKET ================= -->
+<section id="paket">
+  <svg class="kupu" viewBox="0 0 200 170" fill="none" stroke="currentColor" stroke-width="1.6" style="opacity:.07;color:#fff;left:-16%;right:auto;top:-14%" aria-hidden="true">
+    <path d="M100 84C88 40 62 14 34 18 14 21 10 43 18 62c11 26 44 34 68 30"/>
+    <path d="M100 84c12-44 38-70 66-66 20 3 24 25 16 44-11 26-44 34-68 30"/>
+    <path d="M100 88c-12 36-34 56-58 52-17-3-19-22-12-38 10-22 40-28 60-24"/>
+    <path d="M100 88c12 36 34 56 58 52 17-3 19-22 12-38-10-22-40-28-60-24"/>
+  </svg>
+  <div class="wrap">
+    <div class="tengah masuk">
+      <p class="eyebrow tengah terang">Paket</p>
+      <h2 class="judul">Sesekali, berdua, atau rutin</h2>
+      <p class="timbal">Yang rutin dapat terapis tetap — jadi tidak perlu menjelaskan keluhan dari awal setiap kali.</p>
+    </div>
+    <div class="paket">
+      <article class="tier masuk">
+        <span class="cap">Sekali datang</span>
+        <h3>Sesi Tunggal</h3>
+        <p style="color:#93A9C6;font-size:14.5px">Untuk yang ingin mencoba dulu.</p>
+        <div class="biaya"><sup>mulai</sup> 160rb</div>
+        <ul>
+          <li>Pilih layanan dan durasi bebas</li>
+          <li>Terapis dipilihkan sesuai keluhan</li>
+          <li>Bayar tunai, transfer, atau QRIS</li>
+        </ul>
+        <a class="tbl tbl-emas" href="#pesan">Pesan sesi</a>
+      </article>
+      <article class="tier unggul masuk">
+        <span class="cap">Paling sering diambil</span>
+        <h3>Berdua</h3>
+        <p style="color:#93A9C6;font-size:14.5px">Dua terapis datang bersamaan.</p>
+        <div class="biaya"><sup>mulai</sup> 300rb</div>
+        <ul>
+          <li>Dua terapis, satu waktu, satu rumah</li>
+          <li>Bisa beda layanan untuk tiap orang</li>
+          <li>Cocok untuk pasangan atau ibu dan anak</li>
+        </ul>
+        <a class="tbl tbl-emas" href="#pesan">Pesan sesi</a>
+      </article>
+      <article class="tier masuk">
+        <span class="cap">Hemat 15%</span>
+        <h3>Langganan 4×</h3>
+        <p style="color:#93A9C6;font-size:14.5px">Untuk keluhan yang perlu ditangani berkala.</p>
+        <div class="biaya"><sup>mulai</sup> 540rb</div>
+        <ul>
+          <li>Empat sesi, berlaku tiga bulan</li>
+          <li>Terapis tetap yang sama</li>
+          <li>Jadwal rutin diingatkan lebih dulu</li>
+        </ul>
+        <a class="tbl tbl-emas" href="#pesan">Pesan sesi</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CARA PESAN ================= -->
+<section id="cara">
+  <div class="wrap">
+    <div class="masuk">
+      <p class="eyebrow">Cara pemesanan</p>
+      <h2 class="judul">Empat langkah, selesai dalam semenit</h2>
+      <p class="timbal">Tidak perlu unduh aplikasi. Cukup WhatsApp, dan kami urus sisanya.</p>
+    </div>
+    <div class="langkah">
+      <article class="masuk"><span class="no">01</span><h3>Pilih dan kirim</h3>
+        <p>Tentukan layanan, durasi, dan jam kedatangan lewat kotak pemesanan di atas.</p></article>
+      <article class="masuk"><span class="no">02</span><h3>Kami konfirmasi</h3>
+        <p>Dalam 15 menit kami balas dengan nama terapis dan perkiraan waktu tiba.</p></article>
+      <article class="masuk"><span class="no">03</span><h3>Terapis datang</h3>
+        <p>Membawa matras, minyak, dan handuk bersih. Anda cukup menyiapkan ruang.</p></article>
+      <article class="masuk"><span class="no">04</span><h3>Bayar setelah selesai</h3>
+        <p>Tunai, transfer, atau QRIS. Tidak ada biaya tersembunyi di akhir.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TERAPIS ================= -->
+<section id="terapis">
+  <div class="wrap">
+    <div class="tengah masuk">
+      <p class="eyebrow tengah">Terapis</p>
+      <h2 class="judul">Orang yang akan datang ke rumah Anda</h2>
+      <p class="timbal">Semua terapis melewati pelatihan internal, pemeriksaan latar belakang,
+        dan evaluasi penilaian pelanggan setiap bulan.</p>
+    </div>
+    <div class="kisi k3">
+      <article class="orang masuk"><div class="mono">D</div>
+        <h3>Dewi Lestari</h3><p class="peran">Terapis Senior · 6 tahun</p>
+        <p>Kehamilan dan pasca melahirkan. Terbiasa menangani pegal punggung bawah dan kaki bengkak.</p>
+        <p class="tanda">★ 4,9 · 1.240 sesi</p></article>
+      <article class="orang masuk"><div class="mono">A</div>
+        <h3>Ayu Puspita</h3><p class="peran">Terapis · 3 tahun</p>
+        <p>Refleksi kaki dan keluhan duduk lama — leher kaku, bahu tegang, pinggang pegal.</p>
+        <p class="tanda">★ 4,8 · 760 sesi</p></article>
+      <article class="orang masuk"><div class="mono">B</div>
+        <h3>Bagas Prakoso</h3><p class="peran">Terapis Pria · 2 tahun</p>
+        <p>Pijat tekanan kuat dan pemulihan olahraga. Melayani klien pria dan lansia.</p>
+        <p class="tanda">★ 4,8 · 520 sesi</p></article>
+    </div>
+    <p class="tengah masuk" style="margin-top:30px;font-size:14.5px;color:var(--redup)">
+      Punya preferensi terapis wanita atau pria? Sebutkan saat memesan — selalu kami turuti.</p>
+  </div>
+</section>
+
+<!-- ================= TESTIMONI ================= -->
+<section>
+  <div class="wrap">
+    <div class="tengah masuk">
+      <p class="eyebrow tengah">Kata pelanggan</p>
+      <h2 class="judul">Tiga cerita yang sering berulang</h2>
+    </div>
+    <div class="kisi k3">
+      <article class="kesan masuk"><div class="bintang">★★★★★</div>
+        <p>“Hamil 7 bulan, pinggang rasanya mau patah. Terapisnya paham posisi miring yang aman, dan tidak sekali pun bikin saya cemas.”</p>
+        <footer><b>Maria U.</b>Bekasi Selatan · Pijat ibu hamil</footer></article>
+      <article class="kesan masuk"><div class="bintang">★★★★★</div>
+        <p>“Pesan jam 8 malam sepulang kerja, jam 9 sudah dipijat di kamar sendiri. Tidak perlu menyetir dan antre lagi.”</p>
+        <footer><b>Hendra W.</b>Cikarang · Pijat tradisional 90 menit</footer></article>
+      <article class="kesan masuk"><div class="bintang">★★★★★</div>
+        <p>“Ibu saya 72 tahun dan susah keluar rumah. Sekarang rutin dua minggu sekali, terapisnya orang yang sama terus.”</p>
+        <footer><b>Ratna S.</b>Bogor · Langganan 4 sesi</footer></article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AREA & FAQ ================= -->
+<section id="tanya" style="background:var(--kabut)">
+  <div class="wrap dua">
+    <div class="masuk">
+      <p class="eyebrow">Area &amp; jam layanan</p>
+      <h2 class="judul">Kami datang ke sini</h2>
+      <p class="timbal">Di luar daftar ini masih bisa dilayani dengan tambahan biaya perjalanan.
+        Tanyakan saja alamat Anda lewat WhatsApp.</p>
+      <div class="daftar-area" id="daftarArea"></div>
+      <div class="jam">
+        <b>09.00 – 22.00 WIB</b>
+        <span style="font-size:14px;color:var(--redup)">Setiap hari. Pemesanan terakhir pukul 20.30.</span>
+      </div>
+    </div>
+    <div class="masuk">
+      <p class="eyebrow">Tanya jawab</p>
+      <h2 class="judul" style="margin-bottom:22px">Yang sering ditanyakan</h2>
+      <details><summary>Apa saja yang perlu saya siapkan di rumah?</summary>
+        <p>Cukup ruang seluas kira-kira 2×2 meter dan lantai yang rata. Matras, sprei, minyak,
+          dan handuk dibawa terapis. Kalau Anda punya kasur yang nyaman, itu juga bisa dipakai.</p></details>
+      <details><summary>Boleh minta terapis wanita saja?</summary>
+        <p>Boleh, dan ini permintaan yang paling sering kami terima. Sebutkan saat memesan.
+          Terapis pria hanya kami tugaskan bila Anda yang memintanya.</p></details>
+      <details><summary>Berapa lama terapis sampai di rumah?</summary>
+        <p>Rata-rata 30–60 menit setelah pesanan dikonfirmasi, tergantung jarak dan lalu lintas.
+          Untuk jam sibuk, sebaiknya pesan minimal dua jam sebelumnya.</p></details>
+      <details><summary>Aman untuk ibu hamil?</summary>
+        <p>Aman pada kehamilan 4–8 bulan tanpa keluhan khusus, dikerjakan terapis yang terlatih untuk itu.
+          Bila ada riwayat kehamilan berisiko, mintalah izin dokter Anda terlebih dahulu.</p></details>
+      <details><summary>Bagaimana kalau saya perlu membatalkan?</summary>
+        <p>Tidak masalah selama dikabari sebelum terapis berangkat. Bila terapis sudah di jalan,
+          kami mohon pengertiannya untuk biaya perjalanan.</p></details>
+      <details><summary>Bisa untuk acara kantor atau arisan?</summary>
+        <p>Bisa. Untuk tiga orang atau lebih kami siapkan beberapa terapis sekaligus dengan penawaran khusus.
+          Hubungi kami sepekan sebelumnya agar jadwalnya pasti.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PENUTUP ================= -->
+<section style="padding-bottom:0">
+  <div class="penutup masuk">
+    <svg class="kupu" viewBox="0 0 200 170" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+      <path d="M100 84C88 40 62 14 34 18 14 21 10 43 18 62c11 26 44 34 68 30"/>
+      <path d="M100 84c12-44 38-70 66-66 20 3 24 25 16 44-11 26-44 34-68 30"/>
+      <path d="M100 88c-12 36-34 56-58 52-17-3-19-22-12-38 10-22 40-28 60-24"/>
+      <path d="M100 88c12 36 34 56 58 52 17-3 19-22 12-38-10-22-40-28-60-24"/>
+    </svg>
+    <h2>Badan Anda sudah minta istirahat</h2>
+    <p>Pilih waktunya, kami yang datang. Balasan konfirmasi rata-rata dalam 15 menit.</p>
+    <a class="tbl tbl-emas" id="ctaWa" href="#" target="_blank" rel="noopener"
+       style="background:#fff;border-color:#fff;color:var(--laut)">Pesan lewat WhatsApp</a>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="situs">
+  <div class="wrap">
+    <div class="f-kisi">
+      <div>
+        <div class="f-merek"><img src="logo.png" alt="Logo Mahyra Relaksia">
+          <span><b>Mahyra Relaksia</b><span>Home Wellness &amp; Therapy</span></span></div>
+        <p style="font-size:14.5px;max-width:34ch">Pijat dan terapi panggilan untuk keluarga,
+          dikerjakan terapis bersertifikat di rumah Anda sendiri.</p>
+      </div>
+      <div><h4>Layanan</h4><div id="fLay"></div></div>
+      <div><h4>Perusahaan</h4>
+        <a href="#cara">Cara pemesanan</a><a href="#terapis">Terapis kami</a>
+        <a href="#tanya">Tanya jawab</a><a href="#paket">Paket &amp; harga</a></div>
+      <div><h4>Hubungi</h4>
+        <a id="fWa" href="#" target="_blank" rel="noopener">WhatsApp</a>
+        <a id="fTel" href="#">Telepon</a>
+        <a id="fEmail" href="#">Email</a>
+        <span style="display:block;padding-top:10px;font-size:13.5px">Bekasi, Jawa Barat</span></div>
+    </div>
+    <div class="f-bawah">
+      <span>© <span id="tahun"></span> Mahyra Relaksia. Seluruh hak cipta dilindungi.</span>
+      <span><a href="/portal" style="display:inline">Masuk portal karyawan</a></span>
+    </div>
+  </div>
+</footer>
+
+<a class="wa" id="waFloat" href="#" target="_blank" rel="noopener" aria-label="Hubungi lewat WhatsApp">
+  <i><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15L2 22l5.2-1.4A10 10 0 1012 2zm5.5 14.1c-.2.6-1.2 1.2-1.7 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 .9-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2c.1.2.1.4 0 .5l-.4.6c-.1.2-.3.3-.1.6.2.3.7 1.2 1.6 2 1.1.9 1.9 1.2 2.2 1.3.2.1.4.1.6-.1l.8-.9c.2-.2.4-.2.6-.1l1.9.9c.2.1.4.2.4.3.1.2.1.7-.1 1.4z"/></svg></i>
+  <span>Pesan sekarang</span>
+</a>
+
+<script>
+/* =====================================================================
+   PENGATURAN — ubah bagian ini saja untuk memperbarui isi situs
+   ===================================================================== */
+const INFO = {
+  whatsapp : "6281122334455",              // format internasional, tanpa tanda +
+  telepon  : "0811-2233-4455",
+  email    : "mahyramassage@gmail.com",
+  area     : ["Bekasi Kota","Bekasi Selatan","Cikarang","Tambun","Bogor Kota",
+              "Cibubur","Jakarta Timur","Depok"]
+};
+
+/* Harga per durasi. Tambah atau ubah sesuka Anda. */
+const LAYANAN = [
+  { nama:"Pijat Tradisional",     ket:"Relaksasi seluruh badan, tekanan bisa disesuaikan.",
+    durasi:[[60,160000],[90,220000],[120,280000]] },
+  { nama:"Refleksi Kaki",         ket:"Titik telapak kaki untuk pegal dan susah tidur.",
+    durasi:[[45,130000],[60,160000]] },
+  { nama:"Pijat Ibu Hamil",       ket:"Posisi miring yang aman, kehamilan 4–8 bulan.",
+    durasi:[[60,200000],[90,260000]] },
+  { nama:"Pijat Pasca Melahirkan",ket:"Pemulihan masa nifas, tersedia pilis dan tapel.",
+    durasi:[[90,280000],[120,340000]] },
+  { nama:"Pijat Bayi & Anak",     ket:"Gerakan lembut untuk tidur lebih nyenyak.",
+    durasi:[[30,120000],[45,150000]] },
+  { nama:"Totok Wajah",           ket:"Meredakan tegang di dahi, rahang, dan pelipis.",
+    durasi:[[45,150000],[60,190000]] },
+  { nama:"Lulur & Scrub Badan",   ket:"Pembersihan kulit, bisa digabung dengan pijat.",
+    durasi:[[90,270000],[120,330000]] },
+  { nama:"Kerokan & Kop Angin",   ket:"Untuk masuk angin dan punggung yang berat.",
+    durasi:[[30,110000],[45,140000]] }
+];
+
+const JAM = ["Secepatnya hari ini","Siang ini (11.00–14.00)","Sore ini (15.00–18.00)",
+             "Malam ini (19.00–21.00)","Besok pagi (09.00–11.00)","Besok siang","Besok malam",
+             "Tanggal lain — nanti saya sebutkan"];
+
+/* =====================================================================
+   Isi halaman
+   ===================================================================== */
+const rp = n => "Rp " + Number(n).toLocaleString("id-ID");
+const el = id => document.getElementById(id);
+let pilihan = { layanan:0, durasi:0 };
+
+/* --- kartu layanan --- */
+el("kisiLayanan").innerHTML = LAYANAN.map(l => `
+  <article class="kartu lay masuk">
+    <div class="atas">
+      <h3>${l.nama}</h3>
+      <span class="harga"><small>mulai</small>${rp(Math.min(...l.durasi.map(d=>d[1])))}</span>
+    </div>
+    <p>${l.ket}</p>
+    <div class="durasi">${l.durasi.map(d=>`<i>${d[0]} menit</i>`).join("")}</div>
+  </article>`).join("");
+
+el("fLay").innerHTML = LAYANAN.slice(0,5).map(l=>`<a href="#layanan">${l.nama}</a>`).join("");
+el("daftarArea").innerHTML = INFO.area.map(a=>`<span>${a}</span>`).join("");
+el("fLayanan").innerHTML = LAYANAN.map((l,i)=>`<option value="${i}">${l.nama}</option>`).join("");
+el("fArea").innerHTML = INFO.area.map(a=>`<option>${a}</option>`).join("")
+  + `<option>Area lain</option>`;
+el("fWaktu").innerHTML = JAM.map(j=>`<option>${j}</option>`).join("");
+el("tahun").textContent = new Date().getFullYear();
+
+/* --- pilihan durasi --- */
+function gambarDurasi(){
+  const l = LAYANAN[pilihan.layanan];
+  el("fDurasi").innerHTML = l.durasi.map((d,i)=>
+    `<button type="button" class="${i===pilihan.durasi?"aktif":""}" onclick="pilihDurasi(${i})">
+       ${d[0]} menit<small>${rp(d[1])}</small></button>`).join("");
+}
+function pilihDurasi(i){ pilihan.durasi = i; gambarDurasi(); perbarui(); }
+
+el("fLayanan").addEventListener("change", e => {
+  pilihan.layanan = +e.target.value; pilihan.durasi = 0; gambarDurasi(); perbarui();
+});
+["fArea","fWaktu"].forEach(id => el(id).addEventListener("change", perbarui));
+
+/* --- total & tautan WhatsApp --- */
+function perbarui(){
+  const l = LAYANAN[pilihan.layanan], d = l.durasi[pilihan.durasi];
+  el("fTotal").textContent = rp(d[1]);
+  const pesan =
+    `Halo Mahyra Relaksia, saya ingin memesan sesi.\n\n` +
+    `Layanan : ${l.nama}\n` +
+    `Durasi  : ${d[0]} menit\n` +
+    `Biaya   : ${rp(d[1])}\n` +
+    `Area    : ${el("fArea").value}\n` +
+    `Waktu   : ${el("fWaktu").value}\n\n` +
+    `Mohon dikonfirmasi ketersediaan terapisnya. Terima kasih.`;
+  el("fKirim").href = `https://wa.me/${INFO.whatsapp}?text=${encodeURIComponent(pesan)}`;
+}
+const umum = `https://wa.me/${INFO.whatsapp}?text=` +
+  encodeURIComponent("Halo Mahyra Relaksia, saya ingin bertanya tentang layanan pijat panggilan.");
+["waFloat","ctaWa","fWa"].forEach(id => el(id).href = umum);
+el("fTel").href = "tel:" + INFO.telepon.replace(/[^0-9+]/g,"");
+el("fTel").textContent = INFO.telepon;
+el("fEmail").href = "mailto:" + INFO.email;
+el("fEmail").textContent = INFO.email;
+
+gambarDurasi(); perbarui();
+
+/* --- nav menempel saat digulir --- */
+const kepala = document.querySelector("header");
+addEventListener("scroll", () => kepala.classList.toggle("turun", scrollY > 24), {passive:true});
+
+/* --- muncul saat digulir --- */
+if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  document.querySelectorAll(".masuk").forEach(n => n.classList.add("tampil"));
+} else {
+  const pengamat = new IntersectionObserver((entri) => {
+    entri.forEach((e,i) => {
+      if (!e.isIntersecting) return;
+      setTimeout(() => e.target.classList.add("tampil"), i * 70);
+      pengamat.unobserve(e.target);
+    });
+  }, { threshold:.12, rootMargin:"0px 0px -60px 0px" });
+  document.querySelectorAll(".masuk").forEach(n => pengamat.observe(n));
+}
+</script>
+</body>
+</html>
