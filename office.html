@@ -520,7 +520,9 @@ function formAkun(karyawanId){
    <div class="field"><label for="ak_em">Email login</label><input id="ak_em" type="email" value="${esc(k.email||'')}" placeholder="nama@mahyra.id"></div>
    <div class="field"><label for="ak_pw">Kata sandi ${k.user_id?'baru':''}</label>
      <input id="ak_pw" type="text" value="${k.user_id?'':'mahyra'+Math.floor(1000+Math.random()*9000)}" placeholder="minimal 6 karakter"></div>
-   <p class="hint">Catat dan sampaikan kata sandi ini ke terapis. Minta mereka menggantinya setelah masuk pertama kali.</p>
+   <p class="hint">Catat dan sampaikan kata sandi ini ke terapis. Minta mereka menggantinya setelah masuk pertama kali.
+     Bila Edge Function <strong>kelola-akun</strong> belum dipasang, akun tetap dibuat lewat jalur cadangan —
+     pastikan opsi <em>Confirm email</em> di Authentication → Providers → Email sudah dimatikan.</p>
    <div class="row" style="margin-top:14px"><button class="btn" id="akBtn" onclick="simpanAkun('${karyawanId}')">${k.user_id?'Perbarui akun':'Buat akun'}</button>
      <button class="btn ghost" onclick="closeModal()">Batal</button>
      ${k.user_id?`<button class="btn rose" style="margin-left:auto" onclick="cabutAkun('${karyawanId}')">Cabut akses</button>`:''}</div>`;
@@ -532,29 +534,101 @@ async function simpanAkun(karyawanId){
   if(!/^\S+@\S+\.\S+$/.test(email)){err.textContent='Format email belum benar.';err.classList.add('on');return}
   if(!k.user_id&&pass.length<6){err.textContent='Kata sandi minimal 6 karakter.';err.classList.add('on');return}
   akBtn.disabled=true; akBtn.textContent='Menyimpan…';
+  let catatan='';
   try{
     if(LIVE){
-      const {data,error}=await sb.functions.invoke('kelola-akun',{body:{
-        aksi:k.user_id?'ubah':'buat', karyawan_id:k.id, email, password:pass||null, user_id:k.user_id||null}});
-      if(error) throw new Error(error.message);
-      if(data?.error) throw new Error(data.error);
-      await simpan('karyawan',{...k,email,user_id:data.user_id});
+      let hasil=null;
+      try{
+        const {data,error}=await sb.functions.invoke('kelola-akun',{body:{
+          aksi:k.user_id?'ubah':'buat', karyawan_id:k.id, email, password:pass||null, user_id:k.user_id||null}});
+        if(error) throw error;
+        if(data?.error) throw new Error(data.error);
+        hasil={user_id:data.user_id};
+      }catch(eFn){
+        const pesan=await pesanEdge(eFn);
+        console.warn('kelola-akun gagal:',pesan,eFn);
+        // Fungsi menjawab tapi menolak -> tampilkan alasan aslinya
+        if(!edgeTidakAda(eFn)) throw new Error(pesan+petunjukEdge(pesan));
+        console.warn('Edge Function kelola-akun tidak tersedia, memakai jalur cadangan.',eFn);
+        if(k.user_id){
+          if(email!==String(k.email||'').toLowerCase())
+            throw new Error('Mengubah alamat email butuh Edge Function "kelola-akun". Pasang dulu lewat Dashboard → Edge Functions, atau ubah emailnya langsung di Authentication → Users.');
+          const {error:eR}=await sb.auth.resetPasswordForEmail(email);
+          if(eR) throw new Error(eR.message);
+          hasil={user_id:k.user_id};
+          catatan=' Tautan atur ulang sandi dikirim ke email terapis.';
+        }else{
+          const r=await buatAkunTanpaFungsi(email,pass);
+          hasil={user_id:r.user_id};
+          if(r.perluKonfirmasi) catatan=' Terapis harus mengeklik tautan konfirmasi di emailnya dulu. Untuk melewati langkah ini, matikan "Confirm email" di Authentication → Providers → Email.';
+        }
+      }
+      await simpan('karyawan',{...k,email,user_id:hasil.user_id});
     }else{
       if(AKUN_DEMO[email]&&AKUN_DEMO[email].id!==k.id) throw new Error('Email sudah dipakai karyawan lain.');
       await simpan('karyawan',{...k,email,user_id:k.user_id||'u_'+uid()});
       AKUN_DEMO[email]={pw:pass,id:k.id};
     }
     closeModal(); render();
-    toast('Akun siap: '+email+(pass?' / '+pass:''));
+    toast('Akun siap: '+email+(pass&&!catatan?' / '+pass:'')+catatan);
   }catch(e){ err.textContent=e.message; err.classList.add('on'); }
   akBtn.disabled=false; akBtn.textContent='Simpan';
 }
+
+/* Apakah kegagalan ini karena Edge Function belum terpasang / tak terjangkau? */
+function edgeTidakAda(e){
+  const p=(e?.name||'')+' '+(e?.message||'');
+  return /FunctionsFetchError|Failed to send|Failed to fetch|NetworkError/i.test(p);
+}
+
+/* supabase-js menyembunyikan isi jawaban saat status non-2xx; ambil pesan aslinya. */
+async function pesanEdge(e){
+  const ctx=e?.context;
+  if(ctx){
+    try{ const j=await ctx.clone().json(); if(j&&(j.error||j.message)) return String(j.error||j.message); }catch(_){}
+    try{ const s=await ctx.clone().text(); if(s) return (ctx.status?ctx.status+' — ':'')+s.slice(0,300); }catch(_){}
+    if(ctx.status) return 'Fungsi menjawab dengan status '+ctx.status+'.';
+  }
+  return e?.message||String(e);
+}
+
+/* Saran perbaikan berdasarkan pesan yang diterima */
+function petunjukEdge(p){
+  const s=String(p).toLowerCase();
+  if(/hanya owner|403|forbidden/.test(s))
+    return ' — Akun Anda belum terbaca sebagai owner/admin/manajer oleh fungsi tersebut. Jalankan 05_perbaikan_akses.sql lalu 03_akun_admin.sql, keluar, dan login ulang.';
+  if(/belum masuk|401|unauthorized|jwt/.test(s))
+    return ' — Sesi tidak terkirim. Coba keluar lalu login ulang. Jika masih sama, matikan opsi "Verify JWT" pada fungsi kelola-akun, atau pasang ulang versi terbaru kelola-akun.ts.';
+  if(/service_role|env|undefined/.test(s))
+    return ' — Fungsi kekurangan variabel lingkungan. Pasang ulang memakai kelola-akun.ts versi terbaru.';
+  if(/already registered|already been registered|duplicate/.test(s))
+    return ' — Email ini sudah terdaftar di Authentication. Pakai email lain, atau tautkan user yang ada lewat SQL.';
+  return '';
+}
+
+/* Jalur cadangan: buat akun lewat signUp pada klien terpisah,
+   supaya sesi admin yang sedang login tidak ikut tergantikan. */
+async function buatAkunTanpaFungsi(email,password){
+  const tamu=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,
+    {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'mahyra-tamu'}});
+  const {data,error}=await tamu.auth.signUp({email,password});
+  if(error) throw new Error(error.message);
+  if(!data.user) throw new Error('Akun tidak terbentuk. Periksa pengaturan Authentication di Supabase.');
+  return {user_id:data.user.id, perluKonfirmasi:!data.session};
+}
 async function cabutAkun(karyawanId){
-  const k=get('karyawan',karyawanId);
-  if(LIVE){ const {error}=await sb.functions.invoke('kelola-akun',{body:{aksi:'hapus',user_id:k.user_id}});
-    if(error) return toast('Gagal mencabut akses: '+error.message); }
+  const k=get('karyawan',karyawanId); let catatan='';
+  if(LIVE){
+    try{
+      const {error}=await sb.functions.invoke('kelola-akun',{body:{aksi:'hapus',user_id:k.user_id}});
+      if(error) throw error;
+    }catch(e){
+      if(!edgeTidakAda(e)) return toast('Gagal mencabut akses: '+await pesanEdge(e));
+      catatan=' Akun auth-nya masih ada; hapus manual di Authentication → Users bila perlu.';
+    }
+  }
   await simpan('karyawan',{...k,user_id:null});
-  closeModal(); render(); toast('Akses login dicabut');
+  closeModal(); render(); toast('Akses login dicabut.'+catatan);
 }
 
 /* ============================ HALAMAN ============================ */
