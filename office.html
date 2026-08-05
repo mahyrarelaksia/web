@@ -560,6 +560,7 @@ const F={
    {k:'periode',l:'Periode (YYYY-MM)'},{k:'deskripsi',l:'Keterangan'},{k:'nominal',l:'Nominal',t:'rp'},
    {k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
   cols:[{k:'periode'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'jenis',t:'tag'},{k:'deskripsi'},
+   {k:'ord',l:'Dari order',fn:r=>r.pesanan_id?esc(get('pesanan',r.pesanan_id)?.nomor||'-'):'—'},
    {k:'nominal',t:'rp'},{k:'status',t:'tag'}]},
  aturan_bonus:{title:'Aturan Bonus',sub:'Skema insentif yang berlaku untuk terapis.',
   fields:[{k:'nama',l:'Nama skema'},{k:'jenis',l:'Jenis',t:'sel',o:['tips','transport','lembur','target','kehadiran','rating','referral']},
@@ -1495,13 +1496,92 @@ function kartuOrder(r){
       <button class="btn ghost sm" onclick="waPelanggan('${r.id}')">WA Customer</button>
       <button class="btn ghost sm" onclick="waTerapis('${r.id}')">WA Terapis</button>
       <button class="btn sm" onclick="ubahOrder('${r.id}')">Ubah</button>
+      <button class="btn amber sm" onclick="bonusOrder('${r.id}')">Bonus</button>
     </div></div>`;
 }
 function tombolOrder(id){
   return `<div class="row" style="flex-wrap:nowrap">
     <button class="btn ghost sm" onclick="waPelanggan('${id}')">WA Customer</button>
     <button class="btn ghost sm" onclick="waTerapis('${id}')">WA Terapis</button>
-    <button class="btn sm" onclick="ubahOrder('${id}')">Ubah</button></div>`;
+    <button class="btn sm" onclick="ubahOrder('${id}')">Ubah</button>
+    <button class="btn amber sm" onclick="bonusOrder('${id}')">Bonus</button></div>`;
+}
+
+/* Beri bonus langsung dari sebuah order.
+   Bila terapisnya lebih dari satu, bisa dipilih semua atau sebagian. */
+let BON={terapis:[]};
+function bonusOrder(pesananId){
+  const p=get('pesanan',pesananId);
+  const item=DB.item.filter(i=>i.pesanan_id===p.id);
+  BON={terapis:item.map(i=>i.terapis_id)};          // bawaan: semua terapis
+  const sudah=DB.bonus.filter(b=>b.pesanan_id===p.id);
+  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Bonus dari order</h3>
+    <p class="hint" style="margin-bottom:16px">${esc(p.nomor)} · ${esc(nm('pelanggan',p.pelanggan_id))} · ${rp(p.total)}</p>
+
+    <div class="field"><label>Terapis penerima</label><div id="b_terapis"></div>
+      <p class="hint" style="margin-top:6px">Nominal di bawah diberikan ke tiap terapis yang dipilih.</p></div>
+
+    <div class="grid g2">
+      <div class="field"><label for="b_jenis">Jenis bonus</label><select id="b_jenis">
+        <option value="tips">Tips</option><option value="transport">Transport</option>
+        <option value="lembur">Lembur</option><option value="manual">Lainnya</option></select></div>
+      <div class="field"><label for="b_nominal">Nominal per terapis</label>
+        <input type="number" id="b_nominal" placeholder="50000"></div>
+    </div>
+    <div class="field"><label for="b_ket">Keterangan</label>
+      <input id="b_ket" placeholder="Contoh: tips dari pelanggan"></div>
+
+    ${sudah.length?`<div class="card" style="background:var(--mist);box-shadow:none;padding:12px;margin-bottom:12px">
+      <div class="hint" style="margin-bottom:6px">Bonus yang sudah diberikan untuk order ini</div>
+      ${sudah.map(b=>`<div class="list-item" style="padding:7px 0">
+        <div style="flex:1">${esc(nm('karyawan',b.karyawan_id))} · ${esc(cap(b.jenis))}</div>
+        <span class="rp">${rp(b.nominal)}</span></div>`).join('')}</div>`:''}
+
+    <div class="row"><button class="btn" id="b_simpan" onclick="simpanBonusOrder('${p.id}')">Simpan bonus</button>
+      <button class="btn ghost" onclick="closeModal()">Batal</button></div>`;
+  modal.classList.add('on');
+  gambarTerapisBonus(pesananId);
+}
+function gambarTerapisBonus(pesananId){
+  const item=DB.item.filter(i=>i.pesanan_id===pesananId);
+  const kotak=document.getElementById('b_terapis');
+  const semua=item.length>1&&BON.terapis.length===item.length;
+  kotak.innerHTML=`<div class="row">
+    ${item.length>1?`<button type="button" class="btn ${semua?'':'ghost'} sm" style="border-radius:999px"
+       onclick="pilihSemuaBonus('${pesananId}')">${semua?'✓ ':''}Semua terapis</button>`:''}
+    ${item.map(i=>{const on=BON.terapis.includes(i.terapis_id);
+      return `<button type="button" class="btn ${on?'':'ghost'} sm" style="border-radius:999px"
+        onclick="pilihTerapisBonus('${i.terapis_id}','${pesananId}')">${on?'✓ ':''}${esc(nm('karyawan',i.terapis_id))}</button>`;
+    }).join('')}</div>`;
+}
+function pilihTerapisBonus(id,pesananId){
+  BON.terapis = BON.terapis.includes(id) ? BON.terapis.filter(x=>x!==id) : [...BON.terapis,id];
+  gambarTerapisBonus(pesananId);
+}
+function pilihSemuaBonus(pesananId){
+  const item=DB.item.filter(i=>i.pesanan_id===pesananId);
+  BON.terapis = BON.terapis.length===item.length ? [] : item.map(i=>i.terapis_id);
+  gambarTerapisBonus(pesananId);
+}
+async function simpanBonusOrder(pesananId){
+  const p=get('pesanan',pesananId);
+  const nominal=Number(document.getElementById('b_nominal').value)||0;
+  if(!nominal) return toast('Isi nominal bonusnya');
+  if(!BON.terapis.length) return toast('Pilih minimal satu terapis');
+  const btn=document.getElementById('b_simpan'); btn.disabled=true; btn.textContent='Menyimpan…';
+  const jenis=document.getElementById('b_jenis').value;
+  const ket=document.getElementById('b_ket').value.trim()
+    || cap(jenis)+' dari order '+p.nomor;
+  let n=0;
+  for(const idTer of BON.terapis){
+    const item=DB.item.find(i=>i.pesanan_id===p.id&&i.terapis_id===idTer);
+    const hasil=await simpan('bonus',{id:uid(),karyawan_id:idTer,pesanan_id:p.id,
+      pesanan_item_id:item?.id||null,jenis,periode:String(p.tanggal).slice(0,7),
+      deskripsi:ket,nominal,status:'disetujui',dibayar:false,dibuat_oleh:ME.id});
+    if(hasil) n++;
+  }
+  closeModal(); render();
+  toast(n?`Bonus ${rp(nominal)} diberikan ke ${n} terapis`:'Bonus gagal disimpan');
 }
 
 /* Ubah order yang sudah dibuat */
