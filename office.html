@@ -23,6 +23,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .mark img{width:100%;height:100%;object-fit:contain;display:block}
 aside .mark{background:rgba(255,255,255,.94);border-color:rgba(255,255,255,.55)}
 .tagline{color:var(--muted);font-size:13px;margin-bottom:20px}
+.card-login .field{margin-bottom:16px}
+.card-login label{font-size:13px;margin-bottom:7px;color:var(--muted)}
+.card-login input{padding:15px 17px;font-size:16.5px;border-radius:14px;border-width:1.5px}
+.card-login .btn{padding:15px 22px;font-size:15.5px;border-radius:14px}
+.card-login .tagline{font-size:14px}
+
 #app{display:none;min-height:100vh}
 .shell{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
 aside{background:linear-gradient(178deg,#4C8FD6 0%,#2F6FBF 45%,#1F4C86 100%);color:#DCEAF8;padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow:auto}
@@ -852,7 +858,7 @@ order(){
     <button class="btn" onclick="formOrder()">Buat order</button></div>
     ${tableHtml(rows,[{k:'nomor',l:'No. order'},{k:'tanggal',t:'date'},{k:'jam'},{k:'pel',l:'Pelanggan'},
       {k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},{k:'total',t:'rp'},{k:'metode_bayar',l:'Bayar'},{k:'status',t:'tag'},
-      {k:'aksi',l:'',fn:r=>`<button class="btn ghost sm" onclick="kirimOrder('${r.id}')">Kirim WA</button>`}])}</div>`;
+      {k:'aksi',l:'Kirim',fn:r=>tombolWa(r.id)}])}</div>`;
 },
 izin(){
   const rows=DB.izin.filter(i=>dalamLingkup(i,'izin')).map(i=>({...i,kry:nm('karyawan',i.karyawan_id),
@@ -1382,6 +1388,37 @@ function tautanWa(nomor,pesan){
   return 'https://wa.me/'+noWa(nomor)+'?text='+encodeURIComponent(pesan);
 }
 
+/* Dua tombol ringkas untuk tiap baris order */
+function tombolWa(pesananId){
+  return `<div class="row" style="flex-wrap:nowrap">
+    <button class="btn ghost sm" onclick="waPelanggan('${pesananId}')">WA Customer</button>
+    <button class="btn ghost sm" onclick="waTerapis('${pesananId}')">WA Terapis</button></div>`;
+}
+function waPelanggan(pesananId){
+  const p=get('pesanan',pesananId), pel=get('pelanggan',p.pelanggan_id)||{};
+  if(!pel.telepon) return toast('Nomor HP '+(pel.nama||'pelanggan')+' belum diisi');
+  window.open(tautanWa(pel.telepon,pesanPelanggan(p)),'_blank','noopener');
+}
+function waTerapis(pesananId){
+  const p=get('pesanan',pesananId);
+  const item=DB.item.filter(i=>i.pesanan_id===p.id);
+  const punya=item.filter(i=>get('karyawan',i.terapis_id)?.telepon);
+  if(!punya.length) return toast('Terapis pada order ini belum punya nomor HP');
+  if(punya.length===1){
+    const k=get('karyawan',punya[0].terapis_id);
+    return window.open(tautanWa(k.telepon,pesanTerapis(p,k.id)),'_blank','noopener');
+  }
+  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:4px">Kirim ke terapis</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(p.nomor)} · ${item.length} terapis bertugas</p>
+    ${item.map(i=>{const k=get('karyawan',i.terapis_id)||{};
+      return k.telepon
+        ? `<a class="btn amber" style="width:100%;margin-bottom:8px" target="_blank" rel="noopener"
+             href="${tautanWa(k.telepon,pesanTerapis(p,k.id))}">${esc(k.nama)}</a>`
+        : `<p class="hint" style="margin-bottom:8px">${esc(k.nama||'Terapis')} belum punya nomor HP.</p>`;}).join('')}
+    <button class="btn ghost" style="width:100%;margin-top:6px" onclick="closeModal()">Tutup</button>`;
+  modal.classList.add('on');
+}
+
 function kirimOrder(pesananId){
   const p=get('pesanan',pesananId);
   const pel=get('pelanggan',p.pelanggan_id)||{};
@@ -1391,19 +1428,13 @@ function kirimOrder(pesananId){
     <div class="card" style="background:var(--mist);box-shadow:none;padding:14px;white-space:pre-wrap;
       font-size:13px;line-height:1.6;margin-bottom:14px">${esc(rincianOrder(p,{denganHp:true}))}</div>
 
-    <label class="label" style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;display:block">Kirim ke pelanggan</label>
-    ${pel.telepon?`<a class="btn" style="width:100%;margin-bottom:6px" target="_blank" rel="noopener"
-        href="${tautanWa(pel.telepon,pesanPelanggan(p))}">WhatsApp ${esc(pel.nama)} · ${esc(pel.telepon)}</a>`
-      :`<p class="hint" style="margin-bottom:10px">Nomor HP pelanggan belum diisi, jadi tombolnya tidak bisa dibuat.</p>`}
-
-    <label class="label" style="font-size:12px;font-weight:600;color:var(--muted);margin:14px 0 8px;display:block">Kirim ke terapis</label>
-    ${item.map(i=>{
-      const k=get('karyawan',i.terapis_id)||{};
-      return k.telepon
-        ? `<a class="btn amber" style="width:100%;margin-bottom:6px" target="_blank" rel="noopener"
-             href="${tautanWa(k.telepon,pesanTerapis(p,i.terapis_id))}">WhatsApp ${esc(k.nama)} · ${esc(k.telepon)}</a>`
-        : `<p class="hint" style="margin-bottom:6px">${esc(k.nama||'Terapis')} belum punya nomor HP di data karyawan.</p>`;
-    }).join('')}
+    <div class="row">
+      ${pel.telepon?`<a class="btn" style="flex:1" target="_blank" rel="noopener"
+          href="${tautanWa(pel.telepon,pesanPelanggan(p))}">WA Customer</a>`
+        :`<button class="btn" style="flex:1" disabled>WA Customer</button>`}
+      <button class="btn amber" style="flex:1" onclick="waTerapis('${p.id}')">WA Terapis</button>
+    </div>
+    ${pel.telepon?'':'<p class="hint" style="margin-top:8px">Nomor HP pelanggan belum diisi.</p>'}
     <p class="hint" style="margin-top:10px">Pesan ke terapis sengaja tidak memuat nomor HP pelanggan.</p>
     <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Selesai</button>`;
   modal.classList.add('on');
