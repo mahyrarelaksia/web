@@ -146,7 +146,7 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
  shift:'shift',jadwal:'jadwal_kerja',pesanan:'pesanan',item:'pesanan_item',absensi:'absensi',izin:'izin',
  komisi:'komisi',bonus:'bonus',aturan_bonus:'aturan_bonus',gaji:'gaji',kasbon:'kasbon',
  kategori_pengeluaran:'kategori_pengeluaran',pengeluaran:'pengeluaran',kas:'kas',target:'target',
- hak_akses:'hak_akses'};
+ hak_akses:'hak_akses',absen_log:'absen_log'};
 
 /* ------------------ MODUL & MESIN HAK AKSES ------------------ */
 const MODUL=[
@@ -210,6 +210,38 @@ const tgl=d=>d?new Date(String(d).slice(0,10)+'T00:00').toLocaleDateString('id-I
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400)};
 const cap=s=>String(s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+const jamDari=v=>{ if(!v) return '--:--';
+  const s=String(v); return /^\d{2}:\d{2}/.test(s)?s.slice(0,5):new Date(s).toTimeString().slice(0,5); };
+/* Foto dan titik lokasi dari catatan check in/out */
+function buktiAbsen(a){
+  const log=DB.absen_log.filter(x=>x.karyawan_id===a.karyawan_id
+    &&String(x.tanggal).slice(0,10)===String(a.tanggal).slice(0,10));
+  if(!log.length) return '<span class="hint">—</span>';
+  const foto=log.find(x=>x.foto), titik=log.find(x=>x.lat);
+  return `<div class="row" style="align-items:center;gap:8px;flex-wrap:nowrap">
+    ${foto?`<img src="${foto.foto}" alt="Foto absensi" style="width:38px;height:38px;border-radius:10px;object-fit:cover;border:1px solid var(--line);cursor:pointer" onclick="lihatBukti('${a.karyawan_id}','${String(a.tanggal).slice(0,10)}')">`:''}
+    <div style="min-width:0"><div class="hint" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">
+      ${esc((titik?.alamat)||'Lokasi tidak tercatat')}</div>
+      <a class="hint" style="color:var(--jade);font-weight:600;cursor:pointer" onclick="lihatBukti('${a.karyawan_id}','${String(a.tanggal).slice(0,10)}')">${log.length} catatan</a></div></div>`;
+}
+function lihatBukti(karyawanId,tanggal){
+  const log=DB.absen_log.filter(x=>x.karyawan_id===karyawanId&&String(x.tanggal).slice(0,10)===tanggal)
+    .sort((a,b)=>new Date(a.waktu)-new Date(b.waktu));
+  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:3px">Bukti kehadiran</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(nm('karyawan',karyawanId))} · ${tgl(tanggal)}</p>
+    ${log.map(a=>{
+      const i=a.pesanan_item_id?get('item',a.pesanan_item_id):null;
+      return `<div class="list-item">
+        ${a.foto?`<img src="${a.foto}" alt="Foto" style="width:64px;height:64px;border-radius:14px;object-fit:cover;border:1px solid var(--line)">`:'<span class="dot" style="margin-top:8px"></span>'}
+        <div style="flex:1;min-width:0">
+          <strong>${jamDari(a.waktu)}</strong> ${a.tipe==='masuk'?'<span class="tag ok">Check in</span>':'<span class="tag warn">Check out</span>'}
+          <div class="hint">${esc(i?nm('layanan',i.layanan_id):'—')}</div>
+          <div class="hint" style="word-break:break-word">${esc(a.alamat||'Lokasi tidak tercatat')}${a.akurasi_meter?' · ±'+a.akurasi_meter+' m':''}</div>
+          ${a.lat?`<a class="hint" style="color:var(--jade);font-weight:600" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${a.lat},${a.lng}">Buka peta</a>`:''}
+        </div></div>`}).join('')||'<div class="empty">Tidak ada catatan check in untuk hari ini.</div>'}
+    <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`;
+  modal.classList.add('on');
+}
 const sum=(a,f)=>a.reduce((x,y)=>x+(Number(typeof f==='function'?f(y):y[f])||0),0);
 const get=(t,id)=>DB[t].find(x=>x.id===id);
 const nm=(t,id,f='nama')=>{const r=get(t,id);return r?r[f]:'-'};
@@ -217,7 +249,7 @@ const nm=(t,id,f='nama')=>{const r=get(t,id);return r?r[f]:'-'};
 /* ------------------------- data (demo seed) ------------------------- */
 const DB={cabang:[],jabatan:[],karyawan:[],layanan:[],pelanggan:[],shift:[],jadwal:[],pesanan:[],item:[],
  absensi:[],izin:[],komisi:[],bonus:[],aturan_bonus:[],gaji:[],kasbon:[],kategori_pengeluaran:[],
- pengeluaran:[],kas:[],target:[],hak_akses:[]};
+ pengeluaran:[],kas:[],target:[],hak_akses:[],absen_log:[]};
 
 const AKUN_DEMO={ 'owner@mahyra.id':{pw:'mahyra123',id:'k1'}, 'admin@mahyra.id':{pw:'mahyra123',id:'k2'},
                   'kasir@mahyra.id':{pw:'mahyra123',id:'k6'} };
@@ -395,16 +427,25 @@ const F={
   fields:[{k:'kode',l:'Kode'},{k:'nama',l:'Nama jabatan'},{k:'level',l:'Level',t:'num'},{k:'is_terapis',l:'Terhitung terapis',t:'bool'},
    {k:'gaji_pokok_default',l:'Gaji pokok acuan',t:'rp'},{k:'tunjangan_default',l:'Tunjangan acuan',t:'rp'},
    {k:'uang_makan_harian',l:'Uang makan / hari',t:'rp'},{k:'persen_komisi',l:'Komisi (%)',t:'num'},
-   {k:'lingkup',l:'Lingkup data',t:'sel',o:['semua','cabang','sendiri']},{k:'deskripsi',l:'Uraian tugas',t:'area'}],
+   {k:'lingkup',l:'Lingkup data',t:'sel',o:['semua','cabang','sendiri']},
+   {k:'tipe_gaji',l:'Tipe gaji',t:'sel',o:['bulanan','harian','training']},
+   {k:'gaji_harian',l:'Upah per hari efektif',t:'rp'},
+   {k:'potongan_harian',l:'Potongan per hari tanpa orderan',t:'rp'},
+   {k:'fee_per_order',l:'Imbalan tetap per orderan',t:'rp'},
+   {k:'deskripsi',l:'Uraian tugas',t:'area'}],
   cols:[{k:'kode'},{k:'nama'},{k:'level'},{k:'gaji_pokok_default',l:'Gaji pokok',t:'rp'},{k:'tunjangan_default',l:'Tunjangan',t:'rp'},
    {k:'komisi',l:'Komisi',fn:r=>r.persen_komisi+'%'},
-   {k:'lingkup',l:'Lingkup',fn:r=>`<span class="tag info">${cap(r.lingkup||'cabang')}</span>`}]},
+   {k:'lingkup',l:'Lingkup',fn:r=>`<span class="tag info">${cap(r.lingkup||'cabang')}</span>`},
+   {k:'gaji',l:'Skema gaji',fn:r=>ringkasSkema(r)}]},
  karyawan:{title:'Karyawan',sub:'Data staf dan terapis, sekaligus tempat membuat akun login terapis.',
   fields:[{k:'nik',l:'NIK'},{k:'nama',l:'Nama lengkap'},{k:'jabatan_id',l:'Jabatan',t:'ref',ref:'jabatan'},
    {k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},{k:'role',l:'Hak akses',t:'sel',o:['owner','admin','manajer','kasir','terapis']},
    {k:'jenis_kelamin',l:'Jenis kelamin',t:'sel',o:['L','P']},{k:'telepon',l:'Telepon'},{k:'email',l:'Email'},
    {k:'alamat',l:'Alamat',t:'area'},{k:'tgl_masuk',l:'Tanggal masuk',t:'date'},{k:'gaji_pokok',l:'Gaji pokok',t:'rp'},
-   {k:'tunjangan',l:'Tunjangan',t:'rp'},{k:'persen_komisi',l:'Komisi (%)',t:'num'},{k:'bank_nama',l:'Bank'},
+   {k:'tunjangan',l:'Tunjangan',t:'rp'},{k:'persen_komisi',l:'Komisi (%)',t:'num'},
+   {k:'tipe_gaji',l:'Tipe gaji (kosong = ikut jabatan)',t:'sel',o:['','bulanan','harian','training']},
+   {k:'gaji_harian',l:'Upah harian khusus',t:'rp'},{k:'potongan_harian',l:'Potongan harian khusus',t:'rp'},
+   {k:'fee_per_order',l:'Imbalan per orderan khusus',t:'rp'},{k:'bank_nama',l:'Bank'},
    {k:'bank_rekening',l:'No. rekening'},{k:'status',l:'Status',t:'sel',o:['aktif','nonaktif','cuti_panjang']}],
   cols:[{k:'nik'},{k:'nama'},{k:'jab',l:'Jabatan',fn:r=>nm('jabatan',r.jabatan_id)},
    {k:'cab',l:'Cabang',fn:r=>nm('cabang',r.cabang_id)},{k:'role',t:'tag'},
@@ -439,8 +480,10 @@ const F={
    {k:'jam_masuk',l:'Jam masuk',t:'time'},{k:'jam_pulang',l:'Jam pulang',t:'time'},
    {k:'status',l:'Status',t:'sel',o:['hadir','telat','izin','sakit','cuti','alpa','libur']},
    {k:'menit_telat',l:'Menit telat',t:'num'},{k:'catatan',l:'Catatan',t:'area'}],
-  cols:[{k:'tanggal',t:'date'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'jam_masuk',l:'Masuk'},
-   {k:'jam_pulang',l:'Pulang'},{k:'tl',l:'Telat',fn:r=>r.menit_telat?r.menit_telat+' mnt':'—'},{k:'status',t:'tag'}]},
+  cols:[{k:'tanggal',t:'date'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},
+   {k:'jam_masuk',l:'Check in',fn:r=>jamDari(r.jam_masuk)},
+   {k:'jam_pulang',l:'Check out',fn:r=>jamDari(r.jam_pulang)},
+   {k:'bukti',l:'Bukti',fn:r=>buktiAbsen(r)},{k:'status',t:'tag'}]},
  kasbon:{title:'Kasbon',sub:'Pinjaman karyawan dan cicilan potong gaji.',
   fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'tanggal',l:'Tanggal',t:'date'},
    {k:'nominal',l:'Nominal pinjaman',t:'rp'},{k:'cicilan',l:'Cicilan per bulan',t:'rp'},{k:'sisa',l:'Sisa',t:'rp'},
@@ -448,13 +491,13 @@ const F={
   cols:[{k:'tanggal',t:'date'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'nominal',t:'rp'},
    {k:'cicilan',t:'rp'},{k:'sisa',t:'rp'},{k:'status',t:'tag'}]},
  bonus:{title:'Bonus',sub:'Pemberian bonus per periode; otomatis masuk slip gaji.',
-  fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'jenis',l:'Jenis bonus',t:'sel',o:['target','kehadiran','rating','lembur','referral','manual']},
+  fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'jenis',l:'Jenis bonus',t:'sel',o:['tips','transport','lembur','target','kehadiran','rating','referral','manual']},
    {k:'periode',l:'Periode (YYYY-MM)'},{k:'deskripsi',l:'Keterangan'},{k:'nominal',l:'Nominal',t:'rp'},
    {k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
   cols:[{k:'periode'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'jenis',t:'tag'},{k:'deskripsi'},
    {k:'nominal',t:'rp'},{k:'status',t:'tag'}]},
  aturan_bonus:{title:'Aturan Bonus',sub:'Skema insentif yang berlaku untuk terapis.',
-  fields:[{k:'nama',l:'Nama skema'},{k:'jenis',l:'Jenis',t:'sel',o:['target','kehadiran','rating','lembur','referral']},
+  fields:[{k:'nama',l:'Nama skema'},{k:'jenis',l:'Jenis',t:'sel',o:['tips','transport','lembur','target','kehadiran','rating','referral']},
    {k:'syarat',l:'Syarat',t:'area'},{k:'target',l:'Target',t:'num'},{k:'nominal',l:'Nominal bonus',t:'rp'},{k:'aktif',l:'Aktif',t:'bool'}],
   cols:[{k:'nama'},{k:'jenis',t:'tag'},{k:'syarat'},{k:'target'},{k:'nominal',t:'rp'},
    {k:'ak',l:'Status',fn:r=>r.aktif?'<span class="tag ok">Aktif</span>':'<span class="tag">Nonaktif</span>'}]},
@@ -855,12 +898,18 @@ gaji(){
   return `<div class="card"><div class="head"><h3>Periode ${periode()}</h3>
     <div class="row"><button class="btn" onclick="hitungGaji()">Hitung ulang gaji</button>
       ${rows.length?'<button class="btn amber" onclick="bayarGaji()">Tandai dibayar</button>':''}</div></div>
-    <p class="hint">Rumus: gaji pokok + tunjangan + uang makan (per hari hadir) + komisi + bonus − potongan absen − cicilan kasbon.</p>
+    <p class="hint"><strong>Terapis training:</strong> gaji pokok − (potongan harian × hari tanpa orderan) + imbalan per orderan + bonus.
+      <strong>Terapis tetap:</strong> (upah harian × hari efektif) + komisi persen + bonus.
+      Hari efektif dihitung dari hari yang punya minimal satu orderan selesai atau satu check in.</p>
     ${rows.length?`<div style="margin-top:14px">${tableHtml(rows.map(g=>({...g,kry:nm('karyawan',g.karyawan_id),
       jab:nm('jabatan',get('karyawan',g.karyawan_id)?.jabatan_id)})),
-      [{k:'kry',l:'Karyawan'},{k:'jab',l:'Jabatan'},{k:'hari_hadir',l:'Hadir'},{k:'gaji_pokok',l:'Pokok',t:'rp'},
-       {k:'tunjangan',t:'rp'},{k:'uang_makan',l:'U. makan',t:'rp'},{k:'total_komisi',l:'Komisi',t:'rp'},
-       {k:'total_bonus',l:'Bonus',t:'rp'},{k:'potongan_absen',l:'Pot. absen',t:'rp'},{k:'potongan_kasbon',l:'Kasbon',t:'rp'},
+      [{k:'kry',l:'Karyawan'},{k:'jab',l:'Jabatan'},
+       {k:'tipe_gaji',l:'Skema',fn:r=>tagHtml(r.tipe_gaji||'bulanan')},
+       {k:'hari_efektif',l:'Hari efektif',fn:r=>(r.hari_efektif??r.hari_hadir??0)+' hari'},
+       {k:'jml_order',l:'Order',fn:r=>r.jml_order||0},
+       {k:'gaji_pokok',l:'Pokok',t:'rp'},{k:'upah_harian',l:'Upah harian',t:'rp'},
+       {k:'uang_makan',l:'U. makan',t:'rp'},{k:'total_komisi',l:'Komisi',t:'rp'},
+       {k:'total_bonus',l:'Bonus',t:'rp'},{k:'potongan_absen',l:'Potongan',t:'rp'},{k:'potongan_kasbon',l:'Kasbon',t:'rp'},
        {k:'total_terima',l:'Diterima',t:'rp'},{k:'status',t:'tag'}])}
       <div class="row" style="margin-top:12px;justify-content:flex-end"><strong>Total dibayarkan:
         <span class="rp">${rp(sum(rows,'total_terima'))}</span></strong></div></div>`
@@ -1043,6 +1092,37 @@ async function diagnosa(){
     {k:'hasil',l:'Hasil',fn:r=>`<span class="tag ${r.ok?'ok':'bad'}">${esc(r.hasil)}</span>`}]);
 }
 
+/* Ringkasan skema gaji sebuah jabatan, untuk kolom tabel */
+function ringkasSkema(j){
+  const t=j.tipe_gaji||'bulanan', b=[];
+  if(t==='harian')        b.push(rp(j.gaji_harian||0)+' / hari');
+  else if(t==='training') b.push(rp(j.gaji_pokok_default||0)+' − '+rp(j.potongan_harian||0)+' / hari kosong');
+  else                    b.push(rp(j.gaji_pokok_default||0)+' / bulan');
+  if(j.fee_per_order>0)   b.push(rp(j.fee_per_order)+' / order');
+  else if(j.persen_komisi>0) b.push(j.persen_komisi+'% komisi');
+  return b.join(' · ');
+}
+/* Skema yang berlaku untuk seorang karyawan (penimpa karyawan menang) */
+function skemaKaryawan(k){
+  const j=get('jabatan',k.jabatan_id)||{};
+  return { tipe:k.tipe_gaji||j.tipe_gaji||'bulanan',
+    pokok:Number(k.gaji_pokok||0), harian:Number(k.gaji_harian??j.gaji_harian??0),
+    potongan:Number(k.potongan_harian??j.potongan_harian??0),
+    fee:Number(k.fee_per_order??j.fee_per_order??0),
+    uangMakan:Number(j.uang_makan_harian||0) };
+}
+/* Hari kerja efektif: hari dengan minimal satu orderan selesai atau check in */
+function hariEfektif(karyawanId,per){
+  const hari=new Set();
+  DB.item.filter(i=>i.terapis_id===karyawanId&&i.status==='selesai')
+    .forEach(i=>{const d=String(i.jam_selesai||'').slice(0,10)||today(); if(d.startsWith(per)) hari.add(d)});
+  DB.absensi.filter(a=>a.karyawan_id===karyawanId&&String(a.tanggal).startsWith(per)&&a.jam_masuk)
+    .forEach(a=>hari.add(String(a.tanggal).slice(0,10)));
+  DB.absen_log.filter(a=>a.karyawan_id===karyawanId&&String(a.tanggal).startsWith(per))
+    .forEach(a=>hari.add(String(a.tanggal).slice(0,10)));
+  return hari.size;
+}
+
 /* --------------------------- aksi --------------------------- */
 async function putusIzin(id,st){
   const i={...get('izin',id),status:st,approver_id:ME.id,tgl_approve:today()};
@@ -1061,19 +1141,28 @@ async function hitungGaji(){
   if(LIVE){ const {error}=await sb.rpc('generate_gaji',{p_periode:periode()});
     if(error) return toast('Gagal: '+error.message);
     const {data}=await sb.from('gaji').select('*'); DB.gaji=data||[]; render(); return toast('Gaji dihitung'); }
-  const HK=26;
+  const HK=26, per=periode();
   for(const k of DB.karyawan.filter(x=>x.status==='aktif')){
-    const hadir=DB.absensi.filter(a=>a.karyawan_id===k.id&&String(a.tanggal).startsWith(periode())&&['hadir','telat'].includes(a.status)).length;
-    const kom=sum(DB.komisi.filter(c=>c.karyawan_id===k.id&&c.periode===periode()),'nominal');
-    const bon=sum(DB.bonus.filter(b=>b.karyawan_id===k.id&&b.periode===periode()&&b.status==='disetujui'),'nominal');
+    const s=skemaKaryawan(k);
+    const efektif=hariEfektif(k.id,per);
+    const nOrder=DB.item.filter(i=>i.terapis_id===k.id&&i.status==='selesai'
+      &&String(i.jam_selesai||today()).startsWith(per)).length;
+    const kom=sum(DB.komisi.filter(c=>c.karyawan_id===k.id&&c.periode===per),'nominal');
+    const bon=sum(DB.bonus.filter(b=>b.karyawan_id===k.id&&b.periode===per&&b.status==='disetujui'),'nominal');
     const ksb=sum(DB.kasbon.filter(x=>x.karyawan_id===k.id&&x.status==='disetujui'&&x.sisa>0),'cicilan');
-    const um=(get('jabatan',k.jabatan_id)?.uang_makan_harian||0)*hadir;
-    const pot=hadir<HK?Math.round(k.gaji_pokok/HK)*(HK-hadir):0;
-    const lama=DB.gaji.find(g=>g.periode===periode()&&g.karyawan_id===k.id);
+    const um=s.uangMakan*efektif;
+    let pokok=0, upah=0, pot=0;
+    if(s.tipe==='harian'){ upah=s.harian*efektif; }
+    else if(s.tipe==='training'){ pokok=s.pokok; pot=Math.max(0,s.potongan*(HK-efektif)); }
+    else { pokok=s.pokok; pot=efektif<HK?Math.round(s.pokok/HK)*(HK-efektif):0; }
+    const total=pokok+upah+Number(k.tunjangan||0)+um+kom+bon-pot-ksb;
+    const lama=DB.gaji.find(g=>g.periode===per&&g.karyawan_id===k.id);
     if(lama&&lama.status!=='draft') continue;
-    await simpan('gaji',{id:lama?.id||uid(),periode:periode(),karyawan_id:k.id,hari_kerja:HK,hari_hadir:hadir,
-      gaji_pokok:k.gaji_pokok,tunjangan:k.tunjangan,uang_makan:um,total_komisi:kom,total_bonus:bon,
-      potongan_absen:pot,potongan_kasbon:ksb,total_terima:k.gaji_pokok+k.tunjangan+um+kom+bon-pot-ksb,status:'draft'});
+    await simpan('gaji',{id:lama?.id||uid(),periode:per,karyawan_id:k.id,tipe_gaji:s.tipe,
+      hari_kerja:HK,hari_hadir:efektif,hari_efektif:efektif,jml_order:nOrder,
+      gaji_pokok:pokok,upah_harian:upah,tunjangan:Number(k.tunjangan||0),uang_makan:um,
+      total_komisi:kom,total_bonus:bon,potongan_absen:pot,potongan_kasbon:ksb,
+      total_terima:total,status:'draft'});
   }
   render(); toast('Gaji periode '+periode()+' dihitung');
 }
