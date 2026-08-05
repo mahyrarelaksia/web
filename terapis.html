@@ -84,6 +84,8 @@ main{padding:16px 14px 116px;width:100%}
 .btn:hover{background:var(--jade-2)}
 .btn.ghost{background:transparent;color:var(--jade);border:1px solid var(--line)}
 .btn.amber{background:var(--amber)}.btn.sm{padding:6px 10px;font-size:12px}
+.btn.besar{padding:17px 26px;font-size:16.5px;border-radius:16px;font-weight:600;letter-spacing:.01em}
+.btn.blok{width:100%}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--jade-2);outline-offset:-1px;border-color:transparent}
@@ -291,14 +293,37 @@ async function masuk(){
       if(!akun||akun.pw!==pass) throw new Error('Email atau kata sandi salah.');
       ME=get('karyawan',akun.id);
     }
-    document.getElementById('login').style.display='none';
-    document.getElementById('app').style.display='block';
-    meName.textContent=ME.nama; meRole.textContent=nm('jabatan',ME.jabatan_id)+' · '+nm('cabang',ME.cabang_id);
-    meAv.textContent=ME.nama[0]; buildSide(); go('dash');
+    bukaAplikasi();
   }catch(e){ err.textContent=e.message; err.classList.add('on'); }
   btnLogin.disabled=false; btnLogin.textContent='Masuk';
 }
+function bukaAplikasi(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  meName.textContent=ME.nama;
+  meRole.textContent=nm('jabatan',ME.jabatan_id)+' · '+nm('cabang',ME.cabang_id);
+  meAv.textContent=ME.nama[0];
+  buildSide(); go('dash');
+}
 async function keluar(){ if(LIVE) await sb.auth.signOut(); location.reload(); }
+
+/* Sesi disimpan di perangkat, jadi terapis tidak perlu login ulang tiap
+   kali membuka aplikasi untuk check in. Keluar dari menu Lainnya. */
+(async function pulihkanSesi(){
+  if(!LIVE) return;
+  const kotak=document.getElementById('login');
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session) return;
+    kotak.querySelector('.card-login').innerHTML=
+      '<p class="hint" style="text-align:center;padding:20px">Membuka sesi Anda…</p>';
+    const k=await ambilProfil(session.user.id,String(session.user.email||'').toLowerCase());
+    if(!k||k.role!=='terapis'||k.status!=='aktif'){ await sb.auth.signOut(); return location.reload(); }
+    ME=k;
+    if(!DB.karyawan.some(x=>x.id===k.id)) DB.karyawan.push(k);
+    bukaAplikasi();
+  }catch(e){ console.warn('Sesi tidak bisa dipulihkan:',e); location.reload(); }
+})();
 
 /* Tab bawah ala aplikasi. Tombol Absen di tengah, ukurannya paling besar. */
 const TAB=[['dash','◈','Beranda'],['kerja','◎','Kerjaan'],['absen','✓','Absen'],['komisi','%','Komisi'],['menu','☰','Lainnya']];
@@ -418,9 +443,9 @@ absen(){
     <div class="clock" id="liveClock" style="font-size:46px;margin:4px 0">${jam()}</div>
     <div class="hint">Absensi dicatat saat check in dan check out tiap orderan.</div>
     <div class="row" style="justify-content:center;margin-top:16px">
-      ${aktif.length?`<button class="btn amber" onclick="bukaAbsen('${aktif[0].id}','pulang')">Check out pekerjaan berjalan</button>`
-       :antre.length?`<button class="btn" onclick="bukaAbsen('${antre[0].id}','masuk')">Check in orderan berikutnya</button>`
-       :`<button class="btn ghost" onclick="go('kerja')">Belum ada orderan hari ini</button>`}
+      ${aktif.length?`<button class="btn amber besar blok" onclick="bukaAbsen('${aktif[0].id}','pulang')">Check out pekerjaan berjalan</button>`
+       :antre.length?`<button class="btn besar blok" onclick="bukaAbsen('${antre[0].id}','masuk')">Check in orderan berikutnya</button>`
+       :`<button class="btn ghost besar blok" onclick="go('kerja')">Belum ada orderan hari ini</button>`}
     </div>
   </div>
   <div class="grid g3" style="margin-top:14px">
@@ -635,8 +660,8 @@ function listKerja(items){
         <div class="hint">${esc(p?.nomor||'')} · ${esc(pel?.nama||'-')} · ${esc(i.ruangan||'-')} · ${l?.durasi_menit||0} menit</div>
         ${pel?.catatan?`<div class="hint">Catatan: ${esc(pel.catatan)}</div>`:''}
         <div class="hint">Komisi: <span class="rp">${rp(i.komisi)}</span></div></div>
-      <div class="row">${i.status==='menunggu'?`<button class="btn sm" onclick="bukaAbsen('${i.id}','masuk')">Check in</button>`:''}
-        ${i.status==='berjalan'?`<button class="btn amber sm" onclick="bukaAbsen('${i.id}','pulang')">Check out</button>`:''}</div></div>`;
+      <div class="row">${i.status==='menunggu'?`<button class="btn" style="padding:12px 20px;font-size:14.5px" onclick="bukaAbsen('${i.id}','masuk')">Check in</button>`:''}
+        ${i.status==='berjalan'?`<button class="btn amber" style="padding:12px 20px;font-size:14.5px" onclick="bukaAbsen('${i.id}','pulang')">Check out</button>`:''}</div></div>`;
   }).join('');
 }
 
@@ -652,8 +677,8 @@ async function bukaAbsen(itemId,tipe){
       <video id="vid" autoplay playsinline muted></video>
       <div class="sinyal" id="sinyal">Menyalakan kamera depan…</div>
     </div>
-    <div class="row"><button class="btn" style="flex:1" id="btnJepret" onclick="jepret()">Ambil foto</button>
-      <button class="btn ghost" onclick="tutupAbsen()">Batal</button></div>
+    <button class="btn besar blok" id="btnJepret" onclick="jepret()">Ambil foto</button>
+    <button class="btn ghost blok" style="margin-top:8px" onclick="tutupAbsen()">Batal</button>
     <p class="hint" style="margin-top:10px">Foto dan titik lokasi tercatat sebagai bukti kehadiran.</p>`;
   modal.classList.add('on');
   nyalakanKamera(); ambilLokasi();
@@ -670,7 +695,7 @@ async function nyalakanKamera(){
       `<div style="color:#fff;padding:24px;text-align:center;font-size:13.5px">Kamera tidak bisa dibuka.<br>
        Izinkan akses kamera di peramban, lalu coba lagi.<br><span style="opacity:.7">${esc(e.message||'')}</span></div>`;
     const b=document.getElementById('btnJepret');
-    if(b){ b.textContent='Lanjut tanpa foto'; b.onclick=()=>{KAM.foto=null;kirimAbsen();}; }
+    if(b){ b.className='btn besar blok'; b.textContent='Lanjut tanpa foto'; b.onclick=()=>{KAM.foto=null;kirimAbsen();}; }
   }
 }
 function ambilLokasi(){
@@ -704,6 +729,7 @@ function jepret(){
     `<img src="${KAM.foto}" alt="Foto absensi" style="transform:none">
      <div class="sinyal">${jam()} · ${esc(KAM.alamat||'—')}</div>`;
   const b=document.getElementById('btnJepret');
+  b.className='btn besar blok';
   b.textContent=KAM.tipe==='masuk'?'Kirim check in':'Kirim check out'; b.onclick=kirimAbsen;
 }
 async function kirimAbsen(){
@@ -717,7 +743,7 @@ async function kirimAbsen(){
     if(error){
       console.warn('absen_order gagal, memakai jalur cadangan:',error.message);
       const cadangan=await absenCadangan(muatan);
-      if(cadangan){ if(b){b.disabled=false;b.textContent='Coba lagi';} return toast('Gagal: '+cadangan); }
+      if(cadangan){ if(b){b.disabled=false;b.className='btn besar blok';b.textContent='Coba lagi';} return toast('Gagal: '+cadangan); }
     }
     await muatSemua();
   }else{
