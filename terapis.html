@@ -13,7 +13,7 @@
 --ink:#1E3356;--muted:#7A8CA8;--line:#E4EBF5;--amber:#D9A05C;--rose:#BC8298;--ok:#4A9E85;--warn:#C08A4A;--bad:#C0707E;
 --r:18px;--sh:0 1px 2px rgba(31,64,120,.05),0 10px 30px rgba(31,64,120,.08)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Inter,system-ui,sans-serif;background:var(--mist);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased}
+body{font-family:Inter,system-ui,sans-serif;background:var(--mist);color:var(--ink);font-size:13px;-webkit-font-smoothing:antialiased}
 h1,h2,h3,.disp{font-family:Fraunces,Georgia,serif;font-weight:600;letter-spacing:-.01em}
 button,input,select,textarea{font:inherit;color:inherit}
 #login{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(130% 100% at 90% 0%,#8FC6EC 0%,#4C8FD6 42%,#1F4C86 100%)}
@@ -39,7 +39,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .av{width:38px;height:38px;border-radius:13px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);
  color:#fff;display:grid;place-items:center;font-weight:600;flex:none}
 main{padding:16px 14px 116px;width:100%}
-.pagehead h1{font-size:22px}
+.pagehead h1{font-size:19px}
 .pagehead p{color:var(--muted);font-size:12.5px;margin:2px 0 14px}
 .tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:620px;z-index:40;
  display:grid;grid-template-columns:repeat(5,1fr);align-items:end;background:rgba(255,255,255,.96);
@@ -66,7 +66,7 @@ main{padding:16px 14px 116px;width:100%}
 .jejak{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start}
 .jejak:last-child{border-bottom:0}
 .jejak img{width:52px;height:52px;border-radius:14px;object-fit:cover;flex:none;border:1px solid var(--line)}
-.jejak .jam{font-family:Fraunces,serif;font-size:17px;line-height:1.2}
+.jejak .jam{font-family:Fraunces,serif;font-size:15px;line-height:1.25}
 .menulist .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;
  background:#E8F1FC;color:var(--jade);font-size:15px}
 .grid{display:grid;gap:14px}
@@ -76,10 +76,10 @@ main{padding:16px 14px 116px;width:100%}
 .stat:before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:3px;border-radius:3px;background:linear-gradient(180deg,#7FBCE8,#2F6FBF)}
 .stat.a:before{background:var(--amber)}.stat.r:before{background:var(--rose)}.stat.g:before{background:var(--ok)}
 .stat .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.stat .val{font-family:Fraunces,serif;font-size:24px;margin-top:4px}
+.stat .val{font-family:Fraunces,serif;font-size:20px;margin-top:3px}
 .stat .sub{font-size:12px;color:var(--muted);margin-top:2px}
 .head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.head h3{font-size:17px}
+.head h3{font-size:15px}
 .btn{border:0;background:var(--jade);color:#fff;padding:10px 17px;border-radius:12px;font-weight:600;cursor:pointer;font-size:13px}
 .btn:hover{background:var(--jade-2)}
 .btn.ghost{background:transparent;color:var(--jade);border:1px solid var(--line)}
@@ -93,7 +93,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 .field{margin-bottom:12px}
 table{width:100%;border-collapse:collapse}
 th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:11px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 9px;border-bottom:1px solid var(--line);font-size:12.5px}
 tr:last-child td{border-bottom:0}.tw{overflow-x:auto}
 .tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;background:var(--mist);color:var(--muted)}
 .tag.ok{background:#E4F4EE;color:var(--ok)}.tag.warn{background:#FBF1E1;color:var(--warn)}
@@ -112,7 +112,7 @@ tr:last-child td{border-bottom:0}.tw{overflow-x:auto}
 .list-item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:flex-start}
 .list-item:last-child{border-bottom:0}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--jade);margin-top:6px;flex:none}
-.clock{font-family:Fraunces,serif;font-size:40px;letter-spacing:-.02em}
+.clock{font-family:Fraunces,serif;font-size:27px;letter-spacing:-.02em}
 .modal{position:fixed;inset:0;background:rgba(23,52,96,.45);backdrop-filter:blur(3px);display:none;place-items:center;padding:16px;z-index:50}
 .modal.on{display:grid}
 .sheet{background:var(--paper);border-radius:22px;width:100%;max-width:460px;padding:22px}
@@ -175,6 +175,11 @@ const rp=n=>'Rp '+(Number(n)||0).toLocaleString('id-ID');
 const today=()=>new Date().toISOString().slice(0,10);
 const periode=()=>today().slice(0,7);
 const jam=()=>new Date().toTimeString().slice(0,5);
+/* Menerima '09:15', '09:15:00', atau cap waktu penuh -> selalu 'HH.MM' */
+const jamDari=v=>{ if(!v) return '--.--';
+  const s=String(v);
+  if(/^\d{2}:\d{2}/.test(s)) return s.slice(0,5).replace(':','.');
+  const d=new Date(s); return isNaN(d)?'--.--':d.toTimeString().slice(0,5).replace(':','.'); };
 const tgl=d=>d?new Date(String(d).slice(0,10)+'T00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400)};
@@ -236,11 +241,41 @@ function seedDemo(){
 DB.target=DB.target||[];
 
 /* ---------------------- penyimpanan ---------------------- */
+/* Kolom foto sengaja tidak ikut diunduh: ukurannya besar dan hanya perlu
+   saat dibuka. Selebihnya dimuat serentak, bukan satu per satu. */
+const KOLOM={absen_log:'id,karyawan_id,pesanan_item_id,cabang_id,tanggal,tipe,waktu,lat,lng,alamat,akurasi_meter'};
+const FOTO={};
+
+async function muatTabel(daftar){
+  if(!LIVE) return;
+  await Promise.all(daftar.map(async k=>{
+    const {data,error}=await sb.from(TBL[k]).select(KOLOM[k]||'*');
+    if(!error) DB[k]=data||[]; else console.warn('Gagal memuat',TBL[k],error.message);
+  }));
+}
 async function muatSemua(){
   if(!LIVE) return;
-  for(const k in TBL){ const {data,error}=await sb.from(TBL[k]).select('*');
-    if(!error) DB[k]=data||[]; }
-  const {data:t}=await sb.from('target').select('*'); DB.target=t||[];
+  await Promise.all([
+    muatTabel(Object.keys(TBL)),
+    sb.from('target').select('*').then(({data})=>{ DB.target=data||[]; }).catch(()=>{})
+  ]);
+}
+/* Foto diambil satu per satu hanya ketika dilihat */
+async function ambilFoto(id){
+  if(FOTO[id]!==undefined) return FOTO[id];
+  let f=null;
+  if(LIVE){ const {data}=await sb.from('absen_log').select('foto').eq('id',id).single(); f=data?.foto||null; }
+  else f=get('absen_log',id)?.foto||null;
+  FOTO[id]=f; return f;
+}
+async function lihatFoto(id){
+  sheet.innerHTML='<p class="hint" style="text-align:center;padding:26px">Memuat foto…</p>';
+  modal.classList.add('on');
+  const f=await ambilFoto(id);
+  sheet.innerHTML=f?`<img src="${f}" alt="Foto absensi" style="width:100%;border-radius:16px;display:block">
+      <button class="btn ghost blok" style="margin-top:12px" onclick="closeModal()">Tutup</button>`
+    :`<div class="empty"><div class="disp">Foto tidak tersedia</div><div>Catatan ini tersimpan tanpa foto.</div></div>
+      <button class="btn ghost blok" onclick="closeModal()">Tutup</button>`;
 }
 const GENERATED={item:['subtotal'],izin:['jumlah_hari']};
 function bersihkan(key,row){
@@ -414,10 +449,10 @@ dash(){
     ${stat('Rating rata-rata',avg,rat.length+' penilaian','r')}</div>
   <div class="grid g2" style="margin-top:14px">
     <div class="card"><div class="head"><h3>Absensi hari ini</h3>${tagHtml(abs?.jam_masuk?'hadir':'belum')}</div>
-      <p class="hint">${sh?`Shift ${sh.nama} · ${sh.jam_masuk}–${sh.jam_pulang} · ${nm('cabang',jd.cabang_id)}`:'Tidak ada jadwal hari ini.'}</p>
-      <div class="row" style="margin-top:12px">
-        <div style="flex:1"><div class="hint">Masuk</div><div class="clock">${abs?.jam_masuk||'--:--'}</div></div>
-        <div style="flex:1"><div class="hint">Pulang</div><div class="clock">${abs?.jam_pulang||'--:--'}</div></div></div>
+      <p class="hint">${tgl(today())}</p>
+      <div class="row" style="margin-top:10px">
+        <div style="flex:1"><div class="hint">Check in</div><div class="clock">${jamDari(abs?.jam_masuk)}</div></div>
+        <div style="flex:1"><div class="hint">Check out</div><div class="clock">${jamDari(abs?.jam_pulang)}</div></div></div>
       <button class="btn" style="margin-top:12px" onclick="go('absen')">Buka absensi</button></div>
     <div class="card"><div class="head"><h3>Target order saya</h3><span class="tag info">${tg?tg.target_order+' order':'belum diatur'}</span></div>
       <div style="font-family:Fraunces,serif;font-size:30px">${pct}%</div><div class="bar"><i style="width:${pct}%"></i></div>
@@ -440,7 +475,7 @@ absen(){
   const sk=skemaGaji();
   return `<div class="card" style="text-align:center;padding:24px">
     <div class="hint">${new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
-    <div class="clock" id="liveClock" style="font-size:46px;margin:4px 0">${jam()}</div>
+    <div class="clock" id="liveClock" style="font-size:32px;margin:2px 0">${jam()}</div>
     <div class="hint">Absensi dicatat saat check in dan check out tiap orderan.</div>
     <div class="row" style="justify-content:center;margin-top:16px">
       ${aktif.length?`<button class="btn amber besar blok" onclick="bukaAbsen('${aktif[0].id}','pulang')">Check out pekerjaan berjalan</button>`
@@ -460,9 +495,8 @@ absen(){
       '<div class="empty"><div class="disp">Belum ada catatan</div><div>Check in saat mulai mengerjakan orderan pertama.</div></div>'}
   </div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Riwayat hari sebelumnya</h3></div>
-    ${tableHtml(rekapHarian(semua).slice(0,20),
-      [{k:'tanggal',t:'date'},{k:'masuk',l:'Check in pertama'},{k:'pulang',l:'Check out terakhir'},
-       {k:'jml',l:'Orderan'},{k:'st',l:'Status',fn:r=>r.jml?'<span class="tag ok">Efektif</span>':'<span class="tag warn">Tidak lengkap</span>'}])}
+    ${tableHtml(rekapHarian(semua).slice(0,30),
+      [{k:'tanggal',l:'Tanggal',t:'date'},{k:'masuk',l:'Check in'},{k:'pulang',l:'Check out'}])}
   </div>`;
 },
 kerja(){
@@ -629,9 +663,11 @@ function jejakAbsen(a){
   const lay=i?nm('layanan',i.layanan_id):'—';
   const peta=a.lat?`https://www.google.com/maps?q=${a.lat},${a.lng}`:null;
   return `<div class="jejak">
-    ${a.foto?`<img src="${a.foto}" alt="Foto absensi">`:'<div class="dot" style="margin-top:20px"></div>'}
+    <button onclick="lihatFoto('${a.id}')" title="Lihat foto"
+      style="width:46px;height:46px;border-radius:13px;border:1px solid var(--line);background:var(--mist);
+      color:var(--jade);cursor:pointer;flex:none;font-size:17px">◉</button>
     <div style="flex:1;min-width:0">
-      <div class="jam">${new Date(a.waktu).toTimeString().slice(0,5)}
+      <div class="jam">${jamDari(a.waktu)}
         ${a.tipe==='masuk'?'<span class="tag ok">Check in</span>':'<span class="tag warn">Check out</span>'}</div>
       <div class="hint">${esc(lay)}</div>
       <div class="hint" style="word-break:break-word">${esc(a.alamat||'Lokasi tidak tercatat')}
@@ -644,11 +680,11 @@ function rekapHarian(log){
   log.forEach(a=>{
     const d=String(a.tanggal).slice(0,10);
     peta[d]=peta[d]||{id:d,tanggal:d,masuk:null,pulang:null,jml:0};
-    const w=new Date(a.waktu).toTimeString().slice(0,5);
+    const w=jamDari(a.waktu);
     if(a.tipe==='masuk'){ if(!peta[d].masuk||w<peta[d].masuk) peta[d].masuk=w; peta[d].jml++; }
     else { if(!peta[d].pulang||w>peta[d].pulang) peta[d].pulang=w; }
   });
-  return Object.values(peta).map(r=>({...r,masuk:r.masuk||'--:--',pulang:r.pulang||'--:--'}))
+  return Object.values(peta).map(r=>({...r,masuk:r.masuk||'--.--',pulang:r.pulang||'--.--'}))
     .sort((a,b)=>b.tanggal.localeCompare(a.tanggal));
 }
 function listKerja(items){
@@ -720,11 +756,11 @@ function tulisSinyal(){
 function jepret(){
   const v=document.getElementById('vid');
   if(!v||!v.videoWidth) return toast('Kamera belum siap');
-  const lebar=480, tinggi=Math.round(v.videoHeight/v.videoWidth*lebar);
+  const lebar=320, tinggi=Math.round(v.videoHeight/v.videoWidth*lebar);
   const c=document.createElement('canvas'); c.width=lebar; c.height=tinggi;
   const x=c.getContext('2d'); x.translate(lebar,0); x.scale(-1,1);
   x.drawImage(v,0,0,lebar,tinggi);
-  KAM.foto=c.toDataURL('image/jpeg',0.55);
+  KAM.foto=c.toDataURL('image/jpeg',0.42);   // sekitar 15 KB, cukup untuk bukti wajah
   document.getElementById('kotakKam').innerHTML=
     `<img src="${KAM.foto}" alt="Foto absensi" style="transform:none">
      <div class="sinyal">${jam()} · ${esc(KAM.alamat||'—')}</div>`;
@@ -745,7 +781,7 @@ async function kirimAbsen(){
       const cadangan=await absenCadangan(muatan);
       if(cadangan){ if(b){b.disabled=false;b.className='btn besar blok';b.textContent='Coba lagi';} return toast('Gagal: '+cadangan); }
     }
-    await muatSemua();
+    await muatTabel(['absen_log','item','absensi','komisi']);
   }else{
     DB.absen_log.push({id:uid(),karyawan_id:ME.id,pesanan_item_id:KAM.item,cabang_id:ME.cabang_id,
       tanggal:today(),tipe:KAM.tipe,waktu:new Date().toISOString(),foto:KAM.foto,
