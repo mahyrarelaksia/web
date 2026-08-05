@@ -66,6 +66,12 @@ main{padding:16px 14px 116px;width:100%}
 .jejak{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start}
 .jejak:last-child{border-bottom:0}
 .jejak img{width:52px;height:52px;border-radius:14px;object-fit:cover;flex:none;border:1px solid var(--line)}
+.filter{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filter .rentang{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.filter input{width:auto;padding:6px 9px;font-size:12.5px;border-radius:10px}
+.blok-oranye{background:linear-gradient(165deg,#FFF8EE,#FFF1DE);border:1px solid #F3DFC1}
+.blok-oranye .empty .disp{color:#8A5714}
+.blok-oranye .empty{color:#A97434}
 .kartu-kerja{border:1px solid var(--line);border-radius:15px;padding:13px;margin-bottom:9px;background:#fff}
 .kartu-kerja .atas{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .kartu-kerja h4{font-size:14.5px;font-weight:600;line-height:1.3}
@@ -75,6 +81,10 @@ main{padding:16px 14px 116px;width:100%}
 .kartu-kerja .rinci div{display:flex;justify-content:space-between;gap:8px;font-size:12px}
 .kartu-kerja .rinci span{color:var(--muted)}
 .kartu-kerja .rinci b{font-weight:600;font-variant-numeric:tabular-nums}
+.kartu-bonus{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:14px;
+ padding:12px 13px;margin-bottom:8px;background:#fff}
+.kartu-bonus h4{font-size:14px;font-weight:600;line-height:1.3}
+.kartu-bonus .rp{font-size:15px;color:var(--jade);white-space:nowrap}
 .kartu-kerja .bintang{color:var(--amber);border-color:#F0E0C4}
 .jejak .jam{font-family:Fraunces,serif;font-size:15px;line-height:1.25}
 .menulist .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;
@@ -421,7 +431,37 @@ function tagHtml(v){
   const c=ok.includes(v)?'ok':warn.includes(v)?'warn':bad.includes(v)?'bad':'info';
   return `<span class="tag ${c}">${cap(v||'-')}</span>`;
 }
-const stat=(l,v,s,cls='')=>`<div class="card stat ${cls}"><div class="lbl">${l}</div><div class="val">${v}</div>${s?`<div class="sub">${s}</div>`:''}</div>`;
+const stat=(l,v,s,cls='',aksi='')=>`<div class="card stat ${cls}"${aksi?` onclick="${aksi}" style="cursor:pointer"`:''}>
+  <div class="lbl">${l}</div><div class="val">${v}</div>${s?`<div class="sub">${s}</div>`:''}</div>`;
+const hariTgl=d=>d?new Date(String(d).slice(0,10)+'T00:00')
+  .toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'}):'-';
+
+/* ---------------- Penyaring tanggal ---------------- */
+let FIL={mode:'semua',dari:today(),sampai:today()};
+const geser=(n)=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+function setFilter(mode){
+  FIL.mode=mode;
+  if(mode==='hari')    { FIL.dari=today();   FIL.sampai=today(); }
+  if(mode==='besok')   { FIL.dari=geser(1);  FIL.sampai=geser(1); }
+  if(mode==='kemarin') { FIL.dari=geser(-1); FIL.sampai=geser(-1); }
+  render();
+}
+function setRentang(sisi,nilai){ FIL[sisi]=nilai; FIL.mode='rentang'; render(); }
+function dalamFilter(tanggal){
+  if(FIL.mode==='semua') return true;
+  const d=String(tanggal||'').slice(0,10);
+  return d>=FIL.dari&&d<=FIL.sampai;
+}
+function barisFilter(){
+  const b=[['semua','Semua'],['kemarin','Kemarin'],['hari','Hari ini'],['besok','Besok'],['rentang','Rentang']];
+  return `<div class="filter">
+    ${b.map(([m,l])=>`<button class="btn ${FIL.mode===m?'':'ghost'} sm" onclick="setFilter('${m}')">${l}</button>`).join('')}
+    ${FIL.mode==='rentang'?`<span class="rentang">
+      <input type="date" value="${FIL.dari}" onchange="setRentang('dari',this.value)">
+      <span class="hint">sampai</span>
+      <input type="date" value="${FIL.sampai}" onchange="setRentang('sampai',this.value)"></span>`:''}
+  </div>`;
+}
 const myItem=()=>DB.item.filter(i=>i.terapis_id===ME.id);
 function closeModal(){ modal.classList.remove('on'); }
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
@@ -456,8 +496,8 @@ dash(){
   const pct=tg&&tg.target_order?Math.min(100,Math.round(sel.length/tg.target_order*100)):0;
   return `<div class="grid g4">
     ${stat('Order selesai',sel.length,'periode '+periode())}
-    ${stat('Komisi bulan ini',rp(sum(kom,'nominal')),kom.length+' layanan','a')}
-    ${stat('Bonus bulan ini',rp(sum(bon,'nominal')),bon.length+' skema','g')}
+    ${stat('Komisi bulan ini',rp(sum(kom,'nominal')),'ketuk untuk rincian','a',"go('komisi')")}
+    ${stat('Bonus bulan ini',rp(sum(bon,'nominal')),'ketuk untuk rincian','g',"go('bonus')")}
     ${stat('Rating rata-rata',avg,rat.length+' penilaian','r')}</div>
   <div class="grid g2" style="margin-top:14px">
     <div class="card"><div class="head"><h3>Absensi hari ini</h3>${tagHtml(abs?.jam_masuk?'hadir':'belum')}</div>
@@ -514,6 +554,9 @@ absen(){
 },
 kerja(){
   const my=myItem(), sel=my.filter(i=>i.status==='selesai');
+  const tglOrder=i=>get('pesanan',i.pesanan_id)?.tanggal;
+  const aktifSaring=my.filter(i=>i.status!=='selesai'&&i.status!=='batal');
+  const selSaring=sel.filter(i=>dalamFilter(tglOrder(i)));
   const komBln=DB.komisi.filter(c=>c.karyawan_id===ME.id&&c.periode===periode());
   const bonBln=DB.bonus.filter(b=>b.karyawan_id===ME.id&&b.periode===periode()&&b.status!=='ditolak');
   return `<div class="grid g4">
@@ -521,12 +564,13 @@ kerja(){
     ${stat('Sedang berjalan',my.filter(i=>i.status==='berjalan').length,'sudah check in','oranye')}
     ${stat('Selesai',sel.length,'periode '+periode(),'g')}
     ${stat('Komisi + bonus',rp(sum(komBln,'nominal')+sum(bonBln,'nominal')),'bulan ini')}</div>
-  <div class="card" style="margin-top:14px"><div class="head"><h3>Antrean & sedang berjalan</h3></div>
-    ${listKerja(my.filter(i=>i.status!=='selesai'&&i.status!=='batal'))}</div>
+  <div class="card blok-oranye" style="margin-top:14px"><div class="head"><h3>Antrean &amp; sedang berjalan</h3></div>
+    ${listKerja(aktifSaring)}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Riwayat pekerjaan</h3>
-    <span class="tag info">${sel.length} selesai</span></div>
-    ${sel.length?sel.slice().reverse().map(i=>kartuKerja(i)).join('')
-      :'<div class="empty"><div class="disp">Belum ada riwayat</div><div>Pekerjaan yang sudah di-check out muncul di sini.</div></div>'}</div>`;
+    <span class="tag info">${selSaring.length} selesai</span></div>
+    ${barisFilter()}
+    ${selSaring.length?selSaring.slice().reverse().map(i=>kartuKerja(i)).join('')
+      :'<div class="empty"><div class="disp">Tidak ada pekerjaan pada rentang ini</div><div>Ganti penyaring tanggal di atas.</div></div>'}</div>`;
 },
 jadwal(){
   const my=DB.jadwal.filter(j=>j.karyawan_id===ME.id);
@@ -561,12 +605,14 @@ komisi(){
 },
 bonus(){
   const my=DB.bonus.filter(b=>b.karyawan_id===ME.id), sel=myItem().filter(i=>i.status==='selesai');
-  return `<div class="grid g3">
+  const urut=my.slice().sort((a,b)=>String(tglBonus(b)).localeCompare(String(tglBonus(a))));
+  return `<div class="grid g2">
     ${stat('Bonus bulan ini',rp(sum(my.filter(b=>b.periode===periode()&&b.status==='disetujui'),'nominal')),periode())}
-    ${stat('Total bonus diterima',rp(sum(my.filter(b=>b.dibayar),'nominal')),'sepanjang bekerja','g')}
-    ${stat('Menunggu persetujuan',rp(sum(my.filter(b=>b.status==='menunggu'),'nominal')),'','a')}</div>
-  <div class="card" style="margin-top:14px"><div class="head"><h3>Bonus saya</h3></div>
-    ${tableHtml(my,[{k:'periode'},{k:'jenis',t:'tag'},{k:'deskripsi',l:'Keterangan'},{k:'nominal',t:'rp'},{k:'status',t:'tag'}])}</div>
+    ${stat('Total bonus diterima',rp(sum(my.filter(b=>b.dibayar),'nominal')),'sepanjang bekerja','g')}</div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Bonus saya</h3>
+    <span class="tag info">${urut.length} catatan</span></div>
+    ${urut.length?urut.map(b=>kartuBonus(b)).join('')
+      :'<div class="empty"><div class="disp">Belum ada bonus</div><div>Bonus tips, transport, dan lembur muncul di sini.</div></div>'}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Skema bonus yang bisa dikejar</h3></div>
     ${DB.aturan_bonus.filter(a=>a.aktif).map(a=>{
       const capai=a.jenis==='target'?Math.min(100,Math.round(sel.length/a.target*100)):null;
@@ -692,6 +738,22 @@ function rekapHarian(log){
     .sort((a,b)=>b.tanggal.localeCompare(a.tanggal));
 }
 /* Satu kartu riwayat pekerjaan */
+/* Tanggal bonus: ikut order bila ada, kalau tidak pakai waktu pencatatan */
+function tglBonus(b){
+  const p=b.pesanan_id?get('pesanan',b.pesanan_id):null;
+  return p?.tanggal||b.created_at||b.periode+'-01';
+}
+function kartuBonus(b){
+  const p=b.pesanan_id?get('pesanan',b.pesanan_id):null;
+  const pel=p?nm('pelanggan',p.pelanggan_id):(b.deskripsi||'—');
+  return `<div class="kartu-bonus">
+    <div style="flex:1;min-width:0">
+      <h4>${esc(pel)}</h4>
+      <div class="hint">${hariTgl(tglBonus(b))} · ${esc(cap(b.jenis))}</div>
+    </div>
+    <span class="rp">${rp(b.nominal)}</span></div>`;
+}
+
 function kartuKerja(i){
   const p=get('pesanan',i.pesanan_id)||{};
   const l=get('layanan',i.layanan_id)||{};
