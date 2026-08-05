@@ -216,29 +216,42 @@ const tgl=d=>d?new Date(String(d).slice(0,10)+'T00:00').toLocaleDateString('id-I
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400)};
 const cap=s=>String(s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-const jamDari=v=>{ if(!v) return '--:--';
-  const s=String(v); return /^\d{2}:\d{2}/.test(s)?s.slice(0,5):new Date(s).toTimeString().slice(0,5); };
+const jamDari=v=>{ if(!v) return '--.--';
+  const s=String(v);
+  if(/^\d{2}:\d{2}/.test(s)) return s.slice(0,5).replace(':','.');
+  const d=new Date(s); return isNaN(d)?'--.--':d.toTimeString().slice(0,5).replace(':','.'); };
 /* Foto dan titik lokasi dari catatan check in/out */
 function buktiAbsen(a){
   const log=DB.absen_log.filter(x=>x.karyawan_id===a.karyawan_id
     &&String(x.tanggal).slice(0,10)===String(a.tanggal).slice(0,10));
   if(!log.length) return '<span class="hint">—</span>';
-  const foto=log.find(x=>x.foto), titik=log.find(x=>x.lat);
-  return `<div class="row" style="align-items:center;gap:8px;flex-wrap:nowrap">
-    ${foto?`<img src="${foto.foto}" alt="Foto absensi" style="width:38px;height:38px;border-radius:10px;object-fit:cover;border:1px solid var(--line);cursor:pointer" onclick="lihatBukti('${a.karyawan_id}','${String(a.tanggal).slice(0,10)}')">`:''}
-    <div style="min-width:0"><div class="hint" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">
+  const titik=log.find(x=>x.lat);
+  return `<div style="min-width:0">
+    <div class="hint" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">
       ${esc((titik?.alamat)||'Lokasi tidak tercatat')}</div>
-      <a class="hint" style="color:var(--jade);font-weight:600;cursor:pointer" onclick="lihatBukti('${a.karyawan_id}','${String(a.tanggal).slice(0,10)}')">${log.length} catatan</a></div></div>`;
+    <a class="hint" style="color:var(--jade);font-weight:600;cursor:pointer"
+       onclick="lihatBukti('${a.karyawan_id}','${String(a.tanggal).slice(0,10)}')">Lihat ${log.length} catatan</a></div>`;
 }
-function lihatBukti(karyawanId,tanggal){
+async function lihatBukti(karyawanId,tanggal){
   const log=DB.absen_log.filter(x=>x.karyawan_id===karyawanId&&String(x.tanggal).slice(0,10)===tanggal)
     .sort((a,b)=>new Date(a.waktu)-new Date(b.waktu));
+  sheet.innerHTML='<p class="hint" style="text-align:center;padding:26px">Memuat bukti…</p>';
+  modal.classList.add('on');
+  if(LIVE){
+    const perlu=log.filter(a=>FOTO[a.id]===undefined).map(a=>a.id);
+    if(perlu.length){
+      const {data}=await sb.from('absen_log').select('id,foto').in('id',perlu);
+      (data||[]).forEach(d=>FOTO[d.id]=d.foto);
+      perlu.forEach(id=>{ if(FOTO[id]===undefined) FOTO[id]=null; });
+    }
+  }else log.forEach(a=>FOTO[a.id]=a.foto||null);
   sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:3px">Bukti kehadiran</h3>
     <p class="hint" style="margin-bottom:14px">${esc(nm('karyawan',karyawanId))} · ${tgl(tanggal)}</p>
     ${log.map(a=>{
       const i=a.pesanan_item_id?get('item',a.pesanan_item_id):null;
+      const foto=FOTO[a.id];
       return `<div class="list-item">
-        ${a.foto?`<img src="${a.foto}" alt="Foto" style="width:64px;height:64px;border-radius:14px;object-fit:cover;border:1px solid var(--line)">`:'<span class="dot" style="margin-top:8px"></span>'}
+        ${foto?`<img src="${foto}" alt="Foto" style="width:64px;height:64px;border-radius:14px;object-fit:cover;border:1px solid var(--line)">`:'<span class="dot" style="margin-top:8px"></span>'}
         <div style="flex:1;min-width:0">
           <strong>${jamDari(a.waktu)}</strong> ${a.tipe==='masuk'?'<span class="tag ok">Check in</span>':'<span class="tag warn">Check out</span>'}
           <div class="hint">${esc(i?nm('layanan',i.layanan_id):'—')}</div>
@@ -246,7 +259,6 @@ function lihatBukti(karyawanId,tanggal){
           ${a.lat?`<a class="hint" style="color:var(--jade);font-weight:600" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${a.lat},${a.lng}">Buka peta</a>`:''}
         </div></div>`}).join('')||'<div class="empty">Tidak ada catatan check in untuk hari ini.</div>'}
     <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`;
-  modal.classList.add('on');
 }
 const sum=(a,f)=>a.reduce((x,y)=>x+(Number(typeof f==='function'?f(y):y[f])||0),0);
 const get=(t,id)=>DB[t].find(x=>x.id===id);
@@ -341,14 +353,17 @@ function seedDemo(){
 }
 
 /* ---------------------- lapisan penyimpanan ---------------------- */
+/* Kolom foto tidak ikut diunduh; diambil hanya saat dibuka. */
+const KOLOM={absen_log:'id,karyawan_id,pesanan_item_id,cabang_id,tanggal,tipe,waktu,lat,lng,alamat,akurasi_meter'};
+const FOTO={};
 async function muatSemua(){
   if(!LIVE) return;
   const galat=[];
-  for(const k in TBL){
-    const {data,error}=await sb.from(TBL[k]).select('*');
+  await Promise.all(Object.keys(TBL).map(async k=>{
+    const {data,error}=await sb.from(TBL[k]).select(KOLOM[k]||'*');
     if(error){ console.error('Gagal memuat '+TBL[k]+':',error); galat.push(TBL[k]+' ('+error.message+')'); }
     else DB[k]=data||[];
-  }
+  }));
   if(galat.length){
     console.error('Tabel yang gagal dibaca:',galat);
     toast('Sebagian tabel tidak bisa dibaca. Buka Pengaturan → Diagnosa koneksi.');
