@@ -87,6 +87,9 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:99}
 .toast.on{opacity:1}
 .hanya-mobil{display:none}
+.filter{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filter .rentang{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.filter input{width:auto;padding:7px 10px;font-size:13px;border-radius:10px}
 .kartu-order{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;background:#fff}
 .kartu-order .atas{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
 .kartu-order .nomor{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:var(--muted)}
@@ -704,6 +707,32 @@ function tagHtml(v){
   const c=ok.includes(v)?'ok':warn.includes(v)?'warn':bad.includes(v)?'bad':'info';
   return `<span class="tag ${c}">${cap(v||'-')}</span>`;
 }
+/* ---------------- Penyaring tanggal ---------------- */
+let FIL={mode:'semua',dari:today(),sampai:today()};
+const geser=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+function setFilter(mode){
+  FIL.mode=mode;
+  if(mode==='hari')    { FIL.dari=today();   FIL.sampai=today(); }
+  if(mode==='besok')   { FIL.dari=geser(1);  FIL.sampai=geser(1); }
+  if(mode==='kemarin') { FIL.dari=geser(-1); FIL.sampai=geser(-1); }
+  render();
+}
+function setRentang(sisi,nilai){ FIL[sisi]=nilai; FIL.mode='rentang'; render(); }
+function dalamFilter(tanggal){
+  if(FIL.mode==='semua') return true;
+  const d=String(tanggal||'').slice(0,10);
+  return d>=FIL.dari&&d<=FIL.sampai;
+}
+function barisFilter(){
+  const b=[['semua','Semua'],['kemarin','Kemarin'],['hari','Hari ini'],['besok','Besok'],['rentang','Rentang']];
+  return `<div class="filter">
+    ${b.map(([m,l])=>`<button class="btn ${FIL.mode===m?'':'ghost'} sm" onclick="setFilter('${m}')">${l}</button>`).join('')}
+    ${FIL.mode==='rentang'?`<span class="rentang">
+      <input type="date" value="${FIL.dari}" onchange="setRentang('dari',this.value)">
+      <span class="hint">sampai</span>
+      <input type="date" value="${FIL.sampai}" onchange="setRentang('sampai',this.value)"></span>`:''}
+  </div>`;
+}
 const stat=(l,v,s,cls='')=>`<div class="card stat ${cls}"><div class="lbl">${l}</div><div class="val">${v}</div>${s?`<div class="sub">${s}</div>`:''}</div>`;
 
 /* ==================== AKUN LOGIN TERAPIS ==================== */
@@ -905,7 +934,8 @@ dash(){
       :'<div class="empty">Tidak ada antrean persetujuan. Semua beres.</div>'}</div>`;
 },
 order(){
-  const rows=DB.pesanan.filter(p=>dalamLingkup(p,'pesanan')).map(p=>{const it=DB.item.filter(i=>i.pesanan_id===p.id);
+  const rows=DB.pesanan.filter(p=>dalamLingkup(p,'pesanan')&&dalamFilter(p.tanggal))
+    .map(p=>{const it=DB.item.filter(i=>i.pesanan_id===p.id);
     return {...p,pel:nm('pelanggan',p.pelanggan_id),cab:nm('cabang',p.cabang_id),
       lay:it.map(i=>nm('layanan',i.layanan_id)).join(', '),ter:it.map(i=>nm('karyawan',i.terapis_id)).join(', ')}}).reverse();
   const hi=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()&&dalamLingkup(p,'pesanan'));
@@ -916,6 +946,9 @@ order(){
     ${stat('Rata-rata transaksi',rp(hi.length?sum(hi,'total')/hi.length:0),'per order','r')}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Daftar order</h3>
     <button class="btn" onclick="formOrder()">Buat order</button></div>
+    ${barisFilter()}
+    <p class="hint" style="margin:-4px 0 12px">${rows.length} order ditampilkan${FIL.mode==='semua'?'':
+      ' · '+tgl(FIL.dari)+(FIL.dari===FIL.sampai?'':' sampai '+tgl(FIL.sampai))}</p>
     <div class="hanya-desktop">${tableHtml(rows,[{k:'nomor',l:'No. order'},{k:'tanggal',t:'date'},{k:'jam'},
       {k:'pel',l:'Pelanggan'},{k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},{k:'total',t:'rp'},
       {k:'metode_bayar',l:'Bayar'},{k:'status',t:'tag'},
