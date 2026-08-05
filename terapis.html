@@ -555,10 +555,11 @@ dash(){
       <div style="font-family:Fraunces,serif;font-size:26px">${pct}%</div><div class="bar"><i style="width:${pct}%"></i></div>
       <p class="hint" style="margin-top:8px">${tg?`${sel.length} dari ${tg.target_order} order pada periode ${tg.periode}.`
         :'Target belum ditetapkan kantor untuk periode ini.'}</p>
-      <div style="margin-top:14px">${DB.aturan_bonus.filter(a=>a.aktif).slice(0,3).map(a=>
+      <div style="margin-top:14px">${skemaAktif(sel.length).slice(0,3).map(a=>
         `<div class="list-item"><span class="dot" style="background:var(--amber)"></span><div style="flex:1">
-          <strong>${esc(a.nama)}</strong><div class="hint">${esc(a.syarat)}</div></div>
-          <span class="rp">${rp(a.nominal)}</span></div>`).join('')}</div></div></div>
+          <strong>${esc(a.nama)}</strong><div class="hint">${esc(syaratBonus(a))}</div></div>
+          <span class="rp">${rp(a.nominal)}</span></div>`).join('')
+       ||'<p class="hint">Belum ada skema bonus yang aktif. Kantor dapat menambahkannya kapan saja.</p>'}</div></div></div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Kerjaan hari ini</h3>
     <button class="btn ghost sm" onclick="go('kerja')">Lihat semua</button></div>
     ${listKerja(my.filter(i=>i.status!=='selesai'&&i.status!=='batal'))}</div>`;
@@ -661,14 +662,18 @@ bonus(){
     <span class="tag info">${urut.length} catatan</span></div>
     ${urut.length?urut.map(b=>kartuBonus(b)).join('')
       :'<div class="empty"><div class="disp">Belum ada bonus</div><div>Bonus tips, transport, dan lembur muncul di sini.</div></div>'}</div>
-  <div class="card" style="margin-top:14px"><div class="head"><h3>Skema bonus yang bisa dikejar</h3></div>
-    ${DB.aturan_bonus.filter(a=>a.aktif).map(a=>{
-      const capai=a.jenis==='target'?Math.min(100,Math.round(sel.length/a.target*100)):null;
-      return `<div class="list-item"><span class="dot"></span><div style="flex:1"><strong>${esc(a.nama)}</strong>
-        <div class="hint">${esc(a.syarat)}</div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Skema bonus yang bisa dikejar</h3>
+    <span class="tag info">${skemaAktif(sel.length).length} skema aktif</span></div>
+    ${skemaAktif(sel.length).map(a=>{
+      const capai=a.jenis==='target'&&a.target>0?Math.min(100,Math.round(sel.length/a.target*100)):null;
+      return `<div class="list-item"><span class="dot"></span><div style="flex:1">
+        <strong>${esc(a.nama)}</strong>
+        <div class="hint">${esc(syaratBonus(a))}</div>
         ${capai!==null?`<div class="bar" style="max-width:260px"><i style="width:${capai}%"></i></div>
-          <div class="hint">${sel.length}/${a.target} order</div>`:''}</div>
-        <span class="rp">${rp(a.nominal)}</span></div>`}).join('')}</div>`;
+          <div class="hint">${sel.length} dari ${a.target} order · ${capai}%</div>`:''}</div>
+        <span class="rp">${rp(a.nominal)}</span></div>`}).join('')
+      ||'<div class="empty"><div class="disp">Belum ada skema bonus</div><div>Kantor belum menetapkan skema bonus yang aktif.</div></div>'}
+    <p class="hint" style="margin-top:10px">Skema ini adalah sasaran. Bonus baru masuk slip gaji setelah dicatat kantor.</p></div>`;
 },
 slip(){
   const my=DB.gaji.filter(g=>g.karyawan_id===ME.id&&g.status!=='draft');
@@ -801,6 +806,29 @@ function tglBonus(b){
   const p=b.pesanan_id?get('pesanan',b.pesanan_id):null;
   return p?.tanggal||b.created_at||b.periode+'-01';
 }
+/* Skema aktif, diurutkan dari yang paling dekat tercapai */
+function skemaAktif(jmlOrder){
+  return (DB.aturan_bonus||[]).filter(a=>a.aktif!==false)
+    .slice()
+    .sort((a,b)=>{
+      const sisaA=a.jenis==='target'&&a.target>0?Math.max(0,a.target-jmlOrder):9e9;
+      const sisaB=b.jenis==='target'&&b.target>0?Math.max(0,b.target-jmlOrder):9e9;
+      if(sisaA!==sisaB) return sisaA-sisaB;
+      return (a.nominal||0)-(b.nominal||0);
+    });
+}
+/* Syarat yang kosong dilengkapi otomatis dari jenis dan targetnya */
+function syaratBonus(a){
+  if(a.syarat&&String(a.syarat).trim()&&a.syarat!=='-') return a.syarat;
+  const t=a.target||0;
+  if(a.jenis==='target')    return `Menyelesaikan minimal ${t} orderan dalam sebulan`;
+  if(a.jenis==='kehadiran') return `Hadir penuh ${t||26} hari kerja dalam sebulan`;
+  if(a.jenis==='rating')    return `Rata-rata penilaian pelanggan minimal ${t}`;
+  if(a.jenis==='lembur')    return 'Mengambil shift tambahan di luar jadwal';
+  if(a.jenis==='referral')  return 'Merekomendasikan terapis baru yang lolos masa percobaan';
+  return 'Syarat ditetapkan kantor';
+}
+
 function kartuBonus(b){
   const p=b.pesanan_id?get('pesanan',b.pesanan_id):null;
   // nama pelanggan diambil dari order; bila order tak terbaca, cari lewat pekerjaan
