@@ -204,10 +204,10 @@ const LINGKUP=[['semua','Semua cabang'],['cabang','Cabang sendiri'],['sendiri','
 function boleh(modul,aksi='lihat'){
   if(!ME) return false;
   if(ME.role==='owner') return true;                       // pemilik selalu penuh
-  // Tabel izin sama sekali kosong (belum dipasang) -> jaring pengaman untuk admin
-  if(!DB.hak_akses.length) return ME.role==='admin';
-  const baris=DB.hak_akses.filter(x=>x.jabatan_id===ME.jabatan_id);
-  if(!baris.length) return false;                          // jabatan ini belum diberi izin apa pun
+  const baris=(DB.hak_akses||[]).filter(x=>x.jabatan_id===ME.jabatan_id);
+  // Jabatan belum pernah diatur sama sekali -> jaring pengaman untuk owner & admin.
+  // Jabatan yang sudah punya baris izin tetap tunduk penuh pada centangannya.
+  if(!baris.length) return ME.role==='owner'||ME.role==='admin';
   const h=baris.find(x=>x.modul===modul);
   return h?!!h[aksi]:false;                                // yang tidak dicentang = tidak boleh
 }
@@ -893,10 +893,25 @@ function render(){
   const key=PAGE.startsWith('m_')?PAGE.slice(2):null;
   const modul=key||PAGE;
   if(PAGE==='tanpa_akses'){
+    const baris=(DB.hak_akses||[]).filter(x=>x.jabatan_id===ME.jabatan_id);
     pgTitle.textContent='Belum ada akses'; pgSub.textContent='';
-    view.innerHTML=`<div class="card empty"><div class="disp">Jabatan Anda belum diberi izin apa pun</div>
-      <div>Jabatan <strong>${esc(nm('jabatan',ME.jabatan_id))}</strong> belum dicentang pada modul mana pun.
-      Minta owner atau admin membukanya lewat Pengaturan → Hak Akses &amp; Peran.</div></div>`;
+    view.innerHTML=`<div class="card">
+      <div class="empty"><div class="disp">Tidak ada satu pun modul yang terbuka</div>
+        <div>Menu kosong karena semua modul belum dicentang untuk jabatan Anda.</div></div>
+      <div style="max-width:520px;margin:0 auto">
+        ${[['Nama',ME.nama],['Peran (role)',ME.role||'-'],['Jabatan',nm('jabatan',ME.jabatan_id)],
+           ['Cabang',nm('cabang',ME.cabang_id)],['Status',ME.status||'-'],
+           ['Baris izin jabatan ini',baris.length+' modul'],
+           ['Modul tercentang',baris.filter(x=>x.lihat).length+' modul']]
+          .map(([l,v])=>`<div class="list-item"><div style="flex:1" class="hint">${l}</div>
+            <strong>${esc(String(v))}</strong></div>`).join('')}
+      </div>
+      <div class="row" style="justify-content:center;margin-top:16px">
+        <button class="btn" onclick="bukaDiagnosa()">Periksa akses saya</button>
+        <button class="btn ghost" onclick="location.reload()">Muat ulang</button></div>
+      <p class="hint" style="text-align:center;margin-top:12px">
+        Perbaikan tercepat: jalankan <strong>19_akses_admin.sql</strong> di SQL Editor Supabase,
+        lalu masuk kembali.</p></div>`;
     return;
   }
   if(!boleh(modul,'lihat')){
@@ -1155,26 +1170,62 @@ akses(){
        {k:'tulis',l:'Bisa diubah'},{k:'hapus',l:'Bisa dihapus'}])}</div>`;
 },
 biaya(){
-  const M=MODEL, d=dasarBiaya(), h=hitungBiaya(d,M);
+  const cabPilih=cabangBiaya(), M=modelAktif(), d=dasarBiaya(), h=hitungBiaya(d,M);
   const warna=['#2F6FBF','#4C8FD6','#8FC6EC','#C9821F','#A9545F','#1E7A5A','#6A7C78','#0C4A42'];
-  const pos=[
-    ['Komisi terapis',h.komisi],['Transport terapis',h.transport],['Gaji kehadiran',h.gajiHadir],
+  const pos=[['Komisi terapis',h.komisi],['Transport terapis',h.transport],['Gaji & upah terapis',h.gajiTerapis],
     ['Bonus terapis',h.bonus],['Gaji & bonus CS',h.cs],['Penyusutan alat',h.alat],
-    ['Bahan habis pakai',h.bahan],['Iklan & lain-lain',h.lain]
-  ].filter(p=>p[1]>0);
+    ['Bahan habis pakai',h.bahan],['Iklan & lain-lain',h.lain]].filter(p=>p[1]>0);
+  const daftarCab=opsiRef('cabang');
 
-  return `<div class="grid g4">
+  return `<div class="card" style="margin-bottom:14px"><div class="head">
+      <h3>Hitungan untuk</h3>
+      <div class="row">
+        <select style="width:auto;min-width:200px" onchange="pilihCabangBiaya(this.value)">
+          ${lingkupSaya()==='semua'?`<option value="semua" ${cabPilih==='semua'?'selected':''}>Semua cabang digabung</option>`:''}
+          ${daftarCab.map(c=>`<option value="${c.id}" ${cabPilih===c.id?'selected':''}>${esc(c.nama)}</option>`).join('')}
+        </select>
+        <button class="btn sm" onclick="simpanModel()">Simpan asumsi</button>
+        <button class="btn ghost sm" onclick="resetModel()">Angka awal</button>
+      </div></div>
+    <p class="hint">Setiap cabang punya asumsi biayanya sendiri — jumlah CS, sewa, iklan, dan alat boleh berbeda.
+      ${cabPilih==='semua'?'Saat ini menghitung seluruh cabang sebagai satu kesatuan.'
+        :`Perubahan di halaman ini hanya berlaku untuk ${esc(nm('cabang',cabPilih))}.`}</p></div>
+
+  <div class="grid g4">
     ${stat('Omzet bruto',rp(h.omzet),d.jmlOrder+' order · '+d.sumber)}
     ${stat('Total biaya',rp(h.total),Math.round(h.total/(h.omzet||1)*100)+'% dari omzet','r')}
     ${stat('Untung bersih',rp(h.laba),(h.omzet?Math.round(h.laba/h.omzet*100):0)+'% margin',h.laba>=0?'g':'r')}
-    ${stat('Untung per order',rp(d.jmlOrder?h.laba/d.jmlOrder:0),'rata-rata','a')}</div>
+    ${stat('Untung per order',rp(d.jmlOrder?h.laba/d.jmlOrder:0),d.jmlTerapis+' terapis aktif','a')}</div>
 
-  <div class="card" style="margin-top:14px"><div class="head"><h3>Titik impas</h3>
-    <button class="btn ghost sm" onclick="resetModel()">Kembalikan ke angka awal</button></div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Biaya terapis per jabatan</h3>
+    <span class="tag info">${rp(h.komisi+h.transport+h.gajiTerapis+h.bonus)}</span></div>
+    <p class="hint">Angka diambil dari pengaturan tiap jabatan di menu Jabatan — tipe gaji, komisi, upah harian,
+      dan imbalan per orderan. Order dibagi rata ke seluruh terapis aktif di cabang ini.</p>
+    ${d.kelompok.length?`<div class="tw" style="margin-top:12px"><table><thead><tr>
+      <th>Jabatan</th><th>Orang</th><th>Skema</th><th style="text-align:right">Order</th>
+      <th style="text-align:right">Komisi</th><th style="text-align:right">Upah & pokok</th>
+      <th style="text-align:right">Transport</th><th style="text-align:right">Bonus</th>
+      <th style="text-align:right">Total</th><th style="text-align:right">Per orang</th></tr></thead><tbody>
+      ${h.rincianTerapis.map(g=>`<tr>
+        <td><strong>${esc(g.nama)}</strong></td>
+        <td>${g.jumlah}</td>
+        <td class="hint">${esc(g.skema)}</td>
+        <td style="text-align:right">${Math.round(g.order)}</td>
+        <td style="text-align:right" class="rp">${rp(g.komisi)}</td>
+        <td style="text-align:right" class="rp">${rp(g.upah)}</td>
+        <td style="text-align:right" class="rp">${rp(g.transport)}</td>
+        <td style="text-align:right" class="rp">${rp(g.bonus)}</td>
+        <td style="text-align:right" class="rp">${rp(g.total)}</td>
+        <td style="text-align:right" class="rp">${rp(g.jumlah?g.total/g.jumlah:0)}</td></tr>`).join('')}
+      </tbody></table></div>`
+     :'<div class="empty">Belum ada terapis aktif di cabang ini. Tambahkan lewat menu Karyawan.</div>'}
+  </div>
+
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Titik impas</h3></div>
     <p class="hint">${h.bep>0
       ? `Balik modal di <strong>${h.bepHari.toFixed(1)} order per hari per terapis</strong> — sekitar
          ${Math.ceil(h.bep)} order sebulan. Sekarang ${d.perHari.toFixed(1)}.`
-      : 'Biaya tetap belum tertutup karena margin per order masih nol atau minus.'}</p>
+      : 'Biaya tetap belum tertutup karena marjin per order masih nol atau minus.'}</p>
     <div class="bar" style="height:12px;margin-top:10px">
       <i style="width:${Math.min(100,Math.round(d.jmlOrder/(h.bep||1)*100))}%;
         background:${d.jmlOrder>=h.bep?'linear-gradient(90deg,#7FBCE8,#1E7A5A)':'linear-gradient(90deg,#E0A458,#A9545F)'}"></i></div>
@@ -1183,35 +1234,33 @@ biaya(){
 
   <div class="biaya-grid" style="margin-top:14px">
     <div class="card"><div class="head"><h3>Asumsi biaya</h3>
-      <button class="btn sm" onclick="simpanModel()">Simpan</button></div>
+      <span class="tag info">${cabPilih==='semua'?'berlaku umum':esc(nm('cabang',cabPilih))}</span></div>
 
-      <div class="pos"><div class="kepala"><h4>Biaya terapis</h4>
-        <span class="nilai">${rp(h.komisi+h.transport+h.gajiHadir+h.bonus)}</span></div>
-        ${isian('komisi_persen','Komisi terapis','persen dari harga layanan','%')}
-        ${isian('transport_per_order','Transport','per order')}
-        ${isian('gaji_hadir','Gaji kehadiran','per terapis per hari kerja')}
+      <div class="pos"><div class="kepala"><h4>Tambahan biaya terapis</h4>
+        <span class="nilai">${rp(h.transport+h.bonus)}</span></div>
+        ${isian('transport_per_order','Transport','per order, di luar komisi')}
         ${isian('target_bonus1','Target bonus pertama','jumlah order sebulan','×')}
         ${isian('bonus1','Nominal bonus pertama','per terapis per bulan')}
         ${isian('target_bonus2','Target bonus kedua','jumlah order sebulan','×')}
         ${isian('bonus2','Nominal bonus kedua','per terapis per bulan')}
+        ${isian('komisi_persen','Komisi cadangan','dipakai bila jabatan belum diatur','%')}
+        ${isian('gaji_hadir','Upah harian cadangan','dipakai bila jabatan belum diatur')}
       </div>
 
-      <div class="pos"><div class="kepala"><h4>Customer service</h4>
-        <span class="nilai">${rp(h.cs)}</span></div>
+      <div class="pos"><div class="kepala"><h4>Customer service</h4><span class="nilai">${rp(h.cs)}</span></div>
         ${isian('cs_jumlah','Jumlah CS','orang','org')}
         ${isian('cs_gaji','Gaji pokok','per CS per bulan')}
         ${isian('cs_tunjangan','Tunjangan','per CS per bulan')}
         ${isian('cs_bonus_order','Bonus per order','dari seluruh order yang masuk')}
         <p class="hint">Satu CS menerima ${rp(M.cs_jumlah?h.cs/M.cs_jumlah:0)} sebulan,
-          termasuk bonus ${rp(M.cs_bonus_order*d.jmlOrder)}.</p>
+          termasuk bonus ${rp((M.cs_bonus_order||0)*d.jmlOrder)}.</p>
       </div>
 
-      <div class="pos"><div class="kepala"><h4>Alat &amp; bahan</h4>
-        <span class="nilai">${rp(h.alat+h.bahan)}</span></div>
+      <div class="pos"><div class="kepala"><h4>Alat &amp; bahan</h4><span class="nilai">${rp(h.alat+h.bahan)}</span></div>
         <p class="hint" style="margin-bottom:8px">Alat dihitung penyusutannya: harga dibagi umur pakai,
-          dikali jumlah set per terapis. Baris boleh ditambah atau dihapus.</p>
+          dikali jumlah set per terapis.</p>
         <table class="rinci-tabel"><thead><tr><th>Alat</th><th>Harga</th><th>Set</th><th>Umur</th><th></th></tr></thead>
-          <tbody>${M.alat.map((a,i)=>`<tr>
+          <tbody>${(M.alat||[]).map((a,i)=>`<tr>
             <td><input value="${esc(a.nama||'')}" oninput="ubahRinci('alat',${i},'nama',this.value)"></td>
             <td><input type="number" value="${a.harga||0}" oninput="ubahRinci('alat',${i},'harga',this.value)"></td>
             <td><input type="number" value="${a.set||1}" oninput="ubahRinci('alat',${i},'set',this.value)"></td>
@@ -1221,7 +1270,7 @@ biaya(){
         <div class="arus" style="margin-top:8px"><span>Penyusutan alat sebulan</span><strong>${rp(h.alat)}</strong></div>
 
         <table class="rinci-tabel" style="margin-top:10px"><thead><tr><th>Bahan habis pakai</th><th>Harga</th><th>Cukup</th><th></th></tr></thead>
-          <tbody>${M.bahan.map((b,i)=>`<tr>
+          <tbody>${(M.bahan||[]).map((b,i)=>`<tr>
             <td><input value="${esc(b.nama||'')}" oninput="ubahRinci('bahan',${i},'nama',this.value)"></td>
             <td><input type="number" value="${b.harga||0}" oninput="ubahRinci('bahan',${i},'harga',this.value)"></td>
             <td><input type="number" value="${b.cukup||1}" oninput="ubahRinci('bahan',${i},'cukup',this.value)"></td>
@@ -1239,17 +1288,16 @@ biaya(){
         ${isian('hari_kerja','Hari kerja sebulan','dipakai menghitung titik impas','hari')}
         ${isian('order_manual','Simulasi jumlah order','isi 0 untuk memakai data asli','order')}
         ${isian('harga_manual','Simulasi harga rata-rata','isi 0 untuk memakai data asli')}
-        <p class="hint">Data asli periode ${periode()}: ${d.jmlOrderAsli} order, harga rata-rata ${rp(d.hargaAsli)}.</p>
+        <p class="hint">Data asli periode ${periode()}${cabPilih==='semua'?'':' di '+esc(nm('cabang',cabPilih))}:
+          ${d.jmlOrderAsli} order, harga rata-rata ${rp(d.hargaAsli)}.</p>
       </div>
     </div>
 
     <div>
       <div class="card"><div class="head"><h3>Ke mana uangnya</h3></div>
         ${pos.map((p,i)=>`<div class="arus"><div class="kiri">
-          <span class="titik" style="background:${warna[i%warna.length]}"></span>
-          <span>${p[0]}</span></div>
-          <div style="text-align:right;white-space:nowrap">
-            <strong class="rp">${rp(p[1])}</strong>
+          <span class="titik" style="background:${warna[i%warna.length]}"></span><span>${p[0]}</span></div>
+          <div style="text-align:right;white-space:nowrap"><strong class="rp">${rp(p[1])}</strong>
             <span class="hint"> ${h.omzet?Math.round(p[1]/h.omzet*100):0}%</span></div></div>`).join('')}
         <div class="arus" style="border-top:2px solid var(--jade);margin-top:6px">
           <div class="kiri"><span class="titik" style="background:var(--ok)"></span><span><strong>Untung bersih</strong></span></div>
@@ -1262,8 +1310,8 @@ biaya(){
       </div>
 
       <div class="card" style="margin-top:14px"><div class="head"><h3>Anggaran tiap pos</h3></div>
-        <p class="hint">Berapa rupiah yang boleh dibelanjakan untuk tiap pos, dihitung dari porsinya terhadap omzet.
-          Berguna saat mau belanja: angka sebulan adalah pagu, angka per order adalah biaya sebenarnya.</p>
+        <p class="hint">Berapa rupiah yang boleh dibelanjakan untuk tiap pos. Angka sebulan adalah pagu belanja,
+          angka per order adalah biaya sebenarnya.</p>
         <div class="tw" style="margin-top:10px"><table><thead><tr>
           <th>Pos</th><th style="text-align:right">Porsi</th><th style="text-align:right">Per order</th>
           <th style="text-align:right">Sebulan</th></tr></thead><tbody>
@@ -1278,11 +1326,9 @@ biaya(){
       <div class="card" style="margin-top:14px"><div class="head"><h3>Untung mengikuti jumlah order</h3></div>
         <p class="hint">Perkiraan untung bersih bila tiap terapis mengerjakan sekian order per hari.</p>
         <div style="margin-top:10px">${[1,1.5,2,2.5,3,4].map(n=>{
-          const sim=hitungBiaya({...d,jmlOrder:Math.round(n*d.jmlTerapis*M.hari_kerja),
-            harga:d.harga,jmlTerapis:d.jmlTerapis},M);
-          const lebar=Math.min(100,Math.abs(sim.laba)/Math.max(1,Math.abs(h.omzet))*100);
-          return `<div class="arus"><div class="kiri" style="max-width:150px">
-            <span>${n} order/hari</span></div>
+          const sim=hitungBiaya({...d,jmlOrder:Math.round(n*d.jmlTerapis*(M.hari_kerja||26))},M);
+          const lebar=Math.min(100,Math.abs(sim.laba)/Math.max(1,Math.abs(h.omzet||1))*100);
+          return `<div class="arus"><div class="kiri" style="max-width:130px"><span>${n} order/hari</span></div>
             <div style="flex:1;padding:0 10px"><div class="pita-alokasi">
               <i style="width:${lebar}%;background:${sim.laba>=0?'linear-gradient(90deg,#7FBCE8,#1E7A5A)':'linear-gradient(90deg,#E0A458,#A9545F)'}"></i></div></div>
             <strong class="rp" style="color:${sim.laba>=0?'var(--ok)':'var(--bad)'};white-space:nowrap">${rp(sim.laba)}</strong></div>`;
@@ -1292,7 +1338,7 @@ biaya(){
   </div>`;
 }};
 
-/* ================= MODEL BIAYA ================= */
+/* ================= MODEL BIAYA (per cabang) ================= */
 const MODEL_AWAL={
   komisi_persen:40, transport_per_order:8000, gaji_hadir:35000,
   target_bonus1:60, bonus1:100000, target_bonus2:80, bonus2:300000,
@@ -1307,94 +1353,177 @@ const MODEL_AWAL={
          {nama:'Tisu & masker',harga:35000,cukup:30},
          {nama:'Laundry handuk',harga:8000,cukup:1}]
 };
-let MODEL={...MODEL_AWAL};
+let MODELS={};                 // { umum:{...}, '<idCabang>':{...} }
+let CAB_BIAYA=null;
 
+function cabangBiaya(){
+  if(CAB_BIAYA) return CAB_BIAYA;
+  CAB_BIAYA = lingkupSaya()==='semua' ? 'semua' : (ME.cabang_id||'semua');
+  return CAB_BIAYA;
+}
+function pilihCabangBiaya(id){ CAB_BIAYA=id; render(); }
+
+/* Asumsi cabang menimpa asumsi umum */
+function modelAktif(){
+  const dasar={...MODEL_AWAL,...(MODELS.umum||{})};
+  const cab=cabangBiaya();
+  const khusus=(cab&&cab!=='semua')?(MODELS[cab]||{}):{};
+  const g={...dasar,...khusus};
+  g.alat=(khusus.alat&&khusus.alat.length)?khusus.alat
+        :((MODELS.umum&&MODELS.umum.alat&&MODELS.umum.alat.length)?MODELS.umum.alat:MODEL_AWAL.alat);
+  g.bahan=(khusus.bahan&&khusus.bahan.length)?khusus.bahan
+        :((MODELS.umum&&MODELS.umum.bahan&&MODELS.umum.bahan.length)?MODELS.umum.bahan:MODEL_AWAL.bahan);
+  return g;
+}
+/* Tempat menulis perubahan: cabang terpilih, atau asumsi umum */
+function modelTulis(){
+  const cab=cabangBiaya(), kunci=(cab&&cab!=='semua')?cab:'umum';
+  if(!MODELS[kunci]) MODELS[kunci]={...modelAktif()};
+  return MODELS[kunci];
+}
 function muatModel(){
   const p=(DB.pengaturan||[]).find(x=>x.kunci==='model_biaya');
-  const isi=p&&p.nilai&&Object.keys(p.nilai).length?p.nilai:{};
-  MODEL={...MODEL_AWAL,...isi};
-  MODEL.alat=(isi.alat&&isi.alat.length)?isi.alat:MODEL_AWAL.alat.map(x=>({...x}));
-  MODEL.bahan=(isi.bahan&&isi.bahan.length)?isi.bahan:MODEL_AWAL.bahan.map(x=>({...x}));
+  const isi=(p&&p.nilai&&typeof p.nilai==='object')?p.nilai:{};
+  MODELS = isi.umum||Object.keys(isi).some(k=>k!=='alat'&&k!=='bahan'&&typeof isi[k]==='object')
+    ? isi : (Object.keys(isi).length?{umum:isi}:{});   // dukung format lama
+  if(!MODELS.umum) MODELS.umum={};
 }
 async function simpanModel(){
   if(LIVE){
-    const {error}=await sb.from('pengaturan').upsert({kunci:'model_biaya',nilai:MODEL});
+    const {error}=await sb.from('pengaturan').upsert({kunci:'model_biaya',nilai:MODELS});
     if(error) return toast('Gagal menyimpan: '+error.message);
     if(!Array.isArray(DB.pengaturan)) DB.pengaturan=[];
     const i=DB.pengaturan.findIndex(x=>x.kunci==='model_biaya');
-    if(i>=0) DB.pengaturan[i].nilai=MODEL; else DB.pengaturan.push({kunci:'model_biaya',nilai:MODEL});
+    if(i>=0) DB.pengaturan[i].nilai=MODELS; else DB.pengaturan.push({kunci:'model_biaya',nilai:MODELS});
   }
-  toast('Asumsi biaya tersimpan');
+  const cab=cabangBiaya();
+  toast('Asumsi '+(cab==='semua'?'umum':nm('cabang',cab))+' tersimpan');
 }
-function resetModel(){ MODEL={...MODEL_AWAL,alat:MODEL_AWAL.alat.map(x=>({...x})),
-  bahan:MODEL_AWAL.bahan.map(x=>({...x}))}; render(); toast('Kembali ke angka awal'); }
+function resetModel(){
+  const cab=cabangBiaya(), kunci=(cab&&cab!=='semua')?cab:'umum';
+  delete MODELS[kunci]; if(kunci==='umum') MODELS.umum={};
+  render(); toast('Kembali ke angka awal');
+}
 
 function isian(kunci,label,ket,satuan='Rp'){
+  const M=modelAktif();
   return `<div class="baris"><label for="m_${kunci}">${label}<small>${ket}</small></label>
-    <input id="m_${kunci}" type="number" value="${MODEL[kunci]??0}"
+    <input id="m_${kunci}" type="number" value="${M[kunci]??0}"
       oninput="ubahModel('${kunci}',this.value)" placeholder="${satuan}"></div>`;
 }
 let jedaHitung=null;
 function ubahModel(kunci,nilai){
-  MODEL[kunci]=Number(nilai)||0;
+  modelTulis()[kunci]=Number(nilai)||0;
   clearTimeout(jedaHitung); jedaHitung=setTimeout(()=>{ const f=document.activeElement?.id; render();
     const el=document.getElementById(f); if(el){el.focus(); el.setSelectionRange?.(el.value.length,el.value.length);} },600);
 }
 function ubahRinci(jenis,i,kunci,nilai){
-  MODEL[jenis][i][kunci]=kunci==='nama'?nilai:(Number(nilai)||0);
-  clearTimeout(jedaHitung); jedaHitung=setTimeout(()=>{ const f=document.activeElement?.id; render(); },700);
+  const m=modelTulis();
+  if(!m[jenis]) m[jenis]=modelAktif()[jenis].map(x=>({...x}));
+  m[jenis][i][kunci]=kunci==='nama'?nilai:(Number(nilai)||0);
+  clearTimeout(jedaHitung); jedaHitung=setTimeout(()=>render(),700);
 }
 function tambahRinci(jenis){
-  MODEL[jenis].push(jenis==='alat'?{nama:'Alat baru',harga:0,set:1,umur:12}:{nama:'Bahan baru',harga:0,cukup:1});
+  const m=modelTulis();
+  if(!m[jenis]) m[jenis]=modelAktif()[jenis].map(x=>({...x}));
+  m[jenis].push(jenis==='alat'?{nama:'Alat baru',harga:0,set:1,umur:12}:{nama:'Bahan baru',harga:0,cukup:1});
   render();
 }
-function hapusRinci(jenis,i){ MODEL[jenis].splice(i,1); render(); }
+function hapusRinci(jenis,i){
+  const m=modelTulis();
+  if(!m[jenis]) m[jenis]=modelAktif()[jenis].map(x=>({...x}));
+  m[jenis].splice(i,1); render();
+}
 
-/* Data nyata sebagai dasar, boleh ditimpa simulasi */
+/* Data nyata sebagai dasar, disaring per cabang */
 function dasarBiaya(){
-  const per=periode();
-  const sel=DB.pesanan.filter(p=>p.status==='selesai'&&String(p.tanggal).startsWith(per)&&dalamLingkup(p,'pesanan'));
+  const per=periode(), cab=cabangBiaya(), M=modelAktif();
+  const cocokCab=r=>cab==='semua'?dalamLingkup(r,'pesanan'):r.cabang_id===cab;
+  const sel=DB.pesanan.filter(p=>p.status==='selesai'&&String(p.tanggal).startsWith(per)&&cocokCab(p));
   const jmlOrderAsli=sel.length, omzetAsli=sum(sel,'total');
   const hargaAsli=jmlOrderAsli?Math.round(omzetAsli/jmlOrderAsli):0;
-  const jmlTerapis=Math.max(1,DB.karyawan.filter(k=>k.role==='terapis'&&k.status==='aktif'&&dalamLingkup(k,'karyawan')).length);
-  const jmlOrder=MODEL.order_manual>0?MODEL.order_manual:jmlOrderAsli;
-  const harga=MODEL.harga_manual>0?MODEL.harga_manual:(hargaAsli||150000);
-  return {jmlOrder,harga,jmlTerapis,jmlOrderAsli,hargaAsli,
-    perHari:jmlOrder/(jmlTerapis*(MODEL.hari_kerja||26)),
-    sumber:MODEL.order_manual>0?'simulasi':'data '+per};
+
+  const terapis=DB.karyawan.filter(k=>k.role==='terapis'&&k.status==='aktif'
+    &&(cab==='semua'?dalamLingkup(k,'karyawan'):k.cabang_id===cab));
+
+  // kelompokkan terapis menurut jabatannya
+  const peta={};
+  terapis.forEach(k=>{
+    const j=get('jabatan',k.jabatan_id)||{nama:'Tanpa jabatan'};
+    const kunci=k.jabatan_id||'tanpa';
+    if(!peta[kunci]) peta[kunci]={id:kunci,nama:j.nama||'Tanpa jabatan',jumlah:0,
+      tipe:j.tipe_gaji||'bulanan',
+      persen:Number(j.persen_komisi||0), fee:Number(j.fee_per_order||0),
+      harian:Number(j.gaji_harian||0), pokok:Number(j.gaji_pokok_default||0),
+      potongan:Number(j.potongan_harian||0)};
+    const g=peta[kunci]; g.jumlah++;
+    // penimpa di tingkat karyawan diambil rata-rata sederhana
+    if(k.persen_komisi) g.persen=Number(k.persen_komisi);
+    if(k.fee_per_order) g.fee=Number(k.fee_per_order);
+    if(k.gaji_harian)   g.harian=Number(k.gaji_harian);
+    if(k.gaji_pokok)    g.pokok=Number(k.gaji_pokok);
+  });
+  const kelompok=Object.values(peta);
+  const jmlTerapis=Math.max(1,terapis.length);
+  const jmlOrder=M.order_manual>0?M.order_manual:jmlOrderAsli;
+  const harga=M.harga_manual>0?M.harga_manual:(hargaAsli||150000);
+
+  return {jmlOrder,harga,jmlTerapis,jmlOrderAsli,hargaAsli,kelompok,
+    perHari:jmlOrder/(jmlTerapis*(M.hari_kerja||26)),
+    sumber:M.order_manual>0?'simulasi':'data '+per+(cab==='semua'?'':' · '+nm('cabang',cab))};
 }
 
 function hitungBiaya(d,M){
   const omzet=d.jmlOrder*d.harga;
-  const komisi=Math.round(omzet*(M.komisi_persen||0)/100);
-  const transport=(M.transport_per_order||0)*d.jmlOrder;
-  const hariEfektif=Math.min(M.hari_kerja||26,Math.ceil(d.jmlOrder/Math.max(1,d.jmlTerapis)));
-  const gajiHadir=(M.gaji_hadir||0)*hariEfektif*d.jmlTerapis;
-  const orderPerTerapis=d.jmlOrder/Math.max(1,d.jmlTerapis);
-  let bonusSatu=0;
-  if(M.target_bonus2>0&&orderPerTerapis>=M.target_bonus2) bonusSatu=M.bonus2||0;
-  else if(M.target_bonus1>0&&orderPerTerapis>=M.target_bonus1) bonusSatu=M.bonus1||0;
-  const bonus=bonusSatu*d.jmlTerapis;
+  const hariKerja=M.hari_kerja||26;
+  const hariEfektif=Math.min(hariKerja,Math.ceil(d.jmlOrder/Math.max(1,d.jmlTerapis)));
+
+  // ---- biaya terapis, dihitung per kelompok jabatan ----
+  const kelompok=d.kelompok&&d.kelompok.length?d.kelompok
+    :[{id:'umum',nama:'Terapis',jumlah:d.jmlTerapis,tipe:'bulanan',
+       persen:M.komisi_persen||0,fee:0,harian:M.gaji_hadir||0,pokok:0,potongan:0}];
+  const totalOrang=kelompok.reduce((a,g)=>a+g.jumlah,0)||1;
+  let komisi=0,transport=0,gajiTerapis=0,bonus=0;
+  const rincianTerapis=kelompok.map(g=>{
+    const order=d.jmlOrder*(g.jumlah/totalOrang);
+    const omzetG=order*d.harga;
+    const persen=g.persen||((g.fee>0)?0:(M.komisi_persen||0));
+    const kom=g.fee>0?g.fee*order:Math.round(omzetG*persen/100);
+    const trans=(M.transport_per_order||0)*order;
+    const harian=g.harian||((g.tipe==='harian')?(M.gaji_hadir||0):0);
+    let upah=harian*hariEfektif*g.jumlah;
+    if(g.tipe==='training'&&g.pokok>0)
+      upah+=Math.max(0,(g.pokok-(g.potongan||0)*(hariKerja-hariEfektif))*g.jumlah);
+    const orderPerOrang=order/Math.max(1,g.jumlah);
+    let bonusOrang=0;
+    if(M.target_bonus2>0&&orderPerOrang>=M.target_bonus2) bonusOrang=M.bonus2||0;
+    else if(M.target_bonus1>0&&orderPerOrang>=M.target_bonus1) bonusOrang=M.bonus1||0;
+    const bon=bonusOrang*g.jumlah;
+    komisi+=kom; transport+=trans; gajiTerapis+=upah; bonus+=bon;
+    const skema=g.fee>0?rp(g.fee)+' / order':(persen?persen+'% komisi':'tanpa komisi');
+    return {...g,order,komisi:Math.round(kom),transport:Math.round(trans),
+      upah:Math.round(upah),bonus:bon,total:Math.round(kom+trans+upah+bon),
+      skema:skema+(harian?' · '+rp(harian)+' / hari':'')+(g.tipe==='training'?' · training':'')};
+  });
+  komisi=Math.round(komisi); transport=Math.round(transport); gajiTerapis=Math.round(gajiTerapis);
+
   const cs=(M.cs_jumlah||0)*((M.cs_gaji||0)+(M.cs_tunjangan||0))+(M.cs_bonus_order||0)*d.jmlOrder;
   const alat=Math.round((M.alat||[]).reduce((a,x)=>a+((x.harga||0)/Math.max(1,x.umur||1))*(x.set||1),0)*d.jmlTerapis);
   const bahanPerOrder=(M.bahan||[]).reduce((a,x)=>a+((x.harga||0)/Math.max(1,x.cukup||1)),0);
   const bahan=Math.round(bahanPerOrder*d.jmlOrder);
   const lain=(M.iklan||0)+(M.lain||0);
-  const total=komisi+transport+gajiHadir+bonus+cs+alat+bahan+lain;
+  const total=komisi+transport+gajiTerapis+bonus+cs+alat+bahan+lain;
   const laba=omzet-total;
 
-  // titik impas: biaya tetap dibagi marjin per order
-  const tetap=cs-(M.cs_bonus_order||0)*d.jmlOrder+alat+lain+bonus;
-  const variabelPerOrder=d.harga*(M.komisi_persen||0)/100+(M.transport_per_order||0)
-    +bahanPerOrder+(M.cs_bonus_order||0)+(M.gaji_hadir||0)/Math.max(1,orderPerTerapis||1);
+  const tetap=cs-(M.cs_bonus_order||0)*d.jmlOrder+alat+lain+bonus+gajiTerapis;
+  const komisiRata=d.jmlOrder?komisi/d.jmlOrder:0;
+  const variabelPerOrder=komisiRata+(M.transport_per_order||0)+bahanPerOrder+(M.cs_bonus_order||0);
   const marjin=d.harga-variabelPerOrder;
   const bep=marjin>0?tetap/marjin:0;
 
   const anggaran=[
-    {nama:'Komisi terapis',nilai:komisi,catatan:M.komisi_persen+'% dari harga layanan'},
-    {nama:'Transport terapis',nilai:transport,catatan:rp(M.transport_per_order)+' per order'},
-    {nama:'Gaji kehadiran',nilai:gajiHadir,catatan:rp(M.gaji_hadir)+' × '+hariEfektif+' hari × '+d.jmlTerapis+' terapis'},
-    {nama:'Bonus terapis',nilai:bonus,catatan:'ambang '+(M.target_bonus1||0)+' dan '+(M.target_bonus2||0)+' order'},
+    ...rincianTerapis.map(g=>({nama:'Terapis · '+g.nama,nilai:g.total,
+      catatan:g.jumlah+' orang · '+g.skema})),
     {nama:'Gaji & bonus CS',nilai:cs,catatan:(M.cs_jumlah||0)+' orang'},
     ...(M.alat||[]).map(x=>({nama:x.nama||'Alat',
       nilai:Math.round(((x.harga||0)/Math.max(1,x.umur||1))*(x.set||1)*d.jmlTerapis),
@@ -1406,10 +1535,9 @@ function hitungBiaya(d,M){
     {nama:'Lain-lain',nilai:M.lain||0,catatan:'sewa, listrik, pulsa'}
   ].filter(a=>a.nilai>0);
 
-  return {omzet,komisi,transport,gajiHadir,bonus,cs,alat,bahan,lain,total,laba,bep,
-    bepHari:bep/Math.max(1,d.jmlTerapis*(M.hari_kerja||26)),anggaran};
+  return {omzet,komisi,transport,gajiTerapis,bonus,cs,alat,bahan,lain,total,laba,bep,
+    bepHari:bep/Math.max(1,d.jmlTerapis*hariKerja),rincianTerapis,anggaran};
 }
-
 
 /* ----------------------- pengelolaan izin ----------------------- */
 let AKSES_JBT=null;
@@ -1441,6 +1569,15 @@ async function setLingkup(jabatanId,nilai){
   const hasil=await simpan('jabatan',{...j,lingkup:nilai});
   if(!hasil) return;
   render(); toast('Lingkup '+j.nama+' menjadi '+nilai);
+}
+
+/* Buka panel diagnosa dari mana saja, termasuk saat menu kosong */
+async function bukaDiagnosa(){
+  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:10px">Pemeriksaan akses</h3>
+    <div id="hasilDiag"><p class="hint">Memeriksa…</p></div>
+    <button class="btn ghost" style="width:100%;margin-top:14px" onclick="closeModal()">Tutup</button>`;
+  modal.classList.add('on');
+  await diagnosa();
 }
 
 /* Pemeriksaan koneksi & hak akses ke Supabase */
