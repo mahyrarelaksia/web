@@ -851,7 +851,8 @@ order(){
   <div class="card" style="margin-top:14px"><div class="head"><h3>Daftar order</h3>
     <button class="btn" onclick="formOrder()">Buat order</button></div>
     ${tableHtml(rows,[{k:'nomor',l:'No. order'},{k:'tanggal',t:'date'},{k:'jam'},{k:'pel',l:'Pelanggan'},
-      {k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},{k:'total',t:'rp'},{k:'metode_bayar',l:'Bayar'},{k:'status',t:'tag'}])}</div>`;
+      {k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},{k:'total',t:'rp'},{k:'metode_bayar',l:'Bayar'},{k:'status',t:'tag'},
+      {k:'aksi',l:'',fn:r=>`<button class="btn ghost sm" onclick="kirimOrder('${r.id}')">Kirim WA</button>`}])}</div>`;
 },
 izin(){
   const rows=DB.izin.filter(i=>dalamLingkup(i,'izin')).map(i=>({...i,kry:nm('karyawan',i.karyawan_id),
@@ -1177,34 +1178,237 @@ async function bayarGaji(){
   for(const b of DB.bonus.filter(x=>x.periode===periode()&&!x.dibayar)) await simpan('bonus',{...b,dibayar:true});
   render(); toast('Gaji ditandai dibayar dan tercatat di kas');
 }
+/* ===================== FORMULIR ORDER (versi 2) =====================
+   · pelanggan boleh dipilih atau diketik baru langsung di sini
+   · nama yang cocok mengisi kontak, alamat, dan detail order terakhirnya
+   · terapis bisa lebih dari satu
+   · setelah tersimpan, tersedia tombol kirim WhatsApp ke pelanggan & terapis
+   ================================================================== */
+let ORD={pelanggan_id:null,terapis:[]};
+
 function formOrder(){
+  ORD={pelanggan_id:null,terapis:[]};
+  const cabangKu=opsiRef('cabang');
+  const layanan=DB.layanan.filter(l=>l.aktif!==false);
   sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Buat order</h3>
-   <p class="hint" style="margin-bottom:16px">Pilih pelanggan, layanan, dan terapis yang menangani.</p>
-   <div class="field"><label>Cabang</label><select id="o_cab" ${opsiRef('cabang').length<2?'disabled':''}>${opsiRef('cabang').map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select>
-     ${opsiRef('cabang').length<2?`<p class="hint" style="margin-top:6px">Order dibuat untuk ${esc(nm('cabang',ME.cabang_id))}, sesuai penempatan Anda.</p>`:''}</div>
-   <div class="field"><label>Pelanggan</label><select id="o_pel">${DB.pelanggan.map(p=>`<option value="${p.id}">${esc(p.nama)}</option>`).join('')}</select></div>
-   <div class="field"><label>Layanan</label><select id="o_lay">${DB.layanan.filter(l=>l.aktif).map(l=>`<option value="${l.id}">${esc(l.nama)} — ${rp(l.harga)}</option>`).join('')}</select></div>
-   <div class="field"><label>Terapis</label><select id="o_ter">${opsiRef('karyawan').filter(k=>k.role==='terapis').map(k=>`<option value="${k.id}">${esc(k.nama)}</option>`).join('')}</select></div>
-   <div class="grid g2"><div class="field"><label>Ruangan</label><input id="o_room" value="Room 1"></div>
-     <div class="field"><label>Diskon</label><input id="o_disk" type="number" value="0"></div></div>
-   <div class="field"><label>Metode bayar</label><select id="o_bayar"><option>tunai</option><option>qris</option><option>transfer</option><option>debit</option></select></div>
-   <div class="field"><label>Catatan</label><textarea id="o_cat" rows="2" placeholder="Permintaan khusus pelanggan"></textarea></div>
-   <div class="row"><button class="btn" onclick="simpanOrder()">Simpan order</button>
+   <p class="hint" style="margin-bottom:16px">Ketik nama pelanggan — kalau sudah pernah datang, detailnya terisi sendiri.</p>
+
+   <div class="field"><label>Cabang</label>
+     <select id="o_cab" ${cabangKu.length<2?'disabled':''}>${cabangKu.map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select>
+     ${cabangKu.length<2?`<p class="hint" style="margin-top:6px">Order dibuat untuk ${esc(nm('cabang',ME.cabang_id))}, sesuai penempatan Anda.</p>`:''}</div>
+
+   <div class="field"><label for="o_nama">Nama pelanggan</label>
+     <input id="o_nama" list="dlPelanggan" autocomplete="off" placeholder="Ketik nama, atau pilih dari daftar" oninput="cekPelanggan()">
+     <datalist id="dlPelanggan">${DB.pelanggan.map(p=>`<option value="${esc(p.nama)}">${esc(p.telepon||'')}</option>`).join('')}</datalist>
+     <div id="o_infoPel" class="hint" style="margin-top:6px">Pelanggan baru akan langsung disimpan ke daftar.</div></div>
+
+   <div class="grid g2">
+     <div class="field"><label for="o_hp">Nomor HP</label><input id="o_hp" placeholder="08xxxxxxxxxx"></div>
+     <div class="field"><label for="o_jam">Jam kedatangan</label><input id="o_jam" type="time" value="${jam()}"></div>
+   </div>
+   <div class="field"><label for="o_alamat">Alamat</label>
+     <textarea id="o_alamat" rows="2" placeholder="Alamat lengkap tujuan terapis"></textarea></div>
+
+   <div class="field"><label for="o_lay">Layanan</label>
+     <select id="o_lay" onchange="hitungOrder()">${layanan.map(l=>
+       `<option value="${l.id}">${esc(l.nama)} — ${rp(l.harga)} · ${l.durasi_menit} mnt</option>`).join('')}</select></div>
+
+   <div class="field"><label>Terapis <span class="hint" style="font-weight:400">(boleh lebih dari satu)</span></label>
+     <div id="o_terapis"></div></div>
+
+   <div class="grid g2">
+     <div class="field"><label for="o_room">Ruangan / catatan lokasi</label><input id="o_room" value="Rumah pelanggan"></div>
+     <div class="field"><label for="o_disk">Diskon</label><input id="o_disk" type="number" value="0" oninput="hitungOrder()"></div>
+   </div>
+   <div class="field"><label for="o_bayar">Metode bayar</label>
+     <select id="o_bayar"><option>tunai</option><option>qris</option><option>transfer</option><option>debit</option></select></div>
+   <div class="field"><label for="o_cat">Catatan</label>
+     <textarea id="o_cat" rows="2" placeholder="Permintaan khusus, keluhan, preferensi tekanan"></textarea></div>
+
+   <div id="o_total" class="card" style="background:var(--mist);box-shadow:none;padding:14px;margin-bottom:12px"></div>
+   <div class="row"><button class="btn" id="o_simpan" onclick="simpanOrder()">Simpan order</button>
      <button class="btn ghost" onclick="closeModal()">Batal</button></div>`;
   modal.classList.add('on');
+  gambarTerapis(); hitungOrder();
 }
+
+/* daftar terapis sebagai tombol pilih-banyak */
+function gambarTerapis(){
+  const daftar=opsiRef('karyawan').filter(k=>k.role==='terapis'&&k.status==='aktif');
+  const kotak=document.getElementById('o_terapis');
+  if(!daftar.length){ kotak.innerHTML='<p class="hint">Belum ada terapis aktif di cabang ini.</p>'; return; }
+  kotak.innerHTML=`<div class="row">${daftar.map(k=>{
+    const on=ORD.terapis.includes(k.id);
+    return `<button type="button" class="btn ${on?'':'ghost'} sm" style="border-radius:999px"
+      onclick="pilihTerapis('${k.id}')">${on?'✓ ':''}${esc(k.nama)}</button>`;}).join('')}</div>`;
+}
+function pilihTerapis(id){
+  ORD.terapis = ORD.terapis.includes(id) ? ORD.terapis.filter(x=>x!==id) : [...ORD.terapis,id];
+  gambarTerapis(); hitungOrder();
+}
+
+/* nama cocok -> isi kontak, alamat, dan tiru order terakhirnya */
+function cekPelanggan(){
+  const nama=document.getElementById('o_nama').value.trim().toLowerCase();
+  const info=document.getElementById('o_infoPel');
+  const p=DB.pelanggan.find(x=>String(x.nama||'').toLowerCase()===nama);
+  if(!p){
+    ORD.pelanggan_id=null;
+    info.innerHTML=nama?'Nama baru — akan disimpan sebagai pelanggan baru.':'Pelanggan baru akan langsung disimpan ke daftar.';
+    return;
+  }
+  ORD.pelanggan_id=p.id;
+  document.getElementById('o_hp').value=p.telepon||'';
+  document.getElementById('o_alamat').value=p.alamat||'';
+
+  // order terakhir pelanggan ini
+  const lama=DB.pesanan.filter(o=>o.pelanggan_id===p.id)
+    .sort((a,b)=>String(b.tanggal+b.jam).localeCompare(String(a.tanggal+a.jam)))[0];
+  let jejak='';
+  if(lama){
+    const item=DB.item.filter(i=>i.pesanan_id===lama.id);
+    if(item.length){
+      const lay=document.getElementById('o_lay');
+      if([...lay.options].some(o=>o.value===item[0].layanan_id)) lay.value=item[0].layanan_id;
+      ORD.terapis=item.map(i=>i.terapis_id).filter(id=>opsiRef('karyawan').some(k=>k.id===id));
+      if(item[0].ruangan) document.getElementById('o_room').value=item[0].ruangan;
+      gambarTerapis();
+    }
+    if(lama.metode_bayar) document.getElementById('o_bayar').value=lama.metode_bayar;
+    if(lama.catatan) document.getElementById('o_cat').value=lama.catatan;
+    jejak=` · order terakhir ${tgl(lama.tanggal)}: ${esc(DB.item.filter(i=>i.pesanan_id===lama.id).map(i=>nm('layanan',i.layanan_id)).join(', '))}`;
+  }
+  info.innerHTML=`<span class="tag ok">Pelanggan lama</span> ${p.total_kunjungan||0} kunjungan${jejak}
+    ${p.catatan?`<br>Catatan terapi: ${esc(p.catatan)}`:''}`;
+  hitungOrder();
+}
+
+function hitungOrder(){
+  const l=get('layanan',document.getElementById('o_lay').value);
+  const n=Math.max(1,ORD.terapis.length);
+  const disk=Number(document.getElementById('o_disk').value)||0;
+  const sub=(l?.harga||0)*n, total=Math.max(0,sub-disk);
+  document.getElementById('o_total').innerHTML=`
+    <div class="row" style="justify-content:space-between"><span class="hint">${esc(l?.nama||'-')} × ${n} terapis</span>
+      <span class="rp">${rp(sub)}</span></div>
+    ${disk?`<div class="row" style="justify-content:space-between"><span class="hint">Diskon</span>
+      <span class="rp" style="color:var(--bad)">− ${rp(disk)}</span></div>`:''}
+    <div class="row" style="justify-content:space-between;border-top:1px dashed var(--line);margin-top:8px;padding-top:8px">
+      <strong>Total</strong><strong class="rp" style="font-size:17px">${rp(total)}</strong></div>
+    ${ORD.terapis.length>1?`<p class="hint" style="margin-top:6px">Dibuat ${ORD.terapis.length} pekerjaan terpisah, satu untuk tiap terapis.</p>`:''}`;
+}
+
 async function simpanOrder(){
-  const l=get('layanan',o_lay.value), disk=Number(o_disk.value)||0;
-  const cab=get('cabang',o_cab.value||ME.cabang_id);
+  const nama=document.getElementById('o_nama').value.trim();
+  if(!nama) return toast('Isi nama pelanggan dulu');
+  if(!ORD.terapis.length) return toast('Pilih minimal satu terapis');
+  const btn=document.getElementById('o_simpan'); btn.disabled=true; btn.textContent='Menyimpan…';
+
+  const hp=document.getElementById('o_hp').value.trim();
+  const alamat=document.getElementById('o_alamat').value.trim();
+
+  // pelanggan: pakai yang ada, atau buat baru
+  let pel=ORD.pelanggan_id?get('pelanggan',ORD.pelanggan_id):null;
+  if(!pel){
+    pel=await simpan('pelanggan',{id:uid(),kode:'P-'+String(DB.pelanggan.length+1).padStart(4,'0'),
+      nama,telepon:hp,alamat,member:false,poin:0,total_kunjungan:0});
+    if(!pel){ btn.disabled=false; btn.textContent='Simpan order'; return; }
+  }else if(hp!==pel.telepon||alamat!==pel.alamat){
+    pel=await simpan('pelanggan',{...pel,telepon:hp,alamat})||pel;
+  }
+
+  const l=get('layanan',document.getElementById('o_lay').value);
+  const disk=Number(document.getElementById('o_disk').value)||0;
+  const cab=get('cabang',document.getElementById('o_cab').value||ME.cabang_id);
+  const sub=l.harga*ORD.terapis.length;
   const n=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()).length+1;
+
   const p={id:uid(),nomor:'MHR-'+cab.kode+'-'+today().slice(2).replace(/-/g,'')+'-'+String(n).padStart(4,'0'),
-    tanggal:today(),jam:jam(),cabang_id:cab.id,pelanggan_id:o_pel.value,kasir_id:ME.id,status:'berjalan',
-    subtotal:l.harga,diskon:disk,total:l.harga-disk,metode_bayar:o_bayar.value,status_bayar:'belum',catatan:o_cat.value};
-  await simpan('pesanan',p);
-  await simpan('item',{id:uid(),pesanan_id:p.id,layanan_id:l.id,terapis_id:o_ter.value,ruangan:o_room.value,qty:1,
-    harga:l.harga,durasi:l.durasi_menit,subtotal:l.harga,komisi:Math.round((l.harga-disk)*l.komisi_persen/100),status:'menunggu'});
-  closeModal(); render(); toast('Order '+p.nomor+' dibuat');
+    tanggal:today(),jam:document.getElementById('o_jam').value||jam(),cabang_id:cab.id,pelanggan_id:pel.id,
+    kasir_id:ME.id,status:'berjalan',subtotal:sub,diskon:disk,total:Math.max(0,sub-disk),
+    metode_bayar:document.getElementById('o_bayar').value,status_bayar:'belum',
+    catatan:document.getElementById('o_cat').value};
+  const tersimpan=await simpan('pesanan',p);
+  if(!tersimpan){ btn.disabled=false; btn.textContent='Simpan order'; return; }
+
+  const ruangan=document.getElementById('o_room').value;
+  for(const idTer of ORD.terapis){
+    const k=get('karyawan',idTer), j=get('jabatan',k?.jabatan_id)||{};
+    const fee=k?.fee_per_order??j.fee_per_order??0;
+    const persen=k?.persen_komisi||j.persen_komisi||l.komisi_persen||0;
+    await simpan('item',{id:uid(),pesanan_id:p.id,layanan_id:l.id,terapis_id:idTer,ruangan,qty:1,
+      harga:l.harga,durasi:l.durasi_menit,subtotal:l.harga,
+      komisi:fee>0?fee:Math.round(l.harga*persen/100),status:'menunggu'});
+  }
+  render(); kirimOrder(p.id);
+  toast('Order '+p.nomor+' dibuat');
 }
+
+/* ================= KIRIM DETAIL LEWAT WHATSAPP ================= */
+const noWa=n=>{ let s=String(n||'').replace(/[^0-9]/g,'');
+  if(s.startsWith('0')) s='62'+s.slice(1);
+  if(s.startsWith('8')) s='62'+s;
+  return s; };
+
+function rincianOrder(p,{denganHp}){
+  const item=DB.item.filter(i=>i.pesanan_id===p.id);
+  const pel=get('pelanggan',p.pelanggan_id)||{};
+  const lay=get('layanan',item[0]?.layanan_id)||{};
+  const b=[];
+  b.push('No. order  : '+p.nomor);
+  b.push('Tanggal    : '+tgl(p.tanggal)+' pukul '+(p.jam||'-'));
+  b.push('Layanan    : '+lay.nama+' ('+(lay.durasi_menit||0)+' menit)');
+  b.push('Terapis    : '+item.map(i=>nm('karyawan',i.terapis_id)).join(', '));
+  b.push('Pelanggan  : '+pel.nama);
+  if(denganHp&&pel.telepon) b.push('No. HP     : '+pel.telepon);
+  if(pel.alamat) b.push('Alamat     : '+pel.alamat);
+  b.push('Total      : '+rp(p.total));
+  b.push('Pembayaran : '+cap(p.metode_bayar));
+  if(p.catatan) b.push('Catatan    : '+p.catatan);
+  return b.join('\n');
+}
+function pesanPelanggan(p){
+  const pel=get('pelanggan',p.pelanggan_id)||{};
+  return `Halo ${pel.nama}, terima kasih sudah memesan di Mahyra Relaksia.\n\n`+
+    rincianOrder(p,{denganHp:true})+
+    `\n\nTerapis akan menghubungi sebelum berangkat. Mohon siapkan ruang sekitar 2x2 meter. Terima kasih.`;
+}
+function pesanTerapis(p,terapisId){
+  return `Halo ${nm('karyawan',terapisId)}, ada orderan untuk Anda.\n\n`+
+    rincianOrder(p,{denganHp:false})+
+    `\n\nMohon konfirmasi kesiapan Anda dan lakukan check in lewat Portal Terapis saat mulai bekerja.`;
+}
+function tautanWa(nomor,pesan){
+  return 'https://wa.me/'+noWa(nomor)+'?text='+encodeURIComponent(pesan);
+}
+
+function kirimOrder(pesananId){
+  const p=get('pesanan',pesananId);
+  const pel=get('pelanggan',p.pelanggan_id)||{};
+  const item=DB.item.filter(i=>i.pesanan_id===p.id);
+  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Order tersimpan</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(p.nomor)} · ${rp(p.total)}</p>
+    <div class="card" style="background:var(--mist);box-shadow:none;padding:14px;white-space:pre-wrap;
+      font-size:13px;line-height:1.6;margin-bottom:14px">${esc(rincianOrder(p,{denganHp:true}))}</div>
+
+    <label class="label" style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;display:block">Kirim ke pelanggan</label>
+    ${pel.telepon?`<a class="btn" style="width:100%;margin-bottom:6px" target="_blank" rel="noopener"
+        href="${tautanWa(pel.telepon,pesanPelanggan(p))}">WhatsApp ${esc(pel.nama)} · ${esc(pel.telepon)}</a>`
+      :`<p class="hint" style="margin-bottom:10px">Nomor HP pelanggan belum diisi, jadi tombolnya tidak bisa dibuat.</p>`}
+
+    <label class="label" style="font-size:12px;font-weight:600;color:var(--muted);margin:14px 0 8px;display:block">Kirim ke terapis</label>
+    ${item.map(i=>{
+      const k=get('karyawan',i.terapis_id)||{};
+      return k.telepon
+        ? `<a class="btn amber" style="width:100%;margin-bottom:6px" target="_blank" rel="noopener"
+             href="${tautanWa(k.telepon,pesanTerapis(p,i.terapis_id))}">WhatsApp ${esc(k.nama)} · ${esc(k.telepon)}</a>`
+        : `<p class="hint" style="margin-bottom:6px">${esc(k.nama||'Terapis')} belum punya nomor HP di data karyawan.</p>`;
+    }).join('')}
+    <p class="hint" style="margin-top:10px">Pesan ke terapis sengaja tidak memuat nomor HP pelanggan.</p>
+    <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Selesai</button>`;
+  modal.classList.add('on');
+}
+
 function formKas(){
   sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:16px">Catat kas manual</h3>
    <div class="field"><label>Tanggal</label><input type="date" id="k_tgl" value="${today()}"></div>
