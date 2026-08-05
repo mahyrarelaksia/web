@@ -86,9 +86,20 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .err.on{display:block}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:99}
 .toast.on{opacity:1}
+.hanya-mobil{display:none}
+.kartu-order{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;background:#fff}
+.kartu-order .atas{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+.kartu-order .nomor{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:var(--muted)}
+.kartu-order h4{font-size:15px;font-weight:600}
+.kartu-order dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px;margin:8px 0}
+.kartu-order dt{color:var(--muted)}
+.kartu-order dd{text-align:right}
+.kartu-order .kaki{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+.kartu-order .kaki .btn{flex:1;min-width:96px}
 .list-item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:flex-start}
 .list-item:last-child{border-bottom:0}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--jade);margin-top:6px;flex:none}
+@media(max-width:760px){.hanya-desktop{display:none}.hanya-mobil{display:block}}
 @media(max-width:900px){.shell{grid-template-columns:1fr}
 aside{position:fixed;left:-260px;width:250px;z-index:60;transition:.22s}
 aside.open{left:0;box-shadow:0 0 0 100vmax rgba(0,0,0,.4)}
@@ -184,11 +195,14 @@ function lingkupSaya(){
   return ME.role==='owner'?'semua':'cabang';
 }
 /* Saring baris yang di luar cabang pengguna (cadangan tampilan; RLS tetap penjaga utamanya) */
-const TABEL_BERSAMA=['jabatan','layanan','shift','pelanggan','aturan_bonus','kategori_pengeluaran','hak_akses'];
+const TABEL_BERSAMA=['jabatan','shift','pelanggan','aturan_bonus','kategori_pengeluaran','hak_akses'];
+/* Layanan tanpa cabang berlaku di mana saja */
+const layananCabang=cabangId=>DB.layanan.filter(l=>l.aktif!==false&&(!l.cabang_id||l.cabang_id===cabangId));
 function dalamLingkup(r,key){
   const L=lingkupSaya(); if(L==='semua') return true;
   if(key==='cabang') return r.id===ME.cabang_id;           // tabel cabang dikenali lewat id-nya
   if(TABEL_BERSAMA.includes(key)) return true;             // data acuan dipakai semua cabang
+  if(key==='layanan') return !r.cabang_id||r.cabang_id===ME.cabang_id;
   if(r.cabang_id!==undefined&&r.cabang_id!==null) return r.cabang_id===ME.cabang_id;
   if(r.karyawan_id!==undefined&&r.karyawan_id!==null){
     if(L==='sendiri') return r.karyawan_id===ME.id;
@@ -383,9 +397,7 @@ async function simpan(key,row){
   if(LIVE){ const {data,error}=await sb.from(TBL[key]).upsert(bersihkan(key,row)).select().single();
     if(error){ console.error('Gagal menyimpan ke '+TBL[key]+':',error,row);
       const rls=/row-level security/i.test(error.message||'');
-      toast(rls
-        ? 'Ditolak aturan akses ('+TBL[key]+'). Buka Pengaturan → Diagnosa koneksi untuk melihat sebabnya.'
-        : 'Gagal menyimpan ('+TBL[key]+'): '+error.message);
+      if(rls) jelaskanPenolakan(key,row); else toast('Gagal menyimpan ('+TBL[key]+'): '+error.message);
       return null; }
     const i=DB[key].findIndex(x=>x.id===data.id); i>=0?DB[key][i]=data:DB[key].push(data); return data; }
   const i=DB[key].findIndex(x=>x.id===row.id); i>=0?DB[key][i]=row:DB[key].push(row); return row;
@@ -394,6 +406,30 @@ async function hapus(key,id){
   if(LIVE){ const {error}=await sb.from(TBL[key]).delete().eq('id',id);
     if(error){ console.error(error); toast('Gagal hapus: '+error.message); return false; } }
   DB[key]=DB[key].filter(x=>x.id!==id); return true;
+}
+
+/* Saat aturan akses menolak, tanyakan ke database syarat mana yang jatuh */
+async function jelaskanPenolakan(key,row){
+  const modul=({item:'order',pesanan:'order',jadwal:'jadwal',hak_akses:'akses'})[key]||key;
+  let isi='<p class="hint">Tidak bisa mengambil rincian dari database.</p>';
+  try{
+    const {data,error}=await sb.rpc('uji_tulis',{p_modul:modul,p_cabang:row.cabang_id||null});
+    if(!error&&data){
+      const b=[['Dikenali sebagai',(data.saya||'-')+' · role '+(data.role||'-')+' · status '+(data.status||'-'),!!data.saya],
+        ['Lingkup data',(data.lingkup||'-')+(data.cabang_saya?'':' · tanpa cabang'),true],
+        ['1. Diakui orang kantor',data.syarat_1_is_office?'ya':'TIDAK',!!data.syarat_1_is_office],
+        ['2. Izin modul '+modul,data.syarat_2_boleh_tambah?'boleh menambah':'TIDAK dicentang',!!data.syarat_2_boleh_tambah],
+        ['3. Batas cabang',data.syarat_3_cabang_boleh?'lolos':'TIDAK — baris di luar cabang Anda',!!data.syarat_3_cabang_boleh]];
+      isi=b.map(([l,v,ok])=>`<div class="list-item"><div style="flex:1">${l}</div>
+        <span class="tag ${ok?'ok':'bad'}">${esc(v)}</span></div>`).join('');
+    }else if(error) isi=`<p class="hint">${esc(error.message)} — jalankan 15_layanan_cabang.sql di SQL Editor.</p>`;
+  }catch(e){}
+  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:4px">Penyimpanan ditolak aturan akses</h3>
+    <p class="hint" style="margin-bottom:14px">Tabel <strong>${esc(TBL[key]||key)}</strong>.
+      Syarat yang bertanda merah di bawah inilah penyebabnya.</p>
+    ${isi}
+    <button class="btn ghost" style="width:100%;margin-top:14px" onclick="closeModal()">Tutup</button>`;
+  modal.classList.add('on');
 }
 
 /* ---------------------------- LOGIN ---------------------------- */
@@ -478,10 +514,14 @@ const F={
    {k:'status',t:'tag'}],
   extra:r=>`<button class="btn ${r.user_id?'ghost':'amber'} sm" onclick="formAkun('${r.id}')">${r.user_id?'Ubah akun':'Buat akun'}</button>`},
  layanan:{title:'Layanan & Tarif',sub:'Menu perawatan, durasi, harga, dan komisi terapis.',
-  fields:[{k:'kode',l:'Kode'},{k:'nama',l:'Nama layanan'},{k:'kategori',l:'Kategori',t:'sel',o:['Pijat','Refleksi','Perawatan','Paket','Terapi','Khusus']},
+  fields:[{k:'kode',l:'Kode'},{k:'nama',l:'Nama layanan'},
+   {k:'cabang_id',l:'Cabang (kosongkan bila berlaku semua)',t:'ref',ref:'cabang'},
+   {k:'kategori',l:'Kategori',t:'sel',o:['Pijat','Refleksi','Perawatan','Paket','Terapi','Khusus']},
    {k:'durasi_menit',l:'Durasi (menit)',t:'num'},{k:'harga',l:'Harga',t:'rp'},{k:'komisi_persen',l:'Komisi (%)',t:'num'},
    {k:'deskripsi',l:'Deskripsi',t:'area'},{k:'aktif',l:'Ditampilkan di kasir',t:'bool'}],
-  cols:[{k:'kode'},{k:'nama'},{k:'kategori'},{k:'dur',l:'Durasi',fn:r=>r.durasi_menit+' mnt'},{k:'harga',t:'rp'},
+  cols:[{k:'kode'},{k:'nama'},
+   {k:'cab',l:'Cabang',fn:r=>r.cabang_id?esc(nm('cabang',r.cabang_id)):'<span class="tag">Semua cabang</span>'},
+   {k:'kategori'},{k:'dur',l:'Durasi',fn:r=>r.durasi_menit+' mnt'},{k:'harga',t:'rp'},
    {k:'kom',l:'Komisi',fn:r=>r.komisi_persen+'%'}]},
  pelanggan:{title:'Pelanggan',sub:'Riwayat kunjungan, poin member, dan catatan preferensi.',
   fields:[{k:'kode',l:'Kode member'},{k:'nama',l:'Nama'},{k:'telepon',l:'Telepon'},{k:'jenis_kelamin',l:'Jenis kelamin',t:'sel',o:['L','P']},
@@ -875,9 +915,13 @@ order(){
     ${stat('Rata-rata transaksi',rp(hi.length?sum(hi,'total')/hi.length:0),'per order','r')}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Daftar order</h3>
     <button class="btn" onclick="formOrder()">Buat order</button></div>
-    ${tableHtml(rows,[{k:'nomor',l:'No. order'},{k:'tanggal',t:'date'},{k:'jam'},{k:'pel',l:'Pelanggan'},
-      {k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},{k:'total',t:'rp'},{k:'metode_bayar',l:'Bayar'},{k:'status',t:'tag'},
-      {k:'aksi',l:'Kirim',fn:r=>tombolWa(r.id)}])}</div>`;
+    <div class="hanya-desktop">${tableHtml(rows,[{k:'nomor',l:'No. order'},{k:'tanggal',t:'date'},{k:'jam'},
+      {k:'pel',l:'Pelanggan'},{k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},{k:'total',t:'rp'},
+      {k:'metode_bayar',l:'Bayar'},{k:'status',t:'tag'},
+      {k:'aksi',l:'Tindakan',fn:r=>tombolOrder(r.id)}])}</div>
+    <div class="hanya-mobil">${rows.length?rows.map(r=>kartuOrder(r)).join('')
+      :'<div class="empty"><div class="disp">Belum ada order</div><div>Buat order pertama lewat tombol di atas.</div></div>'}</div>
+  </div>`;
 },
 izin(){
   const rows=DB.izin.filter(i=>dalamLingkup(i,'izin')).map(i=>({...i,kry:nm('karyawan',i.karyawan_id),
@@ -1230,12 +1274,13 @@ let ORD={pelanggan_id:null,terapis:[]};
 function formOrder(){
   ORD={pelanggan_id:null,terapis:[]};
   const cabangKu=opsiRef('cabang');
-  const layanan=DB.layanan.filter(l=>l.aktif!==false);
+  const cabangAwal=(cabangKu[0]||{}).id||ME.cabang_id;
+  const layanan=layananCabang(cabangAwal);
   sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Buat order</h3>
    <p class="hint" style="margin-bottom:16px">Ketik nama pelanggan — kalau sudah pernah datang, detailnya terisi sendiri.</p>
 
    <div class="field"><label>Cabang</label>
-     <select id="o_cab" ${cabangKu.length<2?'disabled':''}>${cabangKu.map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select>
+     <select id="o_cab" ${cabangKu.length<2?'disabled':''} onchange="segarkanLayanan()">${cabangKu.map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select>
      ${cabangKu.length<2?`<p class="hint" style="margin-top:6px">Order dibuat untuk ${esc(nm('cabang',ME.cabang_id))}, sesuai penempatan Anda.</p>`:''}</div>
 
    <div class="field"><label for="o_nama">Nama pelanggan</label>
@@ -1270,6 +1315,17 @@ function formOrder(){
    <div class="row"><button class="btn" id="o_simpan" onclick="simpanOrder()">Simpan order</button>
      <button class="btn ghost" onclick="closeModal()">Batal</button></div>`;
   modal.classList.add('on');
+  gambarTerapis(); hitungOrder();
+}
+
+/* daftar layanan mengikuti cabang yang dipilih */
+function segarkanLayanan(){
+  const cab=document.getElementById('o_cab').value||ME.cabang_id;
+  const lay=document.getElementById('o_lay'), pilihan=lay.value;
+  const daftar=layananCabang(cab);
+  lay.innerHTML=daftar.map(l=>`<option value="${l.id}">${esc(l.nama)} — ${rp(l.harga)} · ${l.durasi_menit} mnt</option>`).join('')
+    ||'<option value="">Belum ada layanan untuk cabang ini</option>';
+  if(daftar.some(l=>l.id===pilihan)) lay.value=pilihan;
   gambarTerapis(); hitungOrder();
 }
 
@@ -1421,6 +1477,86 @@ function pesanTerapis(p,terapisId){
 }
 function tautanWa(nomor,pesan){
   return 'https://wa.me/'+noWa(nomor)+'?text='+encodeURIComponent(pesan);
+}
+
+/* Tampilan kartu untuk layar kecil */
+function kartuOrder(r){
+  return `<div class="kartu-order">
+    <div class="atas"><div><div class="nomor">${esc(r.nomor||'')}</div>
+      <h4>${esc(r.pel||'-')}</h4></div>${tagHtml(r.status)}</div>
+    <dl>
+      <dt>Waktu</dt><dd>${tgl(r.tanggal)} · ${esc(r.jam||'-')}</dd>
+      <dt>Layanan</dt><dd>${esc(r.lay||'-')}</dd>
+      <dt>Terapis</dt><dd>${esc(r.ter||'-')}</dd>
+      <dt>Bayar</dt><dd>${cap(r.metode_bayar||'-')}</dd>
+      <dt>Total</dt><dd><span class="rp">${rp(r.total)}</span></dd>
+    </dl>
+    <div class="kaki">
+      <button class="btn ghost sm" onclick="waPelanggan('${r.id}')">WA Customer</button>
+      <button class="btn ghost sm" onclick="waTerapis('${r.id}')">WA Terapis</button>
+      <button class="btn sm" onclick="ubahOrder('${r.id}')">Ubah</button>
+    </div></div>`;
+}
+function tombolOrder(id){
+  return `<div class="row" style="flex-wrap:nowrap">
+    <button class="btn ghost sm" onclick="waPelanggan('${id}')">WA Customer</button>
+    <button class="btn ghost sm" onclick="waTerapis('${id}')">WA Terapis</button>
+    <button class="btn sm" onclick="ubahOrder('${id}')">Ubah</button></div>`;
+}
+
+/* Ubah order yang sudah dibuat */
+function ubahOrder(pesananId){
+  const p=get('pesanan',pesananId);
+  const item=DB.item.filter(i=>i.pesanan_id===p.id);
+  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Ubah order</h3>
+    <p class="hint" style="margin-bottom:16px">${esc(p.nomor)} · ${esc(nm('pelanggan',p.pelanggan_id))}</p>
+    <div class="grid g2">
+      <div class="field"><label for="u_tgl">Tanggal</label><input type="date" id="u_tgl" value="${String(p.tanggal).slice(0,10)}"></div>
+      <div class="field"><label for="u_jam">Jam</label><input type="time" id="u_jam" value="${esc(p.jam||'')}"></div>
+    </div>
+    <div class="field"><label for="u_status">Status order</label><select id="u_status">
+      ${['draft','berjalan','selesai','batal'].map(s=>`<option ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="grid g2">
+      <div class="field"><label for="u_bayar">Metode bayar</label><select id="u_bayar">
+        ${['tunai','qris','transfer','debit'].map(s=>`<option ${p.metode_bayar===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label for="u_lunas">Status bayar</label><select id="u_lunas">
+        ${['belum','sebagian','lunas'].map(s=>`<option ${p.status_bayar===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label for="u_disk">Diskon</label><input type="number" id="u_disk" value="${p.diskon||0}"></div>
+    <div class="field"><label for="u_cat">Catatan</label><textarea id="u_cat" rows="2">${esc(p.catatan||'')}</textarea></div>
+
+    <label class="label" style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px">Pekerjaan dalam order ini</label>
+    ${item.map(i=>`<div class="list-item"><span class="dot"></span><div style="flex:1">
+        <strong>${esc(nm('layanan',i.layanan_id))}</strong> ${tagHtml(i.status)}
+        <div class="hint">${esc(nm('karyawan',i.terapis_id))} · ${rp(i.harga)} · komisi ${rp(i.komisi)}</div></div>
+      <select style="width:auto" onchange="ubahItem('${i.id}',this.value)">
+        ${['menunggu','berjalan','selesai','batal'].map(s=>`<option ${i.status===s?'selected':''}>${s}</option>`).join('')}
+      </select></div>`).join('')}
+
+    <div class="row" style="margin-top:12px"><button class="btn" onclick="simpanUbahOrder('${p.id}')">Simpan perubahan</button>
+      <button class="btn ghost" onclick="closeModal()">Batal</button></div>`;
+  modal.classList.add('on');
+}
+async function ubahItem(itemId,status){
+  const i=get('item',itemId);
+  await simpan('item',{...i,status});
+  toast('Status pekerjaan diperbarui');
+}
+async function simpanUbahOrder(pesananId){
+  const p=get('pesanan',pesananId);
+  const item=DB.item.filter(i=>i.pesanan_id===p.id&&i.status!=='batal');
+  const sub=sum(item,'subtotal')||sum(item,'harga');
+  const disk=Number(document.getElementById('u_disk').value)||0;
+  const hasil=await simpan('pesanan',{...p,
+    tanggal:document.getElementById('u_tgl').value,
+    jam:document.getElementById('u_jam').value,
+    status:document.getElementById('u_status').value,
+    metode_bayar:document.getElementById('u_bayar').value,
+    status_bayar:document.getElementById('u_lunas').value,
+    diskon:disk,subtotal:sub,total:Math.max(0,sub-disk),
+    catatan:document.getElementById('u_cat').value});
+  if(!hasil) return;
+  closeModal(); render(); toast('Order '+p.nomor+' diperbarui');
 }
 
 /* Dua tombol ringkas untuk tiap baris order */
