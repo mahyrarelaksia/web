@@ -162,18 +162,25 @@ const LINGKUP=[['semua','Semua cabang'],['cabang','Cabang sendiri'],['sendiri','
 /* Owner dan admin selalu penuh; sisanya mengikuti tabel hak_akses. */
 function boleh(modul,aksi='lihat'){
   if(!ME) return false;
-  if(ME.role==='owner'||ME.role==='admin') return true;
-  const h=DB.hak_akses.find(x=>x.jabatan_id===ME.jabatan_id&&x.modul===modul);
-  return h?!!h[aksi]:false;
+  if(ME.role==='owner') return true;                       // pemilik selalu penuh
+  const baris=DB.hak_akses.filter(x=>x.jabatan_id===ME.jabatan_id);
+  if(!baris.length) return ME.role==='admin';              // jabatan belum diatur sama sekali
+  const h=baris.find(x=>x.modul===modul);
+  return h?!!h[aksi]:false;                                // yang tidak dicentang = tidak boleh
 }
+/* Lingkup mengikuti jabatan, bukan kolom role. */
 function lingkupSaya(){
   if(!ME) return 'cabang';
-  if(ME.role==='owner'||ME.role==='admin') return 'semua';
-  return get('jabatan',ME.jabatan_id)?.lingkup||'cabang';
+  const j=get('jabatan',ME.jabatan_id);
+  if(j&&j.lingkup) return j.lingkup;
+  return ME.role==='owner'?'semua':'cabang';
 }
 /* Saring baris yang di luar cabang pengguna (cadangan tampilan; RLS tetap penjaga utamanya) */
-function dalamLingkup(r){
+const TABEL_BERSAMA=['jabatan','layanan','shift','pelanggan','aturan_bonus','kategori_pengeluaran','hak_akses'];
+function dalamLingkup(r,key){
   const L=lingkupSaya(); if(L==='semua') return true;
+  if(key==='cabang') return r.id===ME.cabang_id;           // tabel cabang dikenali lewat id-nya
+  if(TABEL_BERSAMA.includes(key)) return true;             // data acuan dipakai semua cabang
   if(r.cabang_id!==undefined&&r.cabang_id!==null) return r.cabang_id===ME.cabang_id;
   if(r.karyawan_id!==undefined&&r.karyawan_id!==null){
     if(L==='sendiri') return r.karyawan_id===ME.id;
@@ -181,6 +188,14 @@ function dalamLingkup(r){
   }
   if(r.pesanan_id) return get('pesanan',r.pesanan_id)?.cabang_id===ME.cabang_id;
   return true;
+}
+/* Pilihan cabang & karyawan pada formulir ikut dibatasi lingkup */
+function opsiRef(ref){
+  const L=lingkupSaya(), daftar=DB[ref]||[];
+  if(L==='semua') return daftar;
+  if(ref==='cabang')   return daftar.filter(o=>o.id===ME.cabang_id);
+  if(ref==='karyawan') return daftar.filter(o=>o.cabang_id===ME.cabang_id);
+  return daftar;
 }
 
 /* --------------------------- utilitas --------------------------- */
@@ -498,7 +513,14 @@ function go(p){ PAGE=p; SEARCH='';
 /* ------------------------ form & tabel ------------------------ */
 let EDIT={mod:null,id:null};
 function openForm(key,id){
-  const m=F[key]; EDIT={mod:key,id}; const r=id?get(key,id):{};
+  const m=F[key]; EDIT={mod:key,id};
+  const BAWAAN={karyawan:{role:'kasir',status:'aktif',cabang_id:ME.cabang_id},
+                jabatan:{lingkup:'cabang',level:1},
+                pengeluaran:{cabang_id:ME.cabang_id,status:'menunggu'},
+                jadwal:{cabang_id:ME.cabang_id},absensi:{cabang_id:ME.cabang_id},
+                target:{cabang_id:ME.cabang_id,periode:periode()},
+                bonus:{periode:periode(),status:'menunggu'}};
+  const r=id?get(key,id):{cabang_id:ME.cabang_id,...(BAWAAN[key]||{})};
   sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">${id?'Ubah':'Tambah'} ${m.title}</h3>
    <p class="hint" style="margin-bottom:16px">${m.sub}</p>
    ${m.fields.map(f=>fieldHtml(f,r[f.k])).join('')}
@@ -511,7 +533,7 @@ function fieldHtml(f,v){
   const id='f_'+f.k,t=f.t||'text';let inp;
   if(t==='area')inp=`<textarea id="${id}" rows="2">${esc(v||'')}</textarea>`;
   else if(t==='sel')inp=`<select id="${id}">${f.o.map(o=>`<option ${v===o?'selected':''}>${o}</option>`).join('')}</select>`;
-  else if(t==='ref')inp=`<select id="${id}"><option value="">— pilih —</option>${DB[f.ref].map(o=>`<option value="${o.id}" ${v===o.id?'selected':''}>${esc(o.nama)}</option>`).join('')}</select>`;
+  else if(t==='ref')inp=`<select id="${id}"><option value="">— pilih —</option>${opsiRef(f.ref).map(o=>`<option value="${o.id}" ${v===o.id?'selected':''}>${esc(o.nama)}</option>`).join('')}</select>`;
   else if(t==='bool')inp=`<select id="${id}"><option value="true" ${v?'selected':''}>Ya</option><option value="false" ${!v?'selected':''}>Tidak</option></select>`;
   else if(t==='date')inp=`<input id="${id}" type="date" value="${v?String(v).slice(0,10):today()}">`;
   else if(t==='time')inp=`<input id="${id}" type="time" value="${v||''}">`;
@@ -536,7 +558,7 @@ function closeModal(){ modal.classList.remove('on'); }
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
 
 function renderModule(key){
-  const m=F[key]; let rows=DB[key].filter(dalamLingkup);
+  const m=F[key]; let rows=DB[key].filter(r=>dalamLingkup(r,key));
   if(SEARCH) rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(SEARCH.toLowerCase()));
   return `<div class="card"><div class="head"><h3>${m.title}</h3>
     <div class="row"><input placeholder="Cari…" style="width:180px" value="${esc(SEARCH)}" oninput="SEARCH=this.value;render()">
@@ -716,12 +738,12 @@ function render(){
 
 const PAGES={
 dash(){
-  const o=DB.pesanan.filter(x=>String(x.tanggal).slice(0,10)===today());
+  const o=DB.pesanan.filter(x=>String(x.tanggal).slice(0,10)===today()&&dalamLingkup(x,'pesanan'));
   const sel=o.filter(x=>x.status==='selesai'), omzet=sum(sel,'total');
   const masuk=sum(DB.kas.filter(k=>k.jenis==='masuk'),'nominal'), keluar=sum(DB.kas.filter(k=>k.jenis==='keluar'),'nominal');
   const tg=DB.target.find(t=>t.periode===periode()&&!t.karyawan_id);
   const pct=tg&&tg.target_omzet?Math.min(100,Math.round(omzet/tg.target_omzet*100)):0;
-  const terapis=DB.karyawan.filter(k=>k.role==='terapis');
+  const terapis=DB.karyawan.filter(k=>k.role==='terapis'&&dalamLingkup(k,'karyawan'));
   const hadir=DB.absensi.filter(a=>String(a.tanggal).slice(0,10)===today()&&['hadir','telat'].includes(a.status)).length;
   const kinerja=terapis.map(k=>({nama:k.nama,cabang:nm('cabang',k.cabang_id),
     n:DB.item.filter(i=>i.terapis_id===k.id&&i.status==='selesai').length,
@@ -739,7 +761,7 @@ dash(){
     <div class="card"><div class="head"><h3>Capaian target</h3><span class="tag info">${periode()}</span></div>
       <div style="font-family:Fraunces,serif;font-size:30px">${pct}%</div><div class="bar"><i style="width:${pct}%"></i></div>
       <p class="hint" style="margin-top:8px">${rp(omzet)} dari target ${rp(tg?.target_omzet||0)}</p>
-      <div style="margin-top:14px">${DB.cabang.map(c=>{
+      <div style="margin-top:14px">${DB.cabang.filter(c=>dalamLingkup(c,'cabang')).map(c=>{
         const om=sum(DB.pesanan.filter(p=>p.cabang_id===c.id&&p.status==='selesai'),'total');
         return `<div class="list-item"><span class="dot"></span><div style="flex:1"><strong>${esc(c.nama)}</strong>
           <div class="hint">${esc(c.kota||'')}</div></div><span class="rp">${rp(om)}</span></div>`}).join('')}</div></div>
@@ -755,10 +777,10 @@ dash(){
       :'<div class="empty">Tidak ada antrean persetujuan. Semua beres.</div>'}</div>`;
 },
 order(){
-  const rows=DB.pesanan.map(p=>{const it=DB.item.filter(i=>i.pesanan_id===p.id);
+  const rows=DB.pesanan.filter(p=>dalamLingkup(p,'pesanan')).map(p=>{const it=DB.item.filter(i=>i.pesanan_id===p.id);
     return {...p,pel:nm('pelanggan',p.pelanggan_id),cab:nm('cabang',p.cabang_id),
       lay:it.map(i=>nm('layanan',i.layanan_id)).join(', '),ter:it.map(i=>nm('karyawan',i.terapis_id)).join(', ')}}).reverse();
-  const hi=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today());
+  const hi=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()&&dalamLingkup(p,'pesanan'));
   return `<div class="grid g4">
     ${stat('Order hari ini',hi.length,'semua status')}
     ${stat('Omzet hari ini',rp(sum(hi.filter(p=>p.status==='selesai'),'total')),'order selesai','g')}
@@ -770,7 +792,7 @@ order(){
       {k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},{k:'total',t:'rp'},{k:'metode_bayar',l:'Bayar'},{k:'status',t:'tag'}])}</div>`;
 },
 izin(){
-  const rows=DB.izin.map(i=>({...i,kry:nm('karyawan',i.karyawan_id),
+  const rows=DB.izin.filter(i=>dalamLingkup(i,'izin')).map(i=>({...i,kry:nm('karyawan',i.karyawan_id),
     hari:Math.round((new Date(i.tgl_selesai)-new Date(i.tgl_mulai))/864e5)+1}));
   const tunggu=rows.filter(r=>r.status==='menunggu');
   return `<div class="grid g3">
@@ -790,12 +812,13 @@ izin(){
       {k:'tgl_selesai',l:'Selesai',t:'date'},{k:'hari',l:'Hari'},{k:'alasan'},{k:'status',t:'tag'}])}</div>`;
 },
 kas(){
-  const masuk=DB.kas.filter(k=>k.jenis==='masuk'), keluar=DB.kas.filter(k=>k.jenis==='keluar');
+  const kasKu=DB.kas.filter(k=>dalamLingkup(k,'kas'));
+  const masuk=kasKu.filter(k=>k.jenis==='masuk'), keluar=kasKu.filter(k=>k.jenis==='keluar');
   return `<div class="grid g3">
     ${stat('Kas masuk',rp(sum(masuk,'nominal')),masuk.length+' transaksi','g')}
     ${stat('Kas keluar',rp(sum(keluar,'nominal')),keluar.length+' transaksi','r')}
     ${stat('Saldo kas',rp(sum(masuk,'nominal')-sum(keluar,'nominal')),'seluruh cabang')}</div>
-  <div class="grid g3" style="margin-top:14px">${DB.cabang.map(c=>{
+  <div class="grid g3" style="margin-top:14px">${DB.cabang.filter(c=>dalamLingkup(c,'cabang')).map(c=>{
     const m=sum(DB.kas.filter(k=>k.cabang_id===c.id&&k.jenis==='masuk'),'nominal');
     const l=sum(DB.kas.filter(k=>k.cabang_id===c.id&&k.jenis==='keluar'),'nominal');
     return `<div class="card"><div class="hint">${esc(c.nama)}</div>
@@ -803,7 +826,7 @@ kas(){
       <div class="hint">masuk ${rp(m)} · keluar ${rp(l)}</div></div>`}).join('')}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Buku kas</h3>
     <button class="btn" onclick="formKas()">Catat kas manual</button></div>
-    ${tableHtml([...DB.kas].reverse().map(k=>({...k,cab:nm('cabang',k.cabang_id)})),
+    ${tableHtml([...kasKu].reverse().map(k=>({...k,cab:nm('cabang',k.cabang_id)})),
       [{k:'tanggal',t:'date'},{k:'cab',l:'Cabang'},
        {k:'jns',l:'Jenis',fn:r=>r.jenis==='masuk'?'<span class="tag ok">Masuk</span>':'<span class="tag bad">Keluar</span>'},
        {k:'kategori'},{k:'keterangan'},{k:'metode'},{k:'nominal',t:'rp'}])}</div>`;
@@ -825,7 +848,7 @@ gaji(){
      :`<div class="empty"><div class="disp">Gaji belum dihitung</div><div>Tekan “Hitung ulang gaji” untuk menyusun slip periode ini.</div></div>`}</div>`;
 },
 laporan(){
-  const sel=DB.pesanan.filter(p=>p.status==='selesai');
+  const sel=DB.pesanan.filter(p=>p.status==='selesai'&&dalamLingkup(p,'pesanan'));
   const omzet=sum(sel,'total'), komisi=sum(DB.komisi,'nominal'),
     biaya=sum(DB.pengeluaran.filter(e=>e.status==='disetujui'),'nominal'), gj=sum(DB.gaji,'total_terima');
   const perLayanan=DB.layanan.map(l=>{const it=DB.item.filter(i=>i.layanan_id===l.id&&i.status==='selesai');
@@ -1043,10 +1066,11 @@ async function bayarGaji(){
 function formOrder(){
   sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Buat order</h3>
    <p class="hint" style="margin-bottom:16px">Pilih pelanggan, layanan, dan terapis yang menangani.</p>
-   <div class="field"><label>Cabang</label><select id="o_cab">${DB.cabang.map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select></div>
+   <div class="field"><label>Cabang</label><select id="o_cab" ${opsiRef('cabang').length<2?'disabled':''}>${opsiRef('cabang').map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select>
+     ${opsiRef('cabang').length<2?`<p class="hint" style="margin-top:6px">Order dibuat untuk ${esc(nm('cabang',ME.cabang_id))}, sesuai penempatan Anda.</p>`:''}</div>
    <div class="field"><label>Pelanggan</label><select id="o_pel">${DB.pelanggan.map(p=>`<option value="${p.id}">${esc(p.nama)}</option>`).join('')}</select></div>
    <div class="field"><label>Layanan</label><select id="o_lay">${DB.layanan.filter(l=>l.aktif).map(l=>`<option value="${l.id}">${esc(l.nama)} — ${rp(l.harga)}</option>`).join('')}</select></div>
-   <div class="field"><label>Terapis</label><select id="o_ter">${DB.karyawan.filter(k=>k.role==='terapis').map(k=>`<option value="${k.id}">${esc(k.nama)}</option>`).join('')}</select></div>
+   <div class="field"><label>Terapis</label><select id="o_ter">${opsiRef('karyawan').filter(k=>k.role==='terapis').map(k=>`<option value="${k.id}">${esc(k.nama)}</option>`).join('')}</select></div>
    <div class="grid g2"><div class="field"><label>Ruangan</label><input id="o_room" value="Room 1"></div>
      <div class="field"><label>Diskon</label><input id="o_disk" type="number" value="0"></div></div>
    <div class="field"><label>Metode bayar</label><select id="o_bayar"><option>tunai</option><option>qris</option><option>transfer</option><option>debit</option></select></div>
@@ -1056,7 +1080,8 @@ function formOrder(){
   modal.classList.add('on');
 }
 async function simpanOrder(){
-  const l=get('layanan',o_lay.value), disk=Number(o_disk.value)||0, cab=get('cabang',o_cab.value);
+  const l=get('layanan',o_lay.value), disk=Number(o_disk.value)||0;
+  const cab=get('cabang',o_cab.value||ME.cabang_id);
   const n=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()).length+1;
   const p={id:uid(),nomor:'MHR-'+cab.kode+'-'+today().slice(2).replace(/-/g,'')+'-'+String(n).padStart(4,'0'),
     tanggal:today(),jam:jam(),cabang_id:cab.id,pelanggan_id:o_pel.value,kasir_id:ME.id,status:'berjalan',
@@ -1069,7 +1094,7 @@ async function simpanOrder(){
 function formKas(){
   sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:16px">Catat kas manual</h3>
    <div class="field"><label>Tanggal</label><input type="date" id="k_tgl" value="${today()}"></div>
-   <div class="field"><label>Cabang</label><select id="k_cab">${DB.cabang.map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select></div>
+   <div class="field"><label>Cabang</label><select id="k_cab" ${opsiRef('cabang').length<2?'disabled':''}>${opsiRef('cabang').map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select></div>
    <div class="field"><label>Jenis</label><select id="k_jns"><option value="masuk">Kas masuk</option><option value="keluar">Kas keluar</option></select></div>
    <div class="field"><label>Kategori</label><input id="k_kat" placeholder="Modal, setoran, penarikan…"></div>
    <div class="field"><label>Nominal</label><input type="number" id="k_nom"></div>
@@ -1081,7 +1106,7 @@ function formKas(){
 }
 async function simpanKas(){
   const n=Number(k_nom.value); if(!n) return toast('Isi nominal');
-  await simpan('kas',{id:uid(),tanggal:k_tgl.value,cabang_id:k_cab.value,jenis:k_jns.value,
+  await simpan('kas',{id:uid(),tanggal:k_tgl.value,cabang_id:k_cab.value||ME.cabang_id,jenis:k_jns.value,
     kategori:k_kat.value||'Lain-lain',sumber:'manual',nominal:n,metode:k_met.value,keterangan:k_ket.value,dibuat_oleh:ME.id});
   closeModal(); render(); toast('Kas tercatat');
 }
