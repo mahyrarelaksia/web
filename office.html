@@ -382,7 +382,11 @@ function bersihkan(key,row){
 async function simpan(key,row){
   if(LIVE){ const {data,error}=await sb.from(TBL[key]).upsert(bersihkan(key,row)).select().single();
     if(error){ console.error('Gagal menyimpan ke '+TBL[key]+':',error,row);
-      toast('Gagal menyimpan ('+TBL[key]+'): '+error.message); return null; }
+      const rls=/row-level security/i.test(error.message||'');
+      toast(rls
+        ? 'Ditolak aturan akses ('+TBL[key]+'). Buka Pengaturan → Diagnosa koneksi untuk melihat sebabnya.'
+        : 'Gagal menyimpan ('+TBL[key]+'): '+error.message);
+      return null; }
     const i=DB[key].findIndex(x=>x.id===data.id); i>=0?DB[key][i]=data:DB[key].push(data); return data; }
   const i=DB[key].findIndex(x=>x.id===row.id); i>=0?DB[key][i]=row:DB[key].push(row); return row;
 }
@@ -1100,6 +1104,22 @@ async function diagnosa(){
   const {error:e2}=await sb.from('kategori_pengeluaran').insert({id:uji.id,nama:'__uji tulis__',tipe:'lainnya'});
   baris.push({item:'Uji tulis (insert)',hasil:e2?'GAGAL: '+e2.message:'berhasil',ok:!e2});
   if(!e2) await sb.from('kategori_pengeluaran').delete().eq('id',uji.id);
+  const {data:ap,error:eA}=await sb.rpc('cek_akses_penuh');
+  if(eA){
+    baris.push({item:'Pemeriksaan akses',hasil:'GAGAL: '+eA.message+' — jalankan 14_pulihkan_akses.sql',ok:false});
+  }else if(ap){
+    baris.push({item:'Dikenali sebagai',hasil:`${ap.karyawan||'-'} · role ${ap.role||'-'} · status ${ap.status||'-'}`,
+      ok:!!ap.karyawan});
+    baris.push({item:'Jabatan & lingkup',hasil:`${ap.jabatan||'belum ada jabatan'} · lingkup ${ap.lingkup||'-'} · ${ap.cabang||'-'}`,
+      ok:!!ap.jabatan_id});
+    baris.push({item:'is_office()',hasil:ap.is_office?'ya, diakui orang kantor':'TIDAK — semua tulis akan ditolak',
+      ok:!!ap.is_office});
+    baris.push({item:'Baris izin jabatan',hasil:(ap.baris_hak_akses||0)+' modul terdaftar',ok:(ap.baris_hak_akses||0)>0});
+    const bt=ap.boleh_tambah||{};
+    baris.push({item:'Izin tambah',
+      hasil:Object.entries(bt).map(([k,v])=>`${k}: ${v?'boleh':'tidak'}`).join(' · '),
+      ok:Object.values(bt).some(Boolean)});
+  }
   const mine=DB.hak_akses.filter(x=>x.jabatan_id===ME.jabatan_id);
   baris.push({item:'Baris izin jabatan saya',
     hasil: mine.length ? mine.length+' modul terbaca · '+mine.filter(x=>x.lihat).length+' boleh dilihat'
