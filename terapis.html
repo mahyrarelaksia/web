@@ -71,6 +71,10 @@ main{padding:16px 14px 116px;width:100%}
 .kartu-kerja h4{font-size:14.5px;font-weight:600;line-height:1.3}
 .kartu-kerja .isi{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
 .kartu-kerja .isi span{font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.kartu-kerja .rinci{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
+.kartu-kerja .rinci div{display:flex;justify-content:space-between;gap:8px;font-size:12px}
+.kartu-kerja .rinci span{color:var(--muted)}
+.kartu-kerja .rinci b{font-weight:600;font-variant-numeric:tabular-nums}
 .kartu-kerja .bintang{color:var(--amber);border-color:#F0E0C4}
 .jejak .jam{font-family:Fraunces,serif;font-size:15px;line-height:1.25}
 .menulist .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;
@@ -81,6 +85,10 @@ main{padding:16px 14px 116px;width:100%}
 .stat{position:relative;padding-left:18px}
 .stat:before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:3px;border-radius:3px;background:linear-gradient(180deg,#7FBCE8,#2F6FBF)}
 .stat.a:before{background:var(--amber)}.stat.r:before{background:var(--rose)}.stat.g:before{background:var(--ok)}
+.stat.oranye{background:linear-gradient(160deg,#FFF6EA,#FFEFDC);border:1px solid #F5DFC0}
+.stat.oranye:before{background:linear-gradient(180deg,#F2A93B,#D9822B)}
+.stat.oranye .val{color:#9A5B12}
+.stat.oranye .lbl{color:#A97434}
 .stat .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .stat .val{font-family:Fraunces,serif;font-size:20px;margin-top:3px}
 .stat .sub{font-size:12px;color:var(--muted);margin-top:2px}
@@ -372,9 +380,7 @@ const MENU_LAIN=[['jadwal','▤','Jadwal Saya','Shift kerja Anda ke depan'],
  ['bonus','★','Bonus Saya','Bonus dan skema yang bisa dikejar'],
  ['slip','▦','Slip Gaji','Rincian penerimaan per periode'],
  ['izin','✎','Izin & Cuti','Ajukan izin, sakit, cuti, tukar shift'],
- ['kasbon','◇','Kasbon','Pinjaman dengan potong gaji'],
- ['profil','☺','Profil Saya','Data kepegawaian Anda'],
- ['sandi','⚿','Ganti Sandi','Perbarui kata sandi akun']];
+ ['profil','☺','Profil Saya','Data kepegawaian Anda']];
 
 function buildSide(){
   tabbar.innerHTML=TAB.map(([id,ic,l])=>{
@@ -489,12 +495,13 @@ absen(){
        :`<button class="btn ghost besar blok" onclick="go('kerja')">Belum ada orderan hari ini</button>`}
     </div>
   </div>
-  <div class="grid g3" style="margin-top:14px">
-    ${stat('Check in hari ini',logHari.filter(a=>a.tipe==='masuk').length,'orderan dimulai')}
+  <div class="grid g4" style="margin-top:14px">
+    ${stat('Check in hari ini',logHari.filter(a=>a.tipe==='masuk').length,'orderan dimulai','oranye')}
+    ${stat('Check out hari ini',logHari.filter(a=>a.tipe==='pulang').length,'orderan selesai','oranye')}
     ${stat('Hari kerja efektif',hariEfektif,'periode '+periode(),'g')}
     ${stat(sk.tipe==='harian'?'Upah harian terkumpul':'Potongan bulan ini',
       sk.tipe==='harian'?rp(sk.harian*hariEfektif):rp(Math.max(0,sk.potongan*(26-hariEfektif))),
-      sk.tipe==='harian'?rp(sk.harian)+' × '+hariEfektif+' hari':rp(sk.potongan)+' × hari kosong','a')}
+      sk.tipe==='harian'?rp(sk.harian)+' × '+hariEfektif+' hari':'izin atau tidak bekerja','a')}
   </div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Catatan hari ini</h3></div>
     ${logHari.length?logHari.map(a=>jejakAbsen(a)).join(''):
@@ -507,10 +514,13 @@ absen(){
 },
 kerja(){
   const my=myItem(), sel=my.filter(i=>i.status==='selesai');
-  return `<div class="grid g3">
-    ${stat('Antrean',my.filter(i=>i.status==='menunggu').length,'menunggu dikerjakan','a')}
-    ${stat('Sedang berjalan',my.filter(i=>i.status==='berjalan').length,'','r')}
-    ${stat('Selesai',sel.length,'komisi '+rp(sum(sel,'komisi')),'g')}</div>
+  const komBln=DB.komisi.filter(c=>c.karyawan_id===ME.id&&c.periode===periode());
+  const bonBln=DB.bonus.filter(b=>b.karyawan_id===ME.id&&b.periode===periode()&&b.status!=='ditolak');
+  return `<div class="grid g4">
+    ${stat('Antrean',my.filter(i=>i.status==='menunggu').length,'menunggu dikerjakan','oranye')}
+    ${stat('Sedang berjalan',my.filter(i=>i.status==='berjalan').length,'sudah check in','oranye')}
+    ${stat('Selesai',sel.length,'periode '+periode(),'g')}
+    ${stat('Komisi + bonus',rp(sum(komBln,'nominal')+sum(bonBln,'nominal')),'bulan ini')}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Antrean & sedang berjalan</h3></div>
     ${listKerja(my.filter(i=>i.status!=='selesai'&&i.status!=='batal'))}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Riwayat pekerjaan</h3>
@@ -534,11 +544,12 @@ komisi(){
     <span class="tag info">${sk.tipe==='training'?'Terapis training':sk.tipe==='harian'?'Terapis tetap':'Bulanan'}</span></div>
     ${[sk.tipe==='training'?['Gaji pokok bulanan',rp(sk.pokok)]:null,
        sk.tipe==='harian'?['Upah per hari kerja efektif',rp(sk.harian)]:null,
-       sk.potongan>0?['Potongan per hari tanpa orderan',rp(sk.potongan)]:null,
+       sk.potongan>0?['Potongan harian bila izin atau tidak bekerja',rp(sk.potongan)]:null,
        sk.fee>0?['Imbalan per orderan selesai',rp(sk.fee)]:null,
        sk.fee>0?null:['Komisi dari nilai order',sk.persen+'%']]
       .filter(Boolean).map(([l,v])=>`<div class="list-item"><div style="flex:1">${l}</div><strong>${v}</strong></div>`).join('')}
-    <p class="hint" style="margin-top:10px">Hari kerja efektif dihitung dari hari yang punya minimal satu orderan selesai.</p></div>
+    <p class="hint" style="margin-top:10px">Hari kerja dihitung dari hari yang punya minimal satu orderan selesai.
+      Hari saat Anda izin atau tidak bekerja dikenai potongan harian di atas.</p></div>
   <div class="grid g2">
     ${stat('Komisi bulan ini',rp(sum(bln,'nominal')),bln.length+' layanan')}
     ${stat('Belum dibayarkan',rp(sum(my.filter(c=>!c.dibayar),'nominal')),'akan masuk slip gaji','a')}</div>
@@ -663,21 +674,10 @@ function skemaGaji(){
   };
 }
 function jejakAbsen(a){
-  const i=a.pesanan_item_id?get('item',a.pesanan_item_id):null;
-  const lay=i?nm('layanan',i.layanan_id):'—';
-  const peta=a.lat?`https://www.google.com/maps?q=${a.lat},${a.lng}`:null;
-  return `<div class="jejak">
-    <button onclick="lihatFoto('${a.id}')" title="Lihat foto"
-      style="width:46px;height:46px;border-radius:13px;border:1px solid var(--line);background:var(--mist);
-      color:var(--jade);cursor:pointer;flex:none;font-size:17px">◉</button>
-    <div style="flex:1;min-width:0">
-      <div class="jam">${jamDari(a.waktu)}
-        ${a.tipe==='masuk'?'<span class="tag ok">Check in</span>':'<span class="tag warn">Check out</span>'}</div>
-      <div class="hint">${esc(lay)}</div>
-      <div class="hint" style="word-break:break-word">${esc(a.alamat||'Lokasi tidak tercatat')}
-        ${a.akurasi_meter?` · ±${a.akurasi_meter} m`:''}</div>
-      ${peta?`<a class="hint" style="color:var(--jade);font-weight:600" href="${peta}" target="_blank" rel="noopener">Lihat di peta</a>`:''}
-    </div></div>`;
+  return `<div class="jejak" style="align-items:center">
+    <div style="flex:1"><span class="jam">${jamDari(a.waktu)}</span></div>
+    ${a.tipe==='masuk'?'<span class="tag ok">Check in</span>':'<span class="tag warn">Check out</span>'}
+  </div>`;
 }
 function rekapHarian(log){
   const peta={};
@@ -695,19 +695,28 @@ function rekapHarian(log){
 function kartuKerja(i){
   const p=get('pesanan',i.pesanan_id)||{};
   const l=get('layanan',i.layanan_id)||{};
+  const bon=DB.bonus.filter(b=>b.karyawan_id===ME.id&&b.pesanan_id===p.id&&b.status!=='ditolak');
+  const nBon=sum(bon,'nominal');
+  const hari=p.tanggal?new Date(String(p.tanggal).slice(0,10)+'T00:00')
+    .toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'-';
   return `<div class="kartu-kerja">
     <div class="atas">
-      <div><h4>${esc(l.nama||'-')}</h4>
-        <div class="hint">${tgl(p.tanggal)} · ${jamDari(i.jam_mulai)}–${jamDari(i.jam_selesai)}</div></div>
-      <div style="text-align:right"><div class="rp" style="color:var(--jade)">${rp(i.komisi)}</div>
-        <div class="hint">komisi</div></div>
+      <div style="min-width:0"><h4>${esc(l.nama||'-')}</h4>
+        <div class="hint">${esc(nm('pelanggan',p.pelanggan_id))}</div>
+        <div class="hint">${hari}</div></div>
+      <div style="text-align:right;flex:none">
+        <div class="rp" style="color:var(--jade);font-size:15px">${rp((i.komisi||0)+nBon)}</div>
+        <div class="hint">diterima</div></div>
     </div>
-    <div class="isi">
-      <span>${esc(nm('pelanggan',p.pelanggan_id))}</span>
-      <span>${l.durasi_menit||0} menit</span>
-      <span>${rp(i.harga)}</span>
-      ${i.rating?`<span class="bintang">★ ${i.rating}</span>`:''}
-    </div></div>`;
+    <div class="rinci">
+      <div><span>Waktu</span><b>${jamDari(i.jam_mulai)}–${jamDari(i.jam_selesai)} · ${l.durasi_menit||0} mnt</b></div>
+      <div><span>Harga layanan</span><b>${rp(i.harga)}</b></div>
+      <div><span>Komisi</span><b>${rp(i.komisi)}</b></div>
+      <div><span>Bonus</span><b>${nBon?rp(nBon):'—'}</b></div>
+    </div>
+    ${bon.length?`<div class="isi">${bon.map(b=>`<span class="bintang">${esc(cap(b.jenis))} ${rp(b.nominal)}</span>`).join('')}</div>`:''}
+    ${i.rating?`<div class="isi"><span class="bintang">★ ${i.rating}</span></div>`:''}
+  </div>`;
 }
 
 function listKerja(items){
@@ -728,17 +737,17 @@ function listKerja(items){
 let KAM={aliran:null,foto:null,posisi:null,alamat:'',item:null,tipe:'masuk'};
 
 async function bukaAbsen(itemId,tipe){
-  KAM={aliran:null,foto:null,posisi:null,alamat:'Mencari lokasi…',item:itemId,tipe};
+  KAM={aliran:null,foto:null,posisi:null,alamat:'',item:itemId,tipe};
   const i=get('item',itemId), l=i?get('layanan',i.layanan_id):null;
   sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:3px">${tipe==='masuk'?'Check in':'Check out'} pekerjaan</h3>
     <p class="hint" style="margin-bottom:14px">${esc(l?.nama||'-')} · ${esc(get('pesanan',i?.pesanan_id)?.nomor||'')}</p>
     <div class="kam" id="kotakKam">
       <video id="vid" autoplay playsinline muted></video>
-      <div class="sinyal" id="sinyal">Menyalakan kamera depan…</div>
+      <div class="sinyal" id="sinyal">${jam()}</div>
     </div>
     <button class="btn besar blok" id="btnJepret" onclick="jepret()">Ambil foto</button>
     <button class="btn ghost blok" style="margin-top:8px" onclick="tutupAbsen()">Batal</button>
-    <p class="hint" style="margin-top:10px">Foto dan titik lokasi tercatat sebagai bukti kehadiran.</p>`;
+    <p class="hint" style="margin-top:10px">Ambil foto, lalu kirim. Waktu dan lokasi tercatat otomatis.</p>`;
   modal.classList.add('on');
   nyalakanKamera(); ambilLokasi();
 }
@@ -758,23 +767,21 @@ async function nyalakanKamera(){
   }
 }
 function ambilLokasi(){
-  if(!navigator.geolocation){ KAM.alamat='Perangkat tidak mendukung GPS'; return tulisSinyal(); }
+  if(!navigator.geolocation){ KAM.alamat='Perangkat tidak mendukung GPS'; return; }
   navigator.geolocation.getCurrentPosition(async p=>{
     KAM.posisi={lat:p.coords.latitude,lng:p.coords.longitude,akurasi:Math.round(p.coords.accuracy)};
-    KAM.alamat='Menerjemahkan alamat…'; tulisSinyal();
     try{
       const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${p.coords.latitude}&lon=${p.coords.longitude}&accept-language=id`);
       const j=await r.json();
       KAM.alamat=j.display_name||`${KAM.posisi.lat.toFixed(5)}, ${KAM.posisi.lng.toFixed(5)}`;
     }catch(_){ KAM.alamat=`${KAM.posisi.lat.toFixed(5)}, ${KAM.posisi.lng.toFixed(5)}`; }
-    tulisSinyal();
-  },e=>{ KAM.alamat='Lokasi tidak diizinkan'; tulisSinyal(); },{enableHighAccuracy:true,timeout:12000});
+  },e=>{ KAM.alamat='Lokasi tidak diizinkan'; },{enableHighAccuracy:true,timeout:12000});
 }
+/* Lokasi tetap direkam diam-diam untuk laporan kantor, tetapi tidak
+   ditampilkan ke terapis supaya layar check in tetap sederhana. */
 function tulisSinyal(){
   const s=document.getElementById('sinyal'); if(!s) return;
-  const a=KAM.posisi?` · ±${KAM.posisi.akurasi} m`:'';
-  s.innerHTML=`<strong>${jam()}</strong> · ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}${a}
-    <br>${esc(KAM.alamat||'—')}`;
+  s.innerHTML=`<strong>${jam()}</strong> · ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}`;
 }
 function jepret(){
   const v=document.getElementById('vid');
@@ -786,7 +793,7 @@ function jepret(){
   KAM.foto=c.toDataURL('image/jpeg',0.42);   // sekitar 15 KB, cukup untuk bukti wajah
   document.getElementById('kotakKam').innerHTML=
     `<img src="${KAM.foto}" alt="Foto absensi" style="transform:none">
-     <div class="sinyal">${jam()} · ${esc(KAM.alamat||'—')}</div>`;
+     <div class="sinyal">${jam()}</div>`;
   const b=document.getElementById('btnJepret');
   b.className='btn besar blok';
   b.textContent=KAM.tipe==='masuk'?'Kirim check in':'Kirim check out'; b.onclick=kirimAbsen;
