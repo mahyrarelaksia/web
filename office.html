@@ -163,8 +163,10 @@ const LINGKUP=[['semua','Semua cabang'],['cabang','Cabang sendiri'],['sendiri','
 function boleh(modul,aksi='lihat'){
   if(!ME) return false;
   if(ME.role==='owner') return true;                       // pemilik selalu penuh
+  // Tabel izin sama sekali kosong (belum dipasang) -> jaring pengaman untuk admin
+  if(!DB.hak_akses.length) return ME.role==='admin';
   const baris=DB.hak_akses.filter(x=>x.jabatan_id===ME.jabatan_id);
-  if(!baris.length) return ME.role==='admin';              // jabatan belum diatur sama sekali
+  if(!baris.length) return false;                          // jabatan ini belum diberi izin apa pun
   const h=baris.find(x=>x.modul===modul);
   return h?!!h[aksi]:false;                                // yang tidak dicentang = tidak boleh
 }
@@ -376,7 +378,7 @@ async function masuk(){
     document.getElementById('login').style.display='none';
     document.getElementById('app').style.display='block';
     meName.textContent=ME.nama; meRole.textContent=nm('jabatan',ME.jabatan_id); meAv.textContent=ME.nama[0];
-    buildSide(); go('dash');
+    buildSide(); go(halamanPertama());
   }catch(e){ err.textContent=e.message; err.classList.add('on'); }
   btnLogin.disabled=false; btnLogin.textContent='Masuk';
 }
@@ -497,13 +499,23 @@ const MENU=[
 ];
 function buildSide(){
   side.innerHTML=`<div class="brand"><div class="mark"><img src="logo.png" alt="Mahyra Relaksia"></div><div><strong style="font-family:Fraunces,serif">Mahyra</strong>
-    <div style="font-size:11px;color:#A9C9EA">Portal Office</div></div></div>`
+    <div style="font-size:11px;color:#A9C9EA">Portal Office</div></div></div>
+    <div style="margin:0 8px 6px;padding:9px 11px;border-radius:12px;background:rgba(255,255,255,.1);font-size:11.5px;line-height:1.5">
+      <div style="color:#fff;font-weight:600">${esc(nm('jabatan',ME.jabatan_id))}</div>
+      <div style="color:#A9C9EA">${lingkupSaya()==='semua'?'Semua cabang':esc(nm('cabang',ME.cabang_id))}</div></div>`
    +MENU.map(([g,it])=>{
       const isi=it.filter(([id])=>boleh(id.startsWith('m_')?id.slice(2):id,'lihat'));
       if(!isi.length) return '';
       return `<div class="navgrp">${g}</div>`+isi.map(([id,ic,l])=>
         `<div class="nav" id="nv_${id}" onclick="go('${id}')"><span class="ic">${ic}</span>${l}</div>`).join('');
      }).join('');
+}
+/* Halaman pembuka = menu pertama yang diizinkan untuk jabatan ini */
+function halamanPertama(){
+  for(const [,isi] of MENU)
+    for(const [id] of isi)
+      if(boleh(id.startsWith('m_')?id.slice(2):id,'lihat')) return id;
+  return 'tanpa_akses';
 }
 function go(p){ PAGE=p; SEARCH='';
   document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
@@ -719,6 +731,13 @@ const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang
 function render(){
   const key=PAGE.startsWith('m_')?PAGE.slice(2):null;
   const modul=key||PAGE;
+  if(PAGE==='tanpa_akses'){
+    pgTitle.textContent='Belum ada akses'; pgSub.textContent='';
+    view.innerHTML=`<div class="card empty"><div class="disp">Jabatan Anda belum diberi izin apa pun</div>
+      <div>Jabatan <strong>${esc(nm('jabatan',ME.jabatan_id))}</strong> belum dicentang pada modul mana pun.
+      Minta owner atau admin membukanya lewat Pengaturan → Hak Akses &amp; Peran.</div></div>`;
+    return;
+  }
   if(!boleh(modul,'lihat')){
     pgTitle.textContent='Tidak ada akses'; pgSub.textContent='';
     view.innerHTML=`<div class="card empty"><div class="disp">Halaman ini di luar hak akses Anda</div>
@@ -1010,6 +1029,12 @@ async function diagnosa(){
   const {error:e2}=await sb.from('kategori_pengeluaran').insert({id:uji.id,nama:'__uji tulis__',tipe:'lainnya'});
   baris.push({item:'Uji tulis (insert)',hasil:e2?'GAGAL: '+e2.message:'berhasil',ok:!e2});
   if(!e2) await sb.from('kategori_pengeluaran').delete().eq('id',uji.id);
+  const mine=DB.hak_akses.filter(x=>x.jabatan_id===ME.jabatan_id);
+  baris.push({item:'Baris izin jabatan saya',
+    hasil: mine.length ? mine.length+' modul terbaca · '+mine.filter(x=>x.lihat).length+' boleh dilihat'
+                       : 'kosong — jalankan 10_izin_terbaca.sql agar baris izin bisa dibaca sendiri',
+    ok: mine.length>0});
+  baris.push({item:'Lingkup data',hasil:cap(lingkupSaya()),ok:true});
   for(const k of Object.keys(TBL)){
     const {count,error}=await sb.from(TBL[k]).select('*',{count:'exact',head:true});
     baris.push({item:TBL[k],hasil:error?'GAGAL: '+error.message:count+' baris',ok:!error});
