@@ -586,14 +586,16 @@ komisi(){
   const sk=skemaGaji();
   return `<div class="card" style="margin-bottom:14px"><div class="head"><h3>Skema penghasilan Anda</h3>
     <span class="tag info">${sk.tipe==='training'?'Terapis training':sk.tipe==='harian'?'Terapis tetap':'Bulanan'}</span></div>
-    ${[sk.tipe==='training'?['Gaji pokok bulanan',rp(sk.pokok)]:null,
-       sk.tipe==='harian'?['Upah per hari kerja efektif',rp(sk.harian)]:null,
+    ${[sk.pokok>0?['Gaji pokok bulanan',rp(sk.pokok)]:null,
+       sk.harian>0?['Gaji harian per hari kerja',rp(sk.harian)]:null,
        sk.potongan>0?['Potongan harian bila izin atau tidak bekerja',rp(sk.potongan)]:null,
        sk.fee>0?['Imbalan per orderan selesai',rp(sk.fee)]:null,
-       sk.fee>0?null:['Komisi dari nilai order',sk.persen+'%']]
+       (sk.fee<=0&&sk.persen>0)?['Komisi dari nilai order',sk.persen+'%']:null,
+       ['Bonus lainnya','tips, transport, lembur']]
       .filter(Boolean).map(([l,v])=>`<div class="list-item"><div style="flex:1">${l}</div><strong>${v}</strong></div>`).join('')}
     <p class="hint" style="margin-top:10px">Hari kerja dihitung dari hari yang punya minimal satu orderan selesai.
-      Hari saat Anda izin atau tidak bekerja dikenai potongan harian di atas.</p></div>
+      Hari saat Anda izin atau tidak bekerja dikenai potongan harian di atas.
+      Bonus tips, transport, dan lembur diberikan kantor per orderan dan langsung masuk slip gaji.</p></div>
   <div class="grid g2">
     ${stat('Komisi bulan ini',rp(sum(bln,'nominal')),bln.length+' layanan')}
     ${stat('Belum dibayarkan',rp(sum(my.filter(c=>!c.dibayar),'nominal')),'akan masuk slip gaji','a')}</div>
@@ -745,7 +747,13 @@ function tglBonus(b){
 }
 function kartuBonus(b){
   const p=b.pesanan_id?get('pesanan',b.pesanan_id):null;
-  const pel=p?nm('pelanggan',p.pelanggan_id):(b.deskripsi||'—');
+  // nama pelanggan diambil dari order; bila order tak terbaca, cari lewat pekerjaan
+  let pel=p?get('pelanggan',p.pelanggan_id)?.nama:null;
+  if(!pel&&b.pesanan_item_id){
+    const i=get('item',b.pesanan_item_id), o=i?get('pesanan',i.pesanan_id):null;
+    pel=o?get('pelanggan',o.pelanggan_id)?.nama:null;
+  }
+  if(!pel) pel=String(b.deskripsi||'').replace(/\s*dari order\s+\S+/i,'').trim()||cap(b.jenis);
   return `<div class="kartu-bonus">
     <div style="flex:1;min-width:0">
       <h4>${esc(pel)}</h4>
