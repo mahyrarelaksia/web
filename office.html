@@ -187,7 +187,7 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
  shift:'shift',jadwal:'jadwal_kerja',pesanan:'pesanan',item:'pesanan_item',absensi:'absensi',izin:'izin',
  komisi:'komisi',bonus:'bonus',aturan_bonus:'aturan_bonus',gaji:'gaji',kasbon:'kasbon',
  kategori_pengeluaran:'kategori_pengeluaran',pengeluaran:'pengeluaran',kas:'kas',target:'target',
- hak_akses:'hak_akses',absen_log:'absen_log'};
+ hak_akses:'hak_akses',absen_log:'absen_log',pengaturan:'pengaturan'};
 
 /* ------------------ MODUL & MESIN HAK AKSES ------------------ */
 const MODUL=[
@@ -305,7 +305,7 @@ const nm=(t,id,f='nama')=>{const r=get(t,id);return r?r[f]:'-'};
 /* ------------------------- data (demo seed) ------------------------- */
 const DB={cabang:[],jabatan:[],karyawan:[],layanan:[],pelanggan:[],shift:[],jadwal:[],pesanan:[],item:[],
  absensi:[],izin:[],komisi:[],bonus:[],aturan_bonus:[],gaji:[],kasbon:[],kategori_pengeluaran:[],
- pengeluaran:[],kas:[],target:[],hak_akses:[],absen_log:[]};
+ pengeluaran:[],kas:[],target:[],hak_akses:[],absen_log:[],pengaturan:[]};
 
 const AKUN_DEMO={ 'owner@mahyra.id':{pw:'mahyra123',id:'k1'}, 'admin@mahyra.id':{pw:'mahyra123',id:'k2'},
                   'kasir@mahyra.id':{pw:'mahyra123',id:'k6'} };
@@ -495,7 +495,7 @@ async function masuk(){
     document.getElementById('login').style.display='none';
     document.getElementById('app').style.display='block';
     meName.textContent=ME.nama; meRole.textContent=nm('jabatan',ME.jabatan_id); meAv.textContent=ME.nama[0];
-    muatModel();
+    try{ muatModel(); }catch(e){ console.warn('Model biaya dilewati:',e); }
     buildSide(); go(halamanPertama());
   }catch(e){ err.textContent=e.message; err.classList.add('on'); }
   btnLogin.disabled=false; btnLogin.textContent='Masuk';
@@ -913,7 +913,14 @@ function render(){
     if(p) AKSES_JBT=p.value;
     if(!AKSES_JBT||!get('jabatan',AKSES_JBT)) AKSES_JBT=DB.jabatan[0]?.id||null;
   }
-  view.innerHTML=key?renderModule(key):(PAGES[PAGE]?PAGES[PAGE]():'<div class="card empty">Halaman belum tersedia</div>');
+  try{
+    view.innerHTML=key?renderModule(key):(PAGES[PAGE]?PAGES[PAGE]():'<div class="card empty">Halaman belum tersedia</div>');
+  }catch(e){
+    console.error('Halaman '+PAGE+' gagal digambar:',e);
+    view.innerHTML=`<div class="card empty"><div class="disp">Halaman ini gagal ditampilkan</div>
+      <div>${esc(e.message||String(e))}</div>
+      <button class="btn ghost" style="margin-top:12px" onclick="go('dash')">Kembali ke dashboard</button></div>`;
+  }
 }
 
 const PAGES={
@@ -1303,7 +1310,7 @@ const MODEL_AWAL={
 let MODEL={...MODEL_AWAL};
 
 function muatModel(){
-  const p=DB.pengaturan.find(x=>x.kunci==='model_biaya');
+  const p=(DB.pengaturan||[]).find(x=>x.kunci==='model_biaya');
   const isi=p&&p.nilai&&Object.keys(p.nilai).length?p.nilai:{};
   MODEL={...MODEL_AWAL,...isi};
   MODEL.alat=(isi.alat&&isi.alat.length)?isi.alat:MODEL_AWAL.alat.map(x=>({...x}));
@@ -1313,6 +1320,7 @@ async function simpanModel(){
   if(LIVE){
     const {error}=await sb.from('pengaturan').upsert({kunci:'model_biaya',nilai:MODEL});
     if(error) return toast('Gagal menyimpan: '+error.message);
+    if(!Array.isArray(DB.pengaturan)) DB.pengaturan=[];
     const i=DB.pengaturan.findIndex(x=>x.kunci==='model_biaya');
     if(i>=0) DB.pengaturan[i].nilai=MODEL; else DB.pengaturan.push({kunci:'model_biaya',nilai:MODEL});
   }
