@@ -352,6 +352,8 @@ async function masuk(){
       if(!akun||akun.pw!==pass) throw new Error('Email atau kata sandi salah.');
       ME=get('karyawan',akun.id);
     }
+    simpanan('tulis','mahyra_versi',VERSI_APP);
+    simpanan('tulis','mahyra_sidik',sidikAkses(ME));
     bukaAplikasi();
   }catch(e){ err.textContent=e.message; err.classList.add('on'); }
   btnLogin.disabled=false; btnLogin.textContent='Masuk';
@@ -364,25 +366,67 @@ function bukaAplikasi(){
   meAv.textContent=ME.nama[0];
   buildSide(); go('dash');
 }
-async function keluar(){ if(LIVE) await sb.auth.signOut(); location.reload(); }
+async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); location.reload(); }
+
+/* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
+   semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
+const VERSI_APP='2026.08.05.1';
+function simpanan(aksi,kunci,nilai){
+  try{
+    if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
+    if(aksi==='baca')  return localStorage.getItem(kunci);
+    localStorage.setItem(kunci,nilai);
+  }catch(e){ return null; }
+}
+/* Sidik jari hak akses: berubah bila peran, jabatan, cabang, atau status diubah admin */
+const sidikAkses=k=>[k.role,k.jabatan_id,k.cabang_id,k.status].join('|');
 
 /* Sesi disimpan di perangkat, jadi terapis tidak perlu login ulang tiap
    kali membuka aplikasi untuk check in. Keluar dari menu Lainnya. */
 (async function pulihkanSesi(){
   if(!LIVE) return;
-  const kotak=document.getElementById('login');
   try{
     const {data:{session}}=await sb.auth.getSession();
     if(!session) return;
-    kotak.querySelector('.card-login').innerHTML=
-      '<p class="hint" style="text-align:center;padding:20px">Membuka sesi Anda…</p>';
+
+    // Aplikasi diperbarui -> minta masuk ulang sekali
+    const versiLama=simpanan('baca','mahyra_versi');
+    if(versiLama&&versiLama!==VERSI_APP){
+      await sb.auth.signOut(); simpanan('hapus'); simpanan('tulis','mahyra_versi',VERSI_APP);
+      return pesanLogin('Aplikasi baru saja diperbarui. Silakan masuk sekali lagi.');
+    }
+    simpanan('tulis','mahyra_versi',VERSI_APP);
+
+    loginMemuat();
     const k=await ambilProfil(session.user.id,String(session.user.email||'').toLowerCase());
-    if(!k||k.role!=='terapis'||k.status!=='aktif'){ await sb.auth.signOut(); return location.reload(); }
+    if(!k||k.role!=='terapis'||k.status!=='aktif'){
+      await sb.auth.signOut(); simpanan('hapus');
+      return pesanLogin('Akun Anda tidak lagi berlaku untuk portal ini. Hubungi admin.');
+    }
+
+    // Hak akses diubah admin -> masuk ulang supaya izinnya terbaca segar
+    const sidik=sidikAkses(k), sidikLama=simpanan('baca','mahyra_sidik');
+    if(sidikLama&&sidikLama!==sidik){
+      await sb.auth.signOut(); simpanan('hapus'); simpanan('tulis','mahyra_sidik',sidik);
+      return pesanLogin('Data kepegawaian Anda diperbarui. Silakan masuk sekali lagi.');
+    }
+    simpanan('tulis','mahyra_sidik',sidik);
+
     ME=k;
     if(!DB.karyawan.some(x=>x.id===k.id)) DB.karyawan.push(k);
     bukaAplikasi();
-  }catch(e){ console.warn('Sesi tidak bisa dipulihkan:',e); location.reload(); }
+  }catch(e){ console.warn('Sesi tidak bisa dipulihkan:',e); pesanLogin(''); }
 })();
+
+function loginMemuat(){
+  const c=document.querySelector('#login .card-login');
+  if(c) c.innerHTML='<p class="hint" style="text-align:center;padding:26px">Membuka sesi Anda…</p>';
+}
+function pesanLogin(teks){
+  // kembalikan formulir login apa adanya, lalu tampilkan keterangannya
+  if(teks) sessionStorage.setItem('mahyra_pesan',teks);
+  location.reload();
+}
 
 /* Tab bawah ala aplikasi. Tombol Absen di tengah, ukurannya paling besar. */
 const TAB=[['dash','◈','Beranda'],['kerja','◎','Kerjaan'],['absen','✓','Absen'],['komisi','%','Komisi'],['menu','☰','Lainnya']];
@@ -492,7 +536,7 @@ dash(){
   const jd=DB.jadwal.find(j=>j.karyawan_id===ME.id&&String(j.tanggal).slice(0,10)===today());
   const sh=jd?get('shift',jd.shift_id):null;
   const rat=sel.filter(i=>i.rating), avg=rat.length?(sum(rat,'rating')/rat.length).toFixed(1):'—';
-  const tg=(DB.target||[]).find(t=>t.karyawan_id===ME.id&&t.periode===periode());
+  const tg=targetSaya();
   const pct=tg&&tg.target_order?Math.min(100,Math.round(sel.length/tg.target_order*100)):0;
   return `<div class="grid g4">
     ${stat('Order selesai',sel.length,'periode '+periode())}
@@ -506,9 +550,11 @@ dash(){
         <div style="flex:1"><div class="hint">Check in</div><div class="clock">${jamDari(abs?.jam_masuk)}</div></div>
         <div style="flex:1"><div class="hint">Check out</div><div class="clock">${jamDari(abs?.jam_pulang)}</div></div></div>
       <button class="btn" style="margin-top:12px" onclick="go('absen')">Buka absensi</button></div>
-    <div class="card"><div class="head"><h3>Target order saya</h3><span class="tag info">${tg?tg.target_order+' order':'belum diatur'}</span></div>
-      <div style="font-family:Fraunces,serif;font-size:30px">${pct}%</div><div class="bar"><i style="width:${pct}%"></i></div>
-      <p class="hint" style="margin-top:8px">${sel.length} dari ${tg?.target_order||0} order bulan ini.</p>
+    <div class="card"><div class="head"><h3>Target order saya</h3>
+      <span class="tag ${tg?'info':'warn'}">${tg?tg.target_order+' order · '+tg.periode:'belum diatur'}</span></div>
+      <div style="font-family:Fraunces,serif;font-size:26px">${pct}%</div><div class="bar"><i style="width:${pct}%"></i></div>
+      <p class="hint" style="margin-top:8px">${tg?`${sel.length} dari ${tg.target_order} order pada periode ${tg.periode}.`
+        :'Target belum ditetapkan kantor untuk periode ini.'}</p>
       <div style="margin-top:14px">${DB.aturan_bonus.filter(a=>a.aktif).slice(0,3).map(a=>
         `<div class="list-item"><span class="dot" style="background:var(--amber)"></span><div style="flex:1">
           <strong>${esc(a.nama)}</strong><div class="hint">${esc(a.syarat)}</div></div>
@@ -710,6 +756,16 @@ sandi(){
 }};
 
 /* Skema gaji yang berlaku untuk saya */
+/* Target saya: utamakan periode berjalan, kalau belum ada pakai yang terbaru.
+   Bila tidak ada target pribadi, ikuti target cabang. */
+function targetSaya(){
+  const daftar=(DB.target||[]);
+  const punyaSaya=daftar.filter(t=>t.karyawan_id===ME.id);
+  return punyaSaya.find(t=>t.periode===periode())
+      || punyaSaya.sort((a,b)=>String(b.periode).localeCompare(String(a.periode)))[0]
+      || daftar.find(t=>!t.karyawan_id&&t.cabang_id===ME.cabang_id&&t.periode===periode())
+      || null;
+}
 function skemaGaji(){
   const j=get('jabatan',ME.jabatan_id)||{};
   return {
@@ -1000,6 +1056,14 @@ async function gantiSandi(){
   else { AKUN_DEMO[ME.email].pw=a; }
   s_baru.value=''; s_ulang.value=''; toast('Kata sandi diperbarui');
 }
+/* Keterangan setelah keluar paksa karena pembaruan */
+(function(){
+  try{
+    const p=sessionStorage.getItem('mahyra_pesan');
+    if(p){ sessionStorage.removeItem('mahyra_pesan');
+      const e=document.getElementById('loginErr'); if(e){ e.textContent=p; e.classList.add('on'); } }
+  }catch(_){}
+})();
 setInterval(()=>{const c=document.getElementById('liveClock'); if(c) c.textContent=jam();},1000);
 </script>
 </body>
