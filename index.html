@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mahyra Relaksia — Pijat & Terapi Panggilan ke Rumah</title>
-<meta name="description" content="Terapis bersertifikat datang ke rumah Anda membawa peralatan sendiri. Pijat tradisional, refleksi, perawatan ibu hamil dan pasca melahirkan. Bayar setelah sesi.">
-<meta property="og:title" content="Mahyra Relaksia — Home Wellness & Therapy">
-<meta property="og:description" content="Pijat dan terapi panggilan ke rumah oleh terapis bersertifikat.">
+<title>Mahyra Massage — Pijat Panggilan ke Rumah di Malang &amp; Surabaya</title>
+<meta name="description" content="Pijat panggilan ke rumah di Malang dan Surabaya. Full body massage mulai Rp 100.000, paket tiga perawatan mulai Rp 160.000. Terapis bersertifikat, bayar setelah sesi.">
+<meta property="og:title" content="Mahyra Massage — Home Wellness & Therapy">
+<meta property="og:description" content="Pijat panggilan ke rumah di Malang dan Surabaya oleh terapis bersertifikat.">
 <meta property="og:image" content="logo.png">
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="apple-touch-icon" href="logo.png">
@@ -120,6 +120,12 @@ select:hover{border-color:var(--langit)}
  font-variant-numeric:tabular-nums}
 .pesan .tbl{width:100%;margin-top:12px}
 .kaki-pesan{font-size:12px;color:var(--redup);text-align:center;margin-top:12px}
+.isi-paket{font-size:13px;color:var(--laut);background:rgba(143,198,236,.16);border-radius:10px;
+ padding:8px 11px;margin-top:2px;line-height:1.5}
+.judul-area{width:100%;background:none!important;border:0!important;padding:10px 0 2px!important;
+ font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--biru);font-weight:500}
+.powered{opacity:.85}
+.powered strong{color:var(--emas-2);font-weight:500}
 
 /* ============ PITA FAKTA ============ */
 .pita{background:var(--malam);color:#D8E4F2;padding:0}
@@ -219,7 +225,7 @@ details p{padding:0 30px 20px 0;color:var(--redup);font-size:15px}
 
 /* footer */
 footer.situs{background:var(--malam);color:#93A9C6;padding:66px 0 26px;margin-top:92px}
-.f-kisi{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:38px}
+.f-kisi{display:grid;grid-template-columns:1.6fr 1fr 1fr 1.1fr 1fr;gap:32px}
 footer.situs h4{font-family:Jost,sans-serif;font-size:11px;letter-spacing:.2em;text-transform:uppercase;
  color:#fff;font-weight:500;margin-bottom:16px}
 footer.situs a{display:block;padding:5px 0;font-size:14.5px;transition:color .2s}
@@ -278,8 +284,8 @@ footer.situs a:hover{color:var(--emas-2)}
 <header id="atas">
   <div class="wrap nav">
     <a class="merek" href="#atas">
-      <img src="logo.png" alt="Logo Mahyra Relaksia">
-      <span><b>Mahyra Relaksia</b><span>Home Wellness &amp; Therapy</span></span>
+      <img src="logo.png" alt="Logo Mahyra Massage">
+      <span><b>Mahyra Massage</b><span>Home Wellness &amp; Therapy</span></span>
     </a>
     <nav class="tautan">
       <a href="#layanan">Layanan</a>
@@ -313,7 +319,7 @@ footer.situs a:hover{color:var(--emas-2)}
   </svg>
   <div class="wrap hero-isi">
     <div class="masuk">
-      <p class="eyebrow">Pijat panggilan · Jabodetabek</p>
+      <p class="eyebrow">Pijat panggilan · Malang &amp; Surabaya</p>
       <h1>Pulih di rumah,<br>tanpa <em>keluar rumah.</em></h1>
       <p class="utama">Terapis kami datang membawa matras, minyak, dan handuk bersih.
         Anda tinggal menyiapkan ruang dan waktu — sisanya urusan kami.</p>
@@ -334,11 +340,16 @@ footer.situs a:hover{color:var(--emas-2)}
       <p class="ket">Pilih dulu di sini, biar pesan WhatsApp-nya tersusun rapi.</p>
 
       <div class="kolom">
+        <label class="label" for="fCabang">Cabang terdekat</label>
+        <select id="fCabang"></select>
+      </div>
+
+      <div class="kolom">
         <label class="label" for="fLayanan">Layanan</label>
         <select id="fLayanan"></select>
       </div>
 
-      <div class="kolom">
+      <div class="kolom" id="kolomDurasi">
         <span class="label">Durasi</span>
         <div class="cip" id="fDurasi"></div>
       </div>
@@ -377,9 +388,9 @@ footer.situs a:hover{color:var(--emas-2)}
   <div class="wrap">
     <div class="tengah masuk">
       <p class="eyebrow tengah">Layanan</p>
-      <h2 class="judul">Delapan perawatan, satu tujuan</h2>
+      <h2 class="judul">Daftar harga, tanpa biaya tersembunyi</h2>
       <p class="timbal">Semua dikerjakan di rumah Anda. Harga di bawah sudah termasuk peralatan,
-        minyak, dan handuk bersih yang dibawa terapis.</p>
+        minyak, dan handuk bersih yang dibawa terapis — tidak ada biaya transportasi di dalam area layanan.</p>
     </div>
     <div class="kisi k4" id="kisiLayanan"></div>
   </div>
@@ -396,43 +407,43 @@ footer.situs a:hover{color:var(--emas-2)}
   <div class="wrap">
     <div class="tengah masuk">
       <p class="eyebrow tengah terang">Paket</p>
-      <h2 class="judul">Sesekali, berdua, atau rutin</h2>
-      <p class="timbal">Yang rutin dapat terapis tetap — jadi tidak perlu menjelaskan keluhan dari awal setiap kali.</p>
+      <h2 class="judul">Pilih sesuai kebutuhan</h2>
+      <p class="timbal">Semua paket dikerjakan terapis bersertifikat di rumah Anda, dengan peralatan yang dibawa sendiri.</p>
     </div>
     <div class="paket">
       <article class="tier masuk">
         <span class="cap">Sekali datang</span>
-        <h3>Sesi Tunggal</h3>
-        <p style="color:#93A9C6;font-size:14.5px">Untuk yang ingin mencoba dulu.</p>
-        <div class="biaya"><sup>mulai</sup> 160rb</div>
+        <h3>Full Body Massage</h3>
+        <p style="color:#93A9C6;font-size:14.5px">Pijat seluruh badan, 1,5 sampai 2,5 jam.</p>
+        <div class="biaya"><sup>mulai</sup> 100rb</div>
         <ul>
-          <li>Pilih layanan dan durasi bebas</li>
-          <li>Terapis dipilihkan sesuai keluhan</li>
-          <li>Bayar tunai, transfer, atau QRIS</li>
+          <li>1,5 jam Rp 100.000 · 2 jam Rp 120.000</li>
+          <li>2,5 jam Rp 150.000</li>
+          <li>Bisa digabung totok wajah, head massage, atau refleksi</li>
         </ul>
         <a class="tbl tbl-emas" href="#pesan">Pesan sesi</a>
       </article>
       <article class="tier unggul masuk">
         <span class="cap">Paling sering diambil</span>
-        <h3>Berdua</h3>
-        <p style="color:#93A9C6;font-size:14.5px">Dua terapis datang bersamaan.</p>
-        <div class="biaya"><sup>mulai</sup> 300rb</div>
+        <h3>Paket Tiga Perawatan</h3>
+        <p style="color:#93A9C6;font-size:14.5px">Dua setengah jam, tiga perawatan sekaligus.</p>
+        <div class="biaya"><sup>mulai</sup> 160rb</div>
         <ul>
-          <li>Dua terapis, satu waktu, satu rumah</li>
-          <li>Bisa beda layanan untuk tiap orang</li>
-          <li>Cocok untuk pasangan atau ibu dan anak</li>
+          <li>Paket Favorit Rp 160.000 — badan, kepala, wajah</li>
+          <li>Paket Rileks Rp 165.000 — badan, wajah, kaki</li>
+          <li>Paket Puas Rp 165.000 — badan, kepala, kaki</li>
         </ul>
         <a class="tbl tbl-emas" href="#pesan">Pesan sesi</a>
       </article>
       <article class="tier masuk">
-        <span class="cap">Hemat 15%</span>
-        <h3>Langganan 4×</h3>
-        <p style="color:#93A9C6;font-size:14.5px">Untuk keluhan yang perlu ditangani berkala.</p>
-        <div class="biaya"><sup>mulai</sup> 540rb</div>
+        <span class="cap">Untuk dua orang</span>
+        <h3>Couple</h3>
+        <p style="color:#93A9C6;font-size:14.5px">Dua terapis datang bersamaan ke satu rumah.</p>
+        <div class="biaya"><sup>mulai</sup> 340rb</div>
         <ul>
-          <li>Empat sesi, berlaku tiga bulan</li>
-          <li>Terapis tetap yang sama</li>
-          <li>Jadwal rutin diingatkan lebih dulu</li>
+          <li>Dua terapis, satu waktu, satu rumah</li>
+          <li>Layanan boleh berbeda untuk tiap orang</li>
+          <li>Cocok untuk pasangan atau ibu dan anak</li>
         </ul>
         <a class="tbl tbl-emas" href="#pesan">Pesan sesi</a>
       </article>
@@ -498,14 +509,14 @@ footer.situs a:hover{color:var(--emas-2)}
     </div>
     <div class="kisi k3">
       <article class="kesan masuk"><div class="bintang">★★★★★</div>
-        <p>“Hamil 7 bulan, pinggang rasanya mau patah. Terapisnya paham posisi miring yang aman, dan tidak sekali pun bikin saya cemas.”</p>
-        <footer><b>Maria U.</b>Bekasi Selatan · Pijat ibu hamil</footer></article>
+        <p>“Badan remuk setelah lembur seminggu. Terapisnya tahu titik mana yang keras, dan tekanannya pas — tidak asal kuat.”</p>
+        <footer><b>Maria U.</b>Lowokwaru, Malang · Full Body Massage</footer></article>
       <article class="kesan masuk"><div class="bintang">★★★★★</div>
         <p>“Pesan jam 8 malam sepulang kerja, jam 9 sudah dipijat di kamar sendiri. Tidak perlu menyetir dan antre lagi.”</p>
-        <footer><b>Hendra W.</b>Cikarang · Pijat tradisional 90 menit</footer></article>
+        <footer><b>Hendra W.</b>Gubeng, Surabaya · Full Body Massage 2 jam</footer></article>
       <article class="kesan masuk"><div class="bintang">★★★★★</div>
-        <p>“Ibu saya 72 tahun dan susah keluar rumah. Sekarang rutin dua minggu sekali, terapisnya orang yang sama terus.”</p>
-        <footer><b>Ratna S.</b>Bogor · Langganan 4 sesi</footer></article>
+        <p>“Ibu saya 72 tahun dan susah keluar rumah. Sekarang rutin dua minggu sekali, dan bisa minta terapis yang sama.”</p>
+        <footer><b>Ratna S.</b>Klojen, Malang · Paket Favorit</footer></article>
     </div>
   </div>
 </section>
@@ -515,9 +526,9 @@ footer.situs a:hover{color:var(--emas-2)}
   <div class="wrap dua">
     <div class="masuk">
       <p class="eyebrow">Area &amp; jam layanan</p>
-      <h2 class="judul">Kami datang ke sini</h2>
-      <p class="timbal">Di luar daftar ini masih bisa dilayani dengan tambahan biaya perjalanan.
-        Tanyakan saja alamat Anda lewat WhatsApp.</p>
+      <h2 class="judul">Dua cabang, banyak wilayah</h2>
+      <p class="timbal">Cabang Malang dan Surabaya, masing-masing melayani kota dan sekitarnya.
+        Di luar daftar ini masih bisa dilayani dengan tambahan biaya perjalanan — tanyakan saja alamat Anda lewat WhatsApp.</p>
       <div class="daftar-area" id="daftarArea"></div>
       <div class="jam">
         <b>09.00 – 22.00 WIB</b>
@@ -570,24 +581,28 @@ footer.situs a:hover{color:var(--emas-2)}
   <div class="wrap">
     <div class="f-kisi">
       <div>
-        <div class="f-merek"><img src="logo.png" alt="Logo Mahyra Relaksia">
-          <span><b>Mahyra Relaksia</b><span>Home Wellness &amp; Therapy</span></span></div>
+        <div class="f-merek"><img src="logo.png" alt="Logo Mahyra Massage">
+          <span><b>Mahyra Massage</b><span>Home Wellness &amp; Therapy</span></span></div>
         <p style="font-size:14.5px;max-width:34ch">Pijat dan terapi panggilan untuk keluarga,
           dikerjakan terapis bersertifikat di rumah Anda sendiri.</p>
+        <p style="font-size:13px;margin-top:12px;opacity:.75">Bagian dari <strong id="indukAtas"></strong></p>
       </div>
       <div><h4>Layanan</h4><div id="fLay"></div></div>
       <div><h4>Perusahaan</h4>
         <a href="#cara">Cara pemesanan</a><a href="#terapis">Terapis kami</a>
         <a href="#tanya">Tanya jawab</a><a href="#paket">Paket &amp; harga</a></div>
       <div><h4>Hubungi</h4>
-        <a id="fWa" href="#" target="_blank" rel="noopener">WhatsApp</a>
-        <a id="fTel" href="#">Telepon</a>
-        <a id="fEmail" href="#">Email</a>
-        <span style="display:block;padding-top:10px;font-size:13.5px">Bekasi, Jawa Barat</span></div>
+        <div id="fKontak"></div>
+        <a id="fEmail" href="#">Email</a></div>
+      <div><h4>Sosial media</h4>
+        <a id="fIg" href="#" target="_blank" rel="noopener">Instagram</a>
+        <a id="fTt" href="#" target="_blank" rel="noopener">TikTok</a>
+        <span style="display:block;padding-top:10px;font-size:13.5px">Malang &amp; Surabaya</span></div>
     </div>
     <div class="f-bawah">
-      <span>© <span id="tahun"></span> Mahyra Relaksia. Seluruh hak cipta dilindungi.</span>
-      <span><a href="/portal" style="display:inline"></a></span>
+      <span>© <span id="tahun"></span> Mahyra Massage. Seluruh hak cipta dilindungi.</span>
+      <span class="powered">Powered by <strong id="induk"></strong></span>
+      <span><a href="/portal" style="display:inline">Masuk portal karyawan</a></span>
     </div>
   </div>
 </footer>
@@ -602,31 +617,47 @@ footer.situs a:hover{color:var(--emas-2)}
    PENGATURAN — ubah bagian ini saja untuk memperbarui isi situs
    ===================================================================== */
 const INFO = {
-  whatsapp : "6281122334455",              // format internasional, tanpa tanda +
-  telepon  : "0811-2233-4455",
-  email    : "mahyramassage@gmail.com",
-  area     : ["Bekasi Kota","Bekasi Selatan","Cikarang","Tambun","Bogor Kota",
-              "Cibubur","Jakarta Timur","Depok"]
+  email     : "mahyramassage@gmail.com",
+  instagram : "https://instagram.com/mahyra.massage",
+  tiktok    : "https://tiktok.com/@mahyra.massage",
+  induk     : "PT. Klin Home Indonesia",
+  cabang: [
+    { nama:"Malang",   telepon:"0856-4518-8603", whatsapp:"6285645188603",
+      area:["Klojen","Lowokwaru","Blimbing","Sukun","Kedungkandang","Singosari","Batu","Kepanjen"] },
+    { nama:"Surabaya", telepon:"0857-7808-2138", whatsapp:"6285778082138",
+      area:["Gubeng","Wonokromo","Rungkut","Tegalsari","Sukolilo","Mulyorejo","Waru","Sidoarjo"] }
+  ]
 };
 
-/* Harga per durasi. Tambah atau ubah sesuka Anda. */
+/* Daftar harga resmi. Durasi dalam menit, harga dalam rupiah. */
 const LAYANAN = [
-  { nama:"Pijat Tradisional",     ket:"Relaksasi seluruh badan, tekanan bisa disesuaikan.",
-    durasi:[[60,160000],[90,220000],[120,280000]] },
-  { nama:"Refleksi Kaki",         ket:"Titik telapak kaki untuk pegal dan susah tidur.",
-    durasi:[[45,130000],[60,160000]] },
-  { nama:"Pijat Ibu Hamil",       ket:"Posisi miring yang aman, kehamilan 4–8 bulan.",
-    durasi:[[60,200000],[90,260000]] },
-  { nama:"Pijat Pasca Melahirkan",ket:"Pemulihan masa nifas, tersedia pilis dan tapel.",
-    durasi:[[90,280000],[120,340000]] },
-  { nama:"Pijat Bayi & Anak",     ket:"Gerakan lembut untuk tidur lebih nyenyak.",
-    durasi:[[30,120000],[45,150000]] },
-  { nama:"Totok Wajah",           ket:"Meredakan tegang di dahi, rahang, dan pelipis.",
-    durasi:[[45,150000],[60,190000]] },
-  { nama:"Lulur & Scrub Badan",   ket:"Pembersihan kulit, bisa digabung dengan pijat.",
-    durasi:[[90,270000],[120,330000]] },
-  { nama:"Kerokan & Kop Angin",   ket:"Untuk masuk angin dan punggung yang berat.",
-    durasi:[[30,110000],[45,140000]] }
+  { nama:"Full Body Massage", kat:"Pijat",
+    ket:"Pijat tradisional untuk seluruh badan. Tekanan bisa disesuaikan permintaan.",
+    durasi:[[90,100000],[120,120000],[150,150000]] },
+
+  { nama:"Full Body Massage & Totok Wajah", kat:"Kombinasi",
+    ket:"Seluruh badan, ditutup totok wajah untuk melepas tegang di dahi dan rahang.",
+    durasi:[[90,120000],[120,135000],[150,155000]] },
+
+  { nama:"Full Body Massage & Head Massage", kat:"Kombinasi",
+    ket:"Seluruh badan ditambah pijat kepala. Pilihan untuk yang sering pusing.",
+    durasi:[[90,120000],[120,135000],[150,155000]] },
+
+  { nama:"Full Body Massage & Foot Reflexy", kat:"Kombinasi",
+    ket:"Seluruh badan ditambah refleksi kaki. Cocok setelah berdiri atau berjalan lama.",
+    durasi:[[90,120000],[120,135000],[150,155000]] },
+
+  { nama:"Paket Rileks", kat:"Paket", rinci:"Full Body Massage 90 menit · Totok Wajah 30 menit · Foot Reflexy 30 menit",
+    ket:"Tiga perawatan dalam satu sesi, selesai dalam dua setengah jam.",
+    durasi:[[150,165000]] },
+
+  { nama:"Paket Puas", kat:"Paket", rinci:"Full Body Massage 90 menit · Head Massage 30 menit · Foot Reflexy 30 menit",
+    ket:"Untuk badan yang butuh dilepas total, dari kepala sampai kaki.",
+    durasi:[[150,165000]] },
+
+  { nama:"Paket Favorit", kat:"Paket", rinci:"Full Body Massage 90 menit · Head Massage 30 menit · Totok Wajah 30 menit",
+    ket:"Paket yang paling sering diambil pelanggan tetap kami.",
+    durasi:[[150,160000]] }
 ];
 
 const JAM = ["Secepatnya hari ini","Siang ini (11.00–14.00)","Sore ini (15.00–18.00)",
@@ -638,64 +669,96 @@ const JAM = ["Secepatnya hari ini","Siang ini (11.00–14.00)","Sore ini (15.00�
    ===================================================================== */
 const rp = n => "Rp " + Number(n).toLocaleString("id-ID");
 const el = id => document.getElementById(id);
-let pilihan = { layanan:0, durasi:0 };
+let pilihan = { layanan:0, durasi:0, cabang:0 };
 
 /* --- kartu layanan --- */
+const jamMenit = m => m % 60 === 0 ? (m/60)+" jam" : Math.floor(m/60)+","+(m%60===30?"5":m%60)+" jam";
+
 el("kisiLayanan").innerHTML = LAYANAN.map(l => `
   <article class="kartu lay masuk">
     <div class="atas">
       <h3>${l.nama}</h3>
-      <span class="harga"><small>mulai</small>${rp(Math.min(...l.durasi.map(d=>d[1])))}</span>
+      <span class="harga"><small>${l.durasi.length>1?"mulai":"harga"}</small>${rp(Math.min(...l.durasi.map(d=>d[1])))}</span>
     </div>
     <p>${l.ket}</p>
-    <div class="durasi">${l.durasi.map(d=>`<i>${d[0]} menit</i>`).join("")}</div>
+    ${l.rinci?`<p class="isi-paket">${l.rinci}</p>`:""}
+    <div class="durasi">${l.durasi.map(d=>
+      `<i>${jamMenit(d[0])}${l.durasi.length>1?" · "+rp(d[1]):""}</i>`).join("")}</div>
   </article>`).join("");
 
 el("fLay").innerHTML = LAYANAN.slice(0,5).map(l=>`<a href="#layanan">${l.nama}</a>`).join("");
-el("daftarArea").innerHTML = INFO.area.map(a=>`<span>${a}</span>`).join("");
 el("fLayanan").innerHTML = LAYANAN.map((l,i)=>`<option value="${i}">${l.nama}</option>`).join("");
-el("fArea").innerHTML = INFO.area.map(a=>`<option>${a}</option>`).join("")
-  + `<option>Area lain</option>`;
+el("fCabang").innerHTML = INFO.cabang.map((c,i)=>`<option value="${i}">${c.nama}</option>`).join("");
 el("fWaktu").innerHTML = JAM.map(j=>`<option>${j}</option>`).join("");
 el("tahun").textContent = new Date().getFullYear();
+
+/* daftar area & pilihan area mengikuti cabang */
+function gambarArea(){
+  const c = INFO.cabang[pilihan.cabang];
+  el("daftarArea").innerHTML = INFO.cabang.map(cb=>
+    `<span class="judul-area">${cb.nama}</span>`+cb.area.map(a=>`<span>${a}</span>`).join("")).join("");
+  el("fArea").innerHTML = c.area.map(a=>`<option>${a}</option>`).join("")
+    + `<option>Area lain di sekitar ${c.nama}</option>`;
+}
 
 /* --- pilihan durasi --- */
 function gambarDurasi(){
   const l = LAYANAN[pilihan.layanan];
   el("fDurasi").innerHTML = l.durasi.map((d,i)=>
     `<button type="button" class="${i===pilihan.durasi?"aktif":""}" onclick="pilihDurasi(${i})">
-       ${d[0]} menit<small>${rp(d[1])}</small></button>`).join("");
+       ${jamMenit(d[0])}<small>${rp(d[1])}</small></button>`).join("");
+  el("kolomDurasi").style.display = l.durasi.length>1 ? "" : "none";
 }
 function pilihDurasi(i){ pilihan.durasi = i; gambarDurasi(); perbarui(); }
 
 el("fLayanan").addEventListener("change", e => {
   pilihan.layanan = +e.target.value; pilihan.durasi = 0; gambarDurasi(); perbarui();
 });
+el("fCabang").addEventListener("change", e => {
+  pilihan.cabang = +e.target.value; gambarArea(); perbarui();
+});
 ["fArea","fWaktu"].forEach(id => el(id).addEventListener("change", perbarui));
 
 /* --- total & tautan WhatsApp --- */
 function perbarui(){
   const l = LAYANAN[pilihan.layanan], d = l.durasi[pilihan.durasi];
+  const c = INFO.cabang[pilihan.cabang];
   el("fTotal").textContent = rp(d[1]);
   const pesan =
-    `Halo Mahyra Relaksia, saya ingin memesan sesi.\n\n` +
+    `Halo Mahyra Massage ${c.nama}, saya ingin memesan sesi.\n\n` +
     `Layanan : ${l.nama}\n` +
-    `Durasi  : ${d[0]} menit\n` +
+    (l.rinci ? `Isi     : ${l.rinci}\n` : "") +
+    `Durasi  : ${jamMenit(d[0])}\n` +
     `Biaya   : ${rp(d[1])}\n` +
     `Area    : ${el("fArea").value}\n` +
     `Waktu   : ${el("fWaktu").value}\n\n` +
     `Mohon dikonfirmasi ketersediaan terapisnya. Terima kasih.`;
-  el("fKirim").href = `https://wa.me/${INFO.whatsapp}?text=${encodeURIComponent(pesan)}`;
+  el("fKirim").href = `https://wa.me/${c.whatsapp}?text=${encodeURIComponent(pesan)}`;
+  el("fKirim").textContent = `Kirim ke WhatsApp ${c.nama}`;
 }
-const umum = `https://wa.me/${INFO.whatsapp}?text=` +
-  encodeURIComponent("Halo Mahyra Relaksia, saya ingin bertanya tentang layanan pijat panggilan.");
-["waFloat","ctaWa","fWa"].forEach(id => el(id).href = umum);
-el("fTel").href = "tel:" + INFO.telepon.replace(/[^0-9+]/g,"");
-el("fTel").textContent = INFO.telepon;
+
+/* tombol umum memakai cabang yang sedang dipilih */
+const pesanUmum = () => {
+  const c = INFO.cabang[pilihan.cabang];
+  return `https://wa.me/${c.whatsapp}?text=` + encodeURIComponent(
+    `Halo Mahyra Massage ${c.nama}, saya ingin bertanya tentang layanan pijat panggilan.`);
+};
+["waFloat","ctaWa"].forEach(id => el(id).addEventListener("click", e => {
+  e.preventDefault(); window.open(pesanUmum(), "_blank", "noopener");
+}));
+
+/* kontak per cabang di footer */
+el("fKontak").innerHTML = INFO.cabang.map(c=>
+  `<a href="https://wa.me/${c.whatsapp}" target="_blank" rel="noopener">
+     ${c.nama} · ${c.telepon}</a>`).join("");
 el("fEmail").href = "mailto:" + INFO.email;
 el("fEmail").textContent = INFO.email;
+el("fIg").href = INFO.instagram;
+el("fTt").href = INFO.tiktok;
+el("induk").textContent = INFO.induk;
+el("indukAtas").textContent = INFO.induk;
 
-gambarDurasi(); perbarui();
+gambarArea(); gambarDurasi(); perbarui();
 
 /* --- nav menempel saat digulir --- */
 const kepala = document.querySelector("header");
