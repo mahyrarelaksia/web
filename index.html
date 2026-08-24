@@ -125,7 +125,24 @@ select:hover{border-color:var(--langit)}
 .judul-area{width:100%;background:none!important;border:0!important;padding:10px 0 2px!important;
  font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--biru);font-weight:500}
 .powered{opacity:.85}
-.powered strong{color:var(--emas-2);font-weight:500}
+.tautan-induk{color:var(--emas-2);font-weight:500;border-bottom:1px solid rgba(199,164,104,.4)}
+.tautan-induk:hover{color:#fff;border-bottom-color:#fff}
+.hint-harga{text-align:center;font-size:13px;color:var(--redup);margin-top:26px}
+
+/* pemilih cabang sebelum WhatsApp */
+.lapis{position:fixed;inset:0;z-index:90;display:none;place-items:center;padding:20px;
+ background:rgba(12,30,54,.55);backdrop-filter:blur(4px)}
+.lapis.on{display:grid}
+.lapis .dialog{background:#fff;border-radius:24px;padding:28px 24px;width:100%;max-width:420px;
+ box-shadow:0 30px 70px rgba(12,30,54,.35)}
+.lapis h3{font-size:25px;margin-bottom:6px}
+.lapis p{font-size:14px;color:var(--redup);margin-bottom:18px}
+.pilihan-cabang{display:flex;align-items:center;justify-content:space-between;gap:12px;
+ border:1px solid var(--garis);border-radius:16px;padding:15px 17px;margin-bottom:9px;transition:.18s}
+.pilihan-cabang:hover{border-color:var(--biru);background:#F6FAFE;transform:translateX(3px)}
+.pilihan-cabang strong{display:block;font-size:16px;font-weight:500}
+.pilihan-cabang small{display:block;font-size:12px;color:var(--redup);margin-top:2px}
+.pilihan-cabang .nomor{font-size:12.5px;color:var(--biru);white-space:nowrap}
 
 /* ============ PITA FAKTA ============ */
 .pita{background:var(--malam);color:#D8E4F2;padding:0}
@@ -392,6 +409,7 @@ footer.situs a:hover{color:var(--emas-2)}
       <p class="timbal">Semua dikerjakan di rumah Anda. Harga di bawah sudah termasuk peralatan,
         minyak, dan handuk bersih yang dibawa terapis — tidak ada biaya transportasi di dalam area layanan.</p>
     </div>
+    <p class="hint-harga" id="catatanHarga"></p>
     <div class="kisi k4" id="kisiLayanan"></div>
   </div>
 </section>
@@ -421,7 +439,8 @@ footer.situs a:hover{color:var(--emas-2)}
           <li>2,5 jam Rp 150.000</li>
           <li>Bisa digabung totok wajah, head massage, atau refleksi</li>
         </ul>
-        <a class="tbl tbl-emas" href="#pesan">Pesan sesi</a>
+        <button class="tbl tbl-emas" data-paket="Full Body Massage">Pesan sesi</button>
+        
       </article>
       <article class="tier unggul masuk">
         <span class="cap">Paling sering diambil</span>
@@ -433,7 +452,8 @@ footer.situs a:hover{color:var(--emas-2)}
           <li>Paket Rileks Rp 165.000 — badan, wajah, kaki</li>
           <li>Paket Puas Rp 165.000 — badan, kepala, kaki</li>
         </ul>
-        <a class="tbl tbl-emas" href="#pesan">Pesan sesi</a>
+        <button class="tbl tbl-emas" data-paket="paket tiga perawatan">Pesan sesi</button>
+        
       </article>
       <article class="tier masuk">
         <span class="cap">Untuk dua orang</span>
@@ -445,7 +465,8 @@ footer.situs a:hover{color:var(--emas-2)}
           <li>Layanan boleh berbeda untuk tiap orang</li>
           <li>Cocok untuk pasangan atau ibu dan anak</li>
         </ul>
-        <a class="tbl tbl-emas" href="#pesan">Pesan sesi</a>
+        <button class="tbl tbl-emas" data-paket="paket couple">Pesan sesi</button>
+        
       </article>
     </div>
   </div>
@@ -585,7 +606,7 @@ footer.situs a:hover{color:var(--emas-2)}
           <span><b>Mahyra Massage</b><span>Home Wellness &amp; Therapy</span></span></div>
         <p style="font-size:14.5px;max-width:34ch">Pijat dan terapi panggilan untuk keluarga,
           dikerjakan terapis bersertifikat di rumah Anda sendiri.</p>
-        <p style="font-size:13px;margin-top:12px;opacity:.75">Bagian dari <strong id="indukAtas"></strong></p>
+        <p style="font-size:13px;margin-top:12px;opacity:.75">Bagian dari <a id="indukAtas" class="tautan-induk"></a></p>
       </div>
       <div><h4>Layanan</h4><div id="fLay"></div></div>
       <div><h4>Perusahaan</h4>
@@ -601,11 +622,12 @@ footer.situs a:hover{color:var(--emas-2)}
     </div>
     <div class="f-bawah">
       <span>© <span id="tahun"></span> Mahyra Massage. Seluruh hak cipta dilindungi.</span>
-      <span class="powered">Powered by <strong id="induk"></strong></span>
-      <span><a href="/portal" style="display:inline">Masuk portal karyawan</a></span>
+      <span class="powered">Powered by <a id="induk" class="tautan-induk"></a></span>
     </div>
   </div>
 </footer>
+
+<div id="pilihCabang" class="lapis"></div>
 
 <a class="wa" id="waFloat" href="#" target="_blank" rel="noopener" aria-label="Hubungi lewat WhatsApp">
   <i><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15L2 22l5.2-1.4A10 10 0 1012 2zm5.5 14.1c-.2.6-1.2 1.2-1.7 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 .9-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2c.1.2.1.4 0 .5l-.4.6c-.1.2-.3.3-.1.6.2.3.7 1.2 1.6 2 1.1.9 1.9 1.2 2.2 1.3.2.1.4.1.6-.1l.8-.9c.2-.2.4-.2.6-.1l1.9.9c.2.1.4.2.4.3.1.2.1.7-.1 1.4z"/></svg></i>
@@ -621,10 +643,12 @@ const INFO = {
   instagram : "https://instagram.com/mahyra.massage",
   tiktok    : "https://tiktok.com/@mahyra.massage",
   induk     : "PT. Klin Home Indonesia",
+  indukUrl  : "https://klinhome.com/",
+  /* selisih: ditambahkan ke setiap harga layanan di cabang tersebut */
   cabang: [
-    { nama:"Malang",   telepon:"0856-4518-8603", whatsapp:"6285645188603",
+    { nama:"Malang",   telepon:"0856-4518-8603", whatsapp:"6285645188603", selisih:0,
       area:["Klojen","Lowokwaru","Blimbing","Sukun","Kedungkandang","Singosari","Batu","Kepanjen"] },
-    { nama:"Surabaya", telepon:"0857-7808-2138", whatsapp:"6285778082138",
+    { nama:"Surabaya", telepon:"0857-7808-2138", whatsapp:"6285778082138", selisih:20000,
       area:["Gubeng","Wonokromo","Rungkut","Tegalsari","Sukolilo","Mulyorejo","Waru","Sidoarjo"] }
   ]
 };
@@ -674,17 +698,26 @@ let pilihan = { layanan:0, durasi:0, cabang:0 };
 /* --- kartu layanan --- */
 const jamMenit = m => m % 60 === 0 ? (m/60)+" jam" : Math.floor(m/60)+","+(m%60===30?"5":m%60)+" jam";
 
-el("kisiLayanan").innerHTML = LAYANAN.map(l => `
-  <article class="kartu lay masuk">
-    <div class="atas">
-      <h3>${l.nama}</h3>
-      <span class="harga"><small>${l.durasi.length>1?"mulai":"harga"}</small>${rp(Math.min(...l.durasi.map(d=>d[1])))}</span>
-    </div>
-    <p>${l.ket}</p>
-    ${l.rinci?`<p class="isi-paket">${l.rinci}</p>`:""}
-    <div class="durasi">${l.durasi.map(d=>
-      `<i>${jamMenit(d[0])}${l.durasi.length>1?" · "+rp(d[1]):""}</i>`).join("")}</div>
-  </article>`).join("");
+/* Harga dasar berlaku di Malang; cabang lain ditambah selisihnya. */
+const selisih = () => INFO.cabang[pilihan.cabang].selisih || 0;
+const hargaDi = n => n + selisih();
+
+function gambarLayanan(){
+  el("kisiLayanan").innerHTML = LAYANAN.map(l => `
+    <article class="kartu lay masuk tampil">
+      <div class="atas">
+        <h3>${l.nama}</h3>
+        <span class="harga"><small>${l.durasi.length>1?"mulai":"harga"}</small>${rp(hargaDi(Math.min(...l.durasi.map(d=>d[1]))))}</span>
+      </div>
+      <p>${l.ket}</p>
+      ${l.rinci?`<p class="isi-paket">${l.rinci}</p>`:""}
+      <div class="durasi">${l.durasi.map(d=>
+        `<i>${jamMenit(d[0])}${l.durasi.length>1?" · "+rp(hargaDi(d[1])):""}</i>`).join("")}</div>
+    </article>`).join("");
+  el("catatanHarga").textContent =
+    `Harga di cabang ${INFO.cabang[pilihan.cabang].nama}.`+
+    (INFO.cabang.length>1?" Ganti cabang di atas untuk melihat harga wilayah lain.":"");
+}
 
 el("fLay").innerHTML = LAYANAN.slice(0,5).map(l=>`<a href="#layanan">${l.nama}</a>`).join("");
 el("fLayanan").innerHTML = LAYANAN.map((l,i)=>`<option value="${i}">${l.nama}</option>`).join("");
@@ -706,7 +739,7 @@ function gambarDurasi(){
   const l = LAYANAN[pilihan.layanan];
   el("fDurasi").innerHTML = l.durasi.map((d,i)=>
     `<button type="button" class="${i===pilihan.durasi?"aktif":""}" onclick="pilihDurasi(${i})">
-       ${jamMenit(d[0])}<small>${rp(d[1])}</small></button>`).join("");
+       ${jamMenit(d[0])}<small>${rp(hargaDi(d[1]))}</small></button>`).join("");
   el("kolomDurasi").style.display = l.durasi.length>1 ? "" : "none";
 }
 function pilihDurasi(i){ pilihan.durasi = i; gambarDurasi(); perbarui(); }
@@ -715,7 +748,8 @@ el("fLayanan").addEventListener("change", e => {
   pilihan.layanan = +e.target.value; pilihan.durasi = 0; gambarDurasi(); perbarui();
 });
 el("fCabang").addEventListener("change", e => {
-  pilihan.cabang = +e.target.value; gambarArea(); perbarui();
+  pilihan.cabang = +e.target.value;
+  gambarArea(); gambarLayanan(); gambarDurasi(); gambarPaket(); perbarui();
 });
 ["fArea","fWaktu"].forEach(id => el(id).addEventListener("change", perbarui));
 
@@ -723,13 +757,13 @@ el("fCabang").addEventListener("change", e => {
 function perbarui(){
   const l = LAYANAN[pilihan.layanan], d = l.durasi[pilihan.durasi];
   const c = INFO.cabang[pilihan.cabang];
-  el("fTotal").textContent = rp(d[1]);
+  el("fTotal").textContent = rp(hargaDi(d[1]));
   const pesan =
     `Halo Mahyra Massage ${c.nama}, saya ingin memesan sesi.\n\n` +
     `Layanan : ${l.nama}\n` +
     (l.rinci ? `Isi     : ${l.rinci}\n` : "") +
     `Durasi  : ${jamMenit(d[0])}\n` +
-    `Biaya   : ${rp(d[1])}\n` +
+    `Biaya   : ${rp(hargaDi(d[1]))}\n` +
     `Area    : ${el("fArea").value}\n` +
     `Waktu   : ${el("fWaktu").value}\n\n` +
     `Mohon dikonfirmasi ketersediaan terapisnya. Terima kasih.`;
@@ -737,15 +771,57 @@ function perbarui(){
   el("fKirim").textContent = `Kirim ke WhatsApp ${c.nama}`;
 }
 
-/* tombol umum memakai cabang yang sedang dipilih */
-const pesanUmum = () => {
-  const c = INFO.cabang[pilihan.cabang];
+/* ---------- Pemilih cabang sebelum membuka WhatsApp ----------
+   Setiap tombol WhatsApp menanyakan cabang dulu, supaya pesan tidak
+   pernah masuk ke nomor yang salah. */
+function tautanUmum(i){
+  const c = INFO.cabang[i];
   return `https://wa.me/${c.whatsapp}?text=` + encodeURIComponent(
     `Halo Mahyra Massage ${c.nama}, saya ingin bertanya tentang layanan pijat panggilan.`);
-};
+}
+function bukaPilihCabang(tautan){
+  const kotak = el("pilihCabang");
+  kotak.innerHTML = `
+    <div class="dialog">
+      <h3>Pilih cabang</h3>
+      <p>Kami akan menyambungkan Anda ke terapis di wilayah terdekat.</p>
+      ${INFO.cabang.map((c,i)=>`
+        <a class="pilihan-cabang" href="${tautan(i)}" target="_blank" rel="noopener"
+           onclick="tutupPilihCabang()">
+          <span><strong>${c.nama}</strong><small>${c.area.slice(0,3).join(" · ")} dan sekitarnya</small></span>
+          <span class="nomor">${c.telepon}</span>
+        </a>`).join("")}
+      <button class="tbl tbl-garis" style="width:100%;margin-top:6px" onclick="tutupPilihCabang()">Batal</button>
+    </div>`;
+  kotak.classList.add("on");
+}
+function tutupPilihCabang(){ el("pilihCabang").classList.remove("on"); }
+
+/* tombol umum: tanya cabang dulu */
 ["waFloat","ctaWa"].forEach(id => el(id).addEventListener("click", e => {
-  e.preventDefault(); window.open(pesanUmum(), "_blank", "noopener");
+  e.preventDefault(); bukaPilihCabang(tautanUmum);
 }));
+
+/* tombol di kotak pemesanan: cabangnya sudah dipilih, kirim langsung */
+el("fKirim").addEventListener("click", e => {
+  const l = LAYANAN[pilihan.layanan], d = l.durasi[pilihan.durasi];
+  if(!l || !d) e.preventDefault();
+});
+
+/* tombol pada tiap paket: tanya cabang dulu, sertakan nama paketnya */
+function gambarPaket(){
+  document.querySelectorAll("[data-paket]").forEach(b => {
+    b.onclick = ev => {
+      ev.preventDefault();
+      const nama = b.getAttribute("data-paket");
+      bukaPilihCabang(i => {
+        const c = INFO.cabang[i];
+        return `https://wa.me/${c.whatsapp}?text=` + encodeURIComponent(
+          `Halo Mahyra Massage ${c.nama}, saya ingin memesan ${nama}. Mohon informasi jadwal terapisnya.`);
+      });
+    };
+  });
+}
 
 /* kontak per cabang di footer */
 el("fKontak").innerHTML = INFO.cabang.map(c=>
@@ -755,10 +831,14 @@ el("fEmail").href = "mailto:" + INFO.email;
 el("fEmail").textContent = INFO.email;
 el("fIg").href = INFO.instagram;
 el("fTt").href = INFO.tiktok;
-el("induk").textContent = INFO.induk;
-el("indukAtas").textContent = INFO.induk;
+["induk","indukAtas"].forEach(id => {
+  const a = el(id);
+  a.textContent = INFO.induk;
+  a.href = INFO.indukUrl;
+  a.target = "_blank"; a.rel = "noopener";
+});
 
-gambarArea(); gambarDurasi(); perbarui();
+gambarArea(); gambarLayanan(); gambarDurasi(); gambarPaket(); perbarui();
 
 /* --- nav menempel saat digulir --- */
 const kepala = document.querySelector("header");
