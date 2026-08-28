@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalkulator Gaji Terapis — Mahyra Relaksia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --kertas:#EFF1E9;
+    --kertas-2:#F7F8F2;
+    --tinta:#1B2A20;
+    --kabur:#5F6F63;
+    --garis:#D2D8C8;
+    --daun:#2F5D42;
+    --kunyit:#C98A16;
+    --bata:#9E3B2A;
+    --r:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--kertas);
+    color:var(--tinta);
+    font-family:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:32px 20px 80px;}
+
+  header{border-bottom:1px solid var(--garis);padding-bottom:22px;margin-bottom:28px;}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--kabur);margin:0 0 10px;}
+  h1{font-family:'Bricolage Grotesque','Instrument Sans',sans-serif;font-weight:800;
+    font-size:clamp(30px,5.4vw,46px);line-height:1.02;letter-spacing:-.02em;margin:0 0 10px;}
+  h1 em{font-style:normal;color:var(--daun);border-bottom:4px solid var(--kunyit);}
+  .sub{color:var(--kabur);max-width:56ch;margin:0;font-size:14.5px;}
+
+  .cols{display:grid;grid-template-columns:1fr 400px;gap:34px;align-items:start;}
+  @media (max-width:900px){.cols{grid-template-columns:1fr;gap:26px;}}
+
+  fieldset{border:none;margin:0 0 26px;padding:0;}
+  legend{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--kabur);padding:0;margin-bottom:12px;
+    display:flex;align-items:center;gap:10px;width:100%;}
+  legend::after{content:"";flex:1;height:1px;background:var(--garis);}
+
+  .seg{display:flex;gap:8px;}
+  .seg label{flex:1;position:relative;cursor:pointer;}
+  .seg input{position:absolute;opacity:0;inset:0;}
+  .seg span{display:block;text-align:center;padding:13px 8px;border:1px solid var(--garis);
+    border-radius:var(--r);background:var(--kertas-2);font-weight:600;font-size:14px;
+    transition:.15s;line-height:1.25;}
+  .seg span small{display:block;font-weight:400;font-size:11.5px;color:var(--kabur);margin-top:2px;}
+  .seg input:checked + span{background:var(--daun);border-color:var(--daun);color:#fff;}
+  .seg input:checked + span small{color:#C9DDD1;}
+  .seg input:focus-visible + span{outline:2px solid var(--kunyit);outline-offset:2px;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:520px){.grid2{grid-template-columns:1fr;}}
+
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:13px;font-weight:600;}
+  .field .hint{font-size:11.5px;color:var(--kabur);font-weight:400;}
+  .inp{display:flex;align-items:center;border:1px solid var(--garis);border-radius:10px;
+    background:var(--kertas-2);overflow:hidden;}
+  .inp:focus-within{border-color:var(--daun);box-shadow:0 0 0 3px rgba(47,93,66,.12);}
+  .inp .pre,.inp .post{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--kabur);
+    padding:0 10px;flex:none;}
+  .inp input{border:none;background:none;padding:11px 4px;width:100%;
+    font:500 15px/1 'JetBrains Mono',monospace;color:var(--tinta);min-width:0;}
+  .inp input:focus{outline:none;}
+  .inp input[type=text]{font-family:'Instrument Sans',sans-serif;font-weight:500;padding-left:11px;}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  input[type=number]{-moz-appearance:textfield;}
+
+  .check{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border:1px solid var(--garis);
+    border-radius:10px;background:var(--kertas-2);cursor:pointer;font-size:13.5px;}
+  .check input{margin:2px 0 0;accent-color:var(--daun);width:16px;height:16px;flex:none;}
+  .check .hint{display:block;font-size:11.5px;color:var(--kabur);}
+
+  /* ---------- daftar layanan ---------- */
+  .svc-head,.svc{display:grid;grid-template-columns:minmax(0,1fr) 122px 84px 76px 30px;gap:8px;align-items:center;}
+  .svc-head{margin-bottom:6px;}
+  .svc-head span{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--kabur);}
+  .svc{margin-bottom:8px;}
+  .svc .flab{display:none;font-size:11px;font-weight:600;color:var(--kabur);margin-bottom:4px;}
+  .del{border:1px solid var(--garis);background:var(--kertas-2);color:var(--kabur);
+    width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px;line-height:1;
+    display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .del:hover{background:#F3E3E0;border-color:#D9B4AC;color:var(--bata);}
+  .del:disabled{opacity:.3;cursor:not-allowed;}
+  .add{margin-top:4px;border:1px dashed #AEBBA4;background:none;color:var(--daun);
+    padding:10px 14px;border-radius:10px;cursor:pointer;font:600 13.5px 'Instrument Sans',sans-serif;
+    width:100%;transition:.15s;}
+  .add:hover{background:rgba(47,93,66,.07);border-color:var(--daun);}
+  .svc-sum{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--kabur);margin-top:10px;}
+
+  @media (max-width:700px){
+    .svc-head{display:none;}
+    .svc{grid-template-columns:1fr 1fr 1fr;gap:8px 10px;background:var(--kertas-2);
+      border:1px solid var(--garis);border-radius:12px;padding:12px;position:relative;margin-bottom:10px;}
+    .svc .c-nama{grid-column:1 / -1;padding-right:34px;}
+    .svc .c-del{position:absolute;top:10px;right:10px;}
+    .svc .flab{display:block;}
+    .svc .inp input{font-size:14px;}
+  }
+
+  /* ---------- slip ---------- */
+  .slip-wrap{position:sticky;top:20px;}
+  @media (max-width:900px){.slip-wrap{position:static;}}
+  .slip{background:var(--kertas-2);border:1px solid var(--garis);border-bottom:none;
+    border-radius:var(--r) var(--r) 0 0;padding:22px 22px 8px;
+    box-shadow:0 1px 0 rgba(27,42,32,.04),0 14px 34px -22px rgba(27,42,32,.5);}
+  .tear{height:12px;
+    background:
+      linear-gradient(-45deg,transparent 8px, var(--kertas-2) 0) 0 0/16px 16px repeat-x,
+      linear-gradient(45deg,transparent 8px, var(--kertas-2) 0) 0 0/16px 16px repeat-x;
+    filter:drop-shadow(0 1px 0 var(--garis));}
+  .slip-head{display:flex;justify-content:space-between;align-items:baseline;
+    border-bottom:2px solid var(--tinta);padding-bottom:8px;margin-bottom:16px;}
+  .slip-head h2{font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:700;margin:0;letter-spacing:-.01em;}
+  .slip-head .tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--kabur);}
+  .big{margin:0 0 4px;}
+  .big .num{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
+    font-size:clamp(34px,7vw,44px);line-height:1;letter-spacing:-.03em;color:var(--daun);
+    font-variant-numeric:tabular-nums;}
+  .big .lbl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--kabur);margin-bottom:6px;}
+  .perhari{font-size:12.5px;color:var(--kabur);margin:0 0 18px;}
+  .perhari b{color:var(--tinta);font-family:'JetBrains Mono',monospace;font-weight:500;}
+  .rows{list-style:none;margin:0 0 4px;padding:0;}
+  .rows li{display:flex;align-items:baseline;gap:6px;padding:5px 0;font-size:13.5px;}
+  .rows .nm{flex:none;max-width:62%;}
+  .rows .dots{flex:1;border-bottom:1px dotted #B9C2AE;transform:translateY(-3px);}
+  .rows .vl{flex:none;font-family:'JetBrains Mono',monospace;font-size:13px;
+    font-variant-numeric:tabular-nums;font-weight:500;}
+  .rows .det{font-size:11px;color:var(--kabur);font-family:'JetBrains Mono',monospace;}
+  .rows li.minus .vl{color:var(--bata);}
+  .rows li.sub{padding:3px 0;font-size:12.5px;color:var(--kabur);}
+  .rows li.sub .vl{font-size:12px;}
+  .rows li.sum{border-top:1px solid var(--garis);margin-top:6px;padding-top:9px;font-weight:700;}
+  .rows li.sum .vl{font-weight:700;font-size:14px;}
+  .grp{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--kabur);margin:14px 0 2px;}
+  .compare{background:rgba(201,138,22,.1);border:1px solid rgba(201,138,22,.35);
+    border-radius:10px;padding:11px 13px;font-size:12.5px;margin-top:14px;}
+  .compare b{font-family:'JetBrains Mono',monospace;font-weight:500;}
+
+  .notes{margin-top:44px;border-top:1px solid var(--garis);padding-top:26px;}
+  .notes h3{font-family:'Bricolage Grotesque',sans-serif;font-size:18px;margin:0 0 14px;letter-spacing:-.01em;}
+  .notes ul{margin:0;padding-left:18px;color:var(--kabur);font-size:13.5px;}
+  .notes li{margin-bottom:7px;}
+  .notes b{color:var(--tinta);}
+  .flag{border-left:3px solid var(--kunyit);padding-left:12px;margin-top:18px;}
+  .flag p{margin:0 0 8px;font-size:13.5px;color:var(--kabur);}
+  .flag p:first-child{font-weight:600;color:var(--tinta);}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Mahyra Relaksia · PT Klin Home Indonesia</p>
+  <h1>Kalkulator gaji <em>terapis</em></h1>
+  <p class="sub">Simulasi penghasilan per bulan berdasarkan Surat Pernyataan Terapis. Daftar layanan dan harganya bisa kamu ubah sendiri.</p>
+</header>
+
+<div class="cols">
+
+  <!-- ============ FORM ============ -->
+  <div>
+    <fieldset>
+      <legend>Status kerja</legend>
+      <div class="seg">
+        <label><input type="radio" name="status" value="training" id="s-tr"><span>Masa training<small>maks. 3 bulan</small></span></label>
+        <label><input type="radio" name="status" value="pasca" id="s-ps" checked><span>Pasca training<small>lulus / tetap</small></span></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Layanan &amp; harga</legend>
+      <div class="svc-head">
+        <span>Nama layanan</span><span>Harga customer</span><span>Order / bln</span><span>Di hari libur</span><span></span>
+      </div>
+      <div id="svcList"></div>
+      <button type="button" class="add" id="addSvc">+ Tambah layanan</button>
+      <p class="svc-sum" id="svcSum"></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Transport</legend>
+      <div class="grid2">
+        <div class="field">
+          <label for="km">Jarak rata-rata ke customer</label>
+          <div class="inp"><input type="number" id="km" value="7" min="0" step="0.5"><span class="post">km</span></div>
+          <span class="hint">Diukur dari kantor · Rp 1.300/km</span>
+        </div>
+        <label class="check" style="align-self:end">
+          <input type="checkbox" id="pp">
+          <span>Hitung pulang-pergi (×2)
+          <span class="hint">Surat cuma menyebut jarak kantor → lokasi customer.</span></span>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Kehadiran &amp; lembur</legend>
+      <div class="grid2">
+        <div class="field">
+          <label for="hariKerja">Hari kerja / bulan</label>
+          <div class="inp"><input type="number" id="hariKerja" value="26" min="0" max="31"><span class="post">hari</span></div>
+          <span class="hint">30 hari − libur Selasa ≈ 26</span>
+        </div>
+        <div class="field">
+          <label for="jamLembur">Jam lembur / bulan</label>
+          <div class="inp"><input type="number" id="jamLembur" value="0" min="0" step="0.5"><span class="post">jam</span></div>
+          <span class="hint">Order di luar pukul 11.00–21.00</span>
+        </div>
+        <div class="field">
+          <label for="hariIzin">Izin / mangkir</label>
+          <div class="inp"><input type="number" id="hariIzin" value="0" min="0"><span class="post">hari</span></div>
+          <span class="hint">Potong Rp 50.000 per hari</span>
+        </div>
+        <div class="field">
+          <label for="bpjs">Tunjangan BPJS</label>
+          <div class="inp"><span class="pre">Rp</span><input type="number" id="bpjs" value="0" min="0" step="10000"></div>
+          <span class="hint">Nominalnya belum disebut di surat</span>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+
+  <!-- ============ SLIP ============ -->
+  <div class="slip-wrap">
+    <div class="slip">
+      <div class="slip-head">
+        <h2>Slip estimasi</h2>
+        <span class="tag" id="tagStatus">Pasca training</span>
+      </div>
+
+      <p class="big">
+        <span class="lbl">Perkiraan diterima / bulan</span>
+        <span class="num" id="total">Rp 0</span>
+      </p>
+      <p class="perhari">Rata-rata <b id="perHari">Rp 0</b> per hari kerja · <b id="perOrder">Rp 0</b> per order</p>
+
+      <p class="grp">Bagi hasil per layanan</p>
+      <ul class="rows" id="svcRows"></ul>
+
+      <p class="grp">Penerimaan lain</p>
+      <ul class="rows" id="plus"></ul>
+
+      <ul class="rows" id="minus"></ul>
+
+      <ul class="rows">
+        <li class="sum"><span class="nm">Total bersih</span><span class="dots"></span><span class="vl" id="totalRow">Rp 0</span></li>
+      </ul>
+
+      <div class="compare" id="compare"></div>
+    </div>
+    <div class="tear"></div>
+  </div>
+</div>
+
+<!-- ============ NOTES ============ -->
+<div class="notes">
+  <h3>Dasar perhitungan</h3>
+  <ul>
+    <li><b>Gaji pokok harian</b> — Rp 25.000/hari saat training, Rp 30.000/hari setelah lulus training.</li>
+    <li><b>Bagi hasil order</b> — 40% dari nilai order pada jam operasional (11.00–21.00). Di harga Rp 120.000, terapis dapat Rp 48.000 per order.</li>
+    <li><b>Hari libur resmi</b> — 1 Januari, Idulfitri (5 hari), 17 Agustus, Iduladha. Order di tanggal ini dihitung lembur dengan bagi hasil 60%, berlaku untuk training maupun pasca training.</li>
+    <li><b>Transport</b> — Rp 1.300/km, diukur dari kantor ke lokasi customer.</li>
+    <li><b>Lembur per jam</b> — Rp 10.000/jam saat training, Rp 15.000/jam setelah lulus.</li>
+    <li><b>Bonus kuantitas (pasca training)</b> — Rp 150.000 kalau lebih dari 60 customer sebulan, Rp 250.000 kalau lebih dari 80 customer. Dihitung dari total semua layanan.</li>
+    <li><b>Bonus servis motor (pasca training)</b> — Rp 65.000 per bulan.</li>
+    <li><b>Potongan</b> — Rp 50.000 per hari untuk izin tanpa tukar hari atau mangkir. Sakit dengan surat dokter tidak dipotong.</li>
+    <li><b>Jadwal gajian</b> — dua kali sebulan, tanggal 15–16 dan tanggal 28–31, lewat rekening yang disepakati.</li>
+  </ul>
+
+  <div class="flag">
+    <p>Tiga hal yang sebaiknya kamu tanyakan ke manajemen sebelum tanda tangan</p>
+    <p>1. <b>Transport sekali jalan atau PP?</b> Surat cuma menyebut "jarak dari kantor ke lokasi customer". Selisihnya besar — di 7 km dan 60 order, bedanya Rp 546.000 sebulan.</p>
+    <p>2. <b>Hari izin: potong Rp 50.000 saja, atau gaji pokok harian juga hangus?</b> Kalkulator ini memakai bacaan harfiahnya, yaitu potong Rp 50.000 dan gaji pokok tetap jalan.</p>
+    <p>3. <b>Berapa nominal tunjangan BPJS-nya</b>, dan apakah dibayarkan perusahaan atau dipotong dari gaji. Di surat belum ada angkanya, jadi di sini defaultnya nol.</p>
+    <p style="margin-top:12px">Catatan lain: bonus 40% di Pasal 2 tertulis dua kali, tapi tetap dihitung sekali. Angka di sini estimasi, bukan janji perusahaan.</p>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var rp = function(n){ return 'Rp ' + Math.round(n).toLocaleString('id-ID'); };
+  var num = function(id){ var v = parseFloat($(id).value); return isNaN(v)||v<0 ? 0 : v; };
+  var esc = function(s){ return String(s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+
+  var TARIF = {
+    training:{ pokok:25000, lembur:10000, motor:0,     kuantitas:false, label:'Masa training',  lain:'pasca'    },
+    pasca:   { pokok:30000, lembur:15000, motor:65000, kuantitas:true,  label:'Pasca training', lain:'training' }
+  };
+
+  /* ---------- daftar layanan ---------- */
+  var layanan = [
+    { nama:'Pijat 90 menit',  harga:120000, qty:60, libur:0 },
+    { nama:'Pijat 120 menit', harga:165000, qty:0,  libur:0 }
+  ];
+  var uid = 0;
+
+  function rowHTML(s, i, only){
+    var id = 'sv' + (uid++);
+    return '<div class="svc" data-i="' + i + '">' +
+      '<div class="c-nama"><span class="flab">Nama layanan</span>' +
+        '<div class="inp"><input type="text" data-k="nama" value="' + esc(s.nama) + '" placeholder="Nama layanan"></div></div>' +
+      '<div class="c-harga"><span class="flab">Harga</span>' +
+        '<div class="inp"><span class="pre">Rp</span><input type="number" data-k="harga" min="0" step="5000" value="' + s.harga + '"></div></div>' +
+      '<div class="c-qty"><span class="flab">Order/bln</span>' +
+        '<div class="inp"><input type="number" data-k="qty" min="0" value="' + s.qty + '"></div></div>' +
+      '<div class="c-libur"><span class="flab">Hari libur</span>' +
+        '<div class="inp"><input type="number" data-k="libur" min="0" value="' + s.libur + '"></div></div>' +
+      '<div class="c-del"><button type="button" class="del" data-del="' + i + '" aria-label="Hapus layanan"' +
+        (only ? ' disabled' : '') + '>&times;</button></div>' +
+    '</div>';
+  }
+
+  function renderLayanan(){
+    var h = '';
+    for(var i=0;i<layanan.length;i++) h += rowHTML(layanan[i], i, layanan.length===1);
+    $('svcList').innerHTML = h;
+  }
+
+  $('svcList').addEventListener('input', function(e){
+    var inp = e.target;
+    if(!inp.dataset.k) return;
+    var i = +inp.closest('.svc').dataset.i, k = inp.dataset.k;
+    if(k === 'nama'){ layanan[i].nama = inp.value; }
+    else {
+      var v = parseFloat(inp.value);
+      layanan[i][k] = isNaN(v)||v<0 ? 0 : v;
+    }
+    render();
+  });
+
+  $('svcList').addEventListener('click', function(e){
+    var b = e.target.closest('.del');
+    if(!b || b.disabled) return;
+    layanan.splice(+b.dataset.del, 1);
+    renderLayanan(); render();
+  });
+
+  $('addSvc').addEventListener('click', function(){
+    layanan.push({ nama:'Layanan baru', harga:150000, qty:0, libur:0 });
+    renderLayanan(); render();
+    var rows = $('svcList').querySelectorAll('.svc input[data-k=nama]');
+    var last = rows[rows.length-1];
+    last.focus(); last.select();
+  });
+
+  /* ---------- hitung ---------- */
+  function hitung(status){
+    var t = TARIF[status];
+    var km = num('km'), hariKerja = num('hariKerja'), jamLembur = num('jamLembur'),
+        hariIzin = Math.min(num('hariIzin'), num('hariKerja')), bpjs = num('bpjs'),
+        pp = $('pp').checked ? 2 : 1;
+
+    var totalOrder = 0, bagiHasil = 0, bagiLibur = 0, rincian = [];
+    layanan.forEach(function(s){
+      var libur = Math.min(s.libur, s.qty), biasa = s.qty - libur;
+      var nilai = biasa * s.harga * 0.40 + libur * s.harga * 0.60;
+      totalOrder += s.qty;
+      bagiHasil += biasa * s.harga * 0.40;
+      bagiLibur += libur * s.harga * 0.60;
+      if(s.qty > 0) rincian.push({ nama:s.nama||'Tanpa nama', harga:s.harga, qty:s.qty, libur:libur, nilai:nilai });
+    });
+
+    var r = {
+      pokok: hariKerja * t.pokok,
+      bagiHasil: bagiHasil,
+      bagiLibur: bagiLibur,
+      transport: totalOrder * km * pp * 1300,
+      lembur: jamLembur * t.lembur,
+      motor: t.motor,
+      kuantitas: t.kuantitas ? (totalOrder > 80 ? 250000 : (totalOrder > 60 ? 150000 : 0)) : 0,
+      bpjs: bpjs,
+      potongan: hariIzin * 50000
+    };
+    r.bruto = r.pokok + r.bagiHasil + r.bagiLibur + r.transport + r.lembur + r.motor + r.kuantitas + r.bpjs;
+    r.total = r.bruto - r.potongan;
+    r._ = { t:t, km:km, pp:pp, hariKerja:hariKerja, jamLembur:jamLembur, hariIzin:hariIzin,
+            totalOrder:totalOrder, rincian:rincian };
+    return r;
+  }
+
+  function baris(nama, detail, nilai, minus, cls){
+    if(!nilai) return '';
+    return '<li class="' + (minus?'minus ':'') + (cls||'') + '">' +
+      '<span class="nm">' + nama + (detail ? ' <span class="det">' + detail + '</span>' : '') + '</span>' +
+      '<span class="dots"></span>' +
+      '<span class="vl">' + (minus?'−':'') + rp(nilai) + '</span></li>';
+  }
+
+  function render(){
+    var status = document.querySelector('input[name=status]:checked').value;
+    var r = hitung(status), d = r._, t = d.t;
+
+    $('tagStatus').textContent = t.label;
+    $('total').textContent = rp(r.total);
+    $('totalRow').textContent = rp(r.total);
+    $('perHari').textContent = d.hariKerja ? rp(r.total / d.hariKerja) : rp(0);
+    $('perOrder').textContent = d.totalOrder ? rp(r.total / d.totalOrder) : rp(0);
+
+    // rincian per layanan
+    var sh = '';
+    d.rincian.forEach(function(s){
+      var det = s.qty + ' × ' + rp(s.harga * 0.40) + (s.libur ? ' · ' + s.libur + ' libur @' + rp(s.harga*0.60) : '');
+      sh += baris(esc(s.nama), det, s.nilai);
+    });
+    $('svcRows').innerHTML = sh ||
+      '<li><span class="nm">Belum ada order</span><span class="dots"></span><span class="vl">Rp 0</span></li>';
+
+    // penerimaan lain
+    var html = '';
+    html += baris('Gaji pokok', d.hariKerja + ' hari × ' + rp(t.pokok), r.pokok);
+    html += baris('Uang transport', d.totalOrder + ' order × ' + d.km + (d.pp===2?' km PP':' km') + ' × Rp 1.300', r.transport);
+    html += baris('Lembur', d.jamLembur + ' jam × ' + rp(t.lembur), r.lembur);
+    html += baris('Bonus servis motor', 'per bulan', r.motor);
+    html += baris('Bonus kuantitas', '>' + (d.totalOrder>80?'80':'60') + ' customer', r.kuantitas);
+    html += baris('Tunjangan BPJS', '', r.bpjs);
+    $('plus').innerHTML = html ||
+      '<li><span class="nm">Tidak ada</span><span class="dots"></span><span class="vl">Rp 0</span></li>';
+
+    var m = baris('Potongan izin / mangkir', d.hariIzin + ' hari × Rp 50.000', r.potongan, true);
+    $('minus').innerHTML = m;
+
+    // ringkasan layanan di form
+    var rata = d.totalOrder ? (r.bagiHasil + r.bagiLibur) / d.totalOrder : 0;
+    $('svcSum').textContent = d.totalOrder + ' order sebulan · rata-rata bagi hasil ' + rp(rata) + ' per order';
+
+    // perbandingan status
+    var lain = hitung(t.lain);
+    var beda = lain.total - r.total;
+    $('compare').innerHTML = 'Dengan angka yang sama, status <b>' + TARIF[t.lain].label.toLowerCase() +
+      '</b> dapat <b>' + rp(lain.total) + '</b> — ' + rp(Math.abs(beda)) + ' ' +
+      (beda >= 0 ? 'lebih besar' : 'lebih kecil') + '.';
+  }
+
+  ['km','pp','hariKerja','jamLembur','hariIzin','bpjs','s-tr','s-ps'].forEach(function(id){
+    $(id).addEventListener('input', render);
+    $(id).addEventListener('change', render);
+  });
+
+  renderLayanan();
+  render();
+})();
+</script>
+</body>
+</html>
