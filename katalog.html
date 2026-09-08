@@ -2,237 +2,306 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Katalog Layanan 2026 — Mahyra Massage</title>
-<meta name="description" content="Katalog layanan pijat panggilan Mahyra Massage untuk Malang dan Surabaya. Daftar perawatan, paket, dan harga, dibolak-balik seperti buku.">
-<meta property="og:title" content="Katalog Layanan 2026 — Mahyra Massage">
-<meta property="og:description" content="Daftar perawatan, paket, dan harga pijat panggilan ke rumah di Malang & Surabaya.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Katalog Layanan 2026 — Mahyra Relaksia</title>
+<meta name="description" content="Katalog layanan pijat panggilan Mahyra Relaksia untuk Malang dan Surabaya. Perawatan, paket, dan harga, dibuka seperti lembaran buku.">
+<meta property="og:title" content="Katalog Layanan 2026 — Mahyra Relaksia">
+<meta property="og:description" content="Perawatan, paket, dan harga pijat panggilan ke rumah di Malang & Surabaya.">
+<meta property="og:image" content="https://mahyrarelaksia.com/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-/* ============================================================
-   GANTI DUA BARIS DI BAWAH INI DENGAN DATA ASLI KAMU
-   (nomor WhatsApp ada di file JavaScript, cari kata WA_NOMOR)
-   ============================================================ */
+/* ══════════════════════════════════════════════════════════
+   Yang perlu kamu ganti ada tiga:
+   1. Nomor WhatsApp  → cari WA_NOMOR di bagian JavaScript, paling bawah
+   2. Foto            → unggah ke folder /foto (daftar ada di bawah)
+   3. Warna           → tiga baris pertama di :root
+   ══════════════════════════════════════════════════════════ */
 :root{
-  --nila:#16233F;        /* indigo tua — sampul */
-  --nila-mid:#33487A;    /* indigo sedang — aksen */
-  --kertas:#FBF7F0;      /* kertas halaman */
-  --tinta:#22201C;       /* teks */
-  --kunyit:#B5822B;      /* aksen harga & garis */
-  --abu:#6E6A61;         /* teks sekunder */
+  --malam:#0F1C2B;        /* biru malam — sampul */
+  --emas:#C6A96B;         /* emas — aksen & harga */
+  --gading:#F7F2E8;       /* kertas */
 
-  --page-h:min(76vh,600px);
-  --page-w:calc(var(--page-h)/1.36);
-  --flip:.85s;
+  --malam-2:#1B2E44;
+  --emas-tua:#8A6E3A;
+  --tinta:#1E1C17;
+  --abu:#7A736A;
+  --page-w:360px;
+  --page-h:504px;
+  --flip:.9s;
+  --ease:cubic-bezier(.36,.66,.24,1);
 }
 @media (prefers-reduced-motion:reduce){:root{--flip:.001s}}
 
 *{box-sizing:border-box}
-html,body{height:100%}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 body{
-  margin:0;background:#0E1729;color:var(--kertas);
-  font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  display:flex;flex-direction:column;min-height:100dvh;
-  background-image:radial-gradient(120% 80% at 50% 0%,#1B2B48 0%,#0E1729 60%);
+  margin:0;color:var(--gading);
+  font-family:Jost,system-ui,-apple-system,"Segoe UI",sans-serif;font-weight:300;
+  display:flex;flex-direction:column;height:100dvh;
+  background:
+    radial-gradient(120% 90% at 50% -10%,#20344C 0%,#0B1522 62%),
+    #0B1522;
+}
+body::before{ /* butiran halus, biar tidak terasa datar */
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;z-index:0;
+  background-image:radial-gradient(circle at 1px 1px,rgba(198,169,107,.14) 1px,transparent 0);
+  background-size:22px 22px;
 }
 
-/* ---------- kepala ---------- */
-.bar{display:flex;align-items:center;gap:.9rem;padding:.85rem 1.1rem;flex:0 0 auto}
-.bar .mark{font-family:Fraunces,Georgia,serif;font-size:1.02rem;letter-spacing:.01em}
-.bar .mark span{display:block;font-family:"Instrument Sans",sans-serif;font-size:.66rem;color:#93A2C0;margin-top:.1rem}
-.bar .spacer{flex:1}
-.bar a.back{color:#B9C6E0;text-decoration:none;font-size:.82rem;border-bottom:1px solid rgba(185,198,224,.35);padding-bottom:1px}
-.bar a.back:hover{color:#fff}
+/* ── kepala ── */
+.bar{flex:0 0 auto;display:flex;justify-content:center;padding:1rem .8rem .2rem;position:relative;z-index:2}
+.bar .mark{text-align:center;line-height:1.25}
+.bar .mark b{
+  font-family:"Cormorant Garamond",Georgia,serif;font-weight:400;font-size:1.32rem;
+  letter-spacing:.14em;color:#EFE6D4;display:block;
+}
+.bar .mark i{
+  font-style:normal;font-size:.6rem;letter-spacing:.34em;color:var(--emas);
+  display:block;margin-top:.3rem;
+}
 
-/* ---------- panggung buku ---------- */
-.stage{flex:1;display:grid;place-items:center;padding:.4rem 1rem 0;perspective:2400px;min-height:0}
+/* ── panggung ── */
+.stage{flex:1 1 auto;display:grid;place-items:center;min-height:0;perspective:2600px;position:relative;z-index:1}
 .book{
-  position:relative;width:calc(var(--page-w)*2);height:var(--page-h);
-  transform-style:preserve-3d;transition:transform var(--flip) cubic-bezier(.32,.72,.29,1);
+  position:relative;width:var(--book-w);height:var(--page-h);
+  transform-style:preserve-3d;touch-action:none;
+  transition:transform var(--flip) var(--ease);
 }
 .book.at-first{transform:translateX(calc(var(--page-w)/2))}
 .book.at-last{transform:translateX(calc(var(--page-w)/-2))}
-.book::after{ /* bayangan buku di bawah */
-  content:"";position:absolute;left:6%;right:6%;bottom:-14px;height:26px;
-  background:radial-gradient(50% 50% at 50% 50%,rgba(0,0,0,.55),transparent 70%);
-  filter:blur(3px);z-index:0;
+.book::after{
+  content:"";position:absolute;left:4%;right:4%;bottom:-16px;height:30px;z-index:0;
+  background:radial-gradient(50% 50% at 50% 50%,rgba(0,0,0,.6),transparent 72%);filter:blur(4px);
 }
 .leaf{
-  position:absolute;top:0;left:50%;width:50%;height:100%;
-  transform-style:preserve-3d;transform-origin:left center;
-  transition:transform var(--flip) cubic-bezier(.36,.66,.24,1);
+  position:absolute;top:0;height:100%;transform-style:preserve-3d;
+  transform-origin:left center;will-change:transform;
+  transition:transform var(--flip) var(--ease);
 }
+.spread .leaf{left:50%;width:50%}
+.solo .leaf{left:0;width:100%}
 .leaf.flipped{transform:rotateY(-180deg)}
+.leaf.dragging{transition:none}
 .face{
-  position:absolute;inset:0;backface-visibility:hidden;overflow:hidden;
-  background:var(--kertas);
+  position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  overflow:hidden;background:var(--gading);
 }
 .face.back{transform:rotateY(180deg)}
-.face.front{box-shadow:inset 14px 0 22px -18px rgba(0,0,0,.55),2px 2px 14px rgba(0,0,0,.35)}
-.face.back{box-shadow:inset -14px 0 22px -18px rgba(0,0,0,.55),-2px 2px 14px rgba(0,0,0,.35)}
+.face.front{box-shadow:inset 16px 0 26px -20px rgba(0,0,0,.5),3px 3px 18px rgba(0,0,0,.4)}
+.face.back{box-shadow:inset -16px 0 26px -20px rgba(0,0,0,.5),-3px 3px 18px rgba(0,0,0,.4)}
 
-/* ---------- halaman ---------- */
+/* punggung halaman kosong (mode ponsel) */
+.verso{
+  width:100%;height:100%;background:var(--gading);display:grid;place-items:center;
+}
+.verso img{width:34%;opacity:.07}
+
+/* ── halaman ── */
 .page{
-  width:100%;height:100%;color:var(--tinta);
-  font-size:calc(var(--page-w)/25);line-height:1.5;
-  padding:2.1em 1.9em 1.5em;display:flex;flex-direction:column;position:relative;
+  width:100%;height:100%;color:var(--tinta);position:relative;
+  font-size:calc(var(--page-w)/26);line-height:1.55;
+  padding:1.9em 1.7em 1.3em;display:flex;flex-direction:column;
+  background:var(--gading);
+}
+.page::before{ /* bingkai emas tipis */
+  content:"";position:absolute;inset:.75em;border:1px solid rgba(198,169,107,.42);pointer-events:none;
 }
 .page h2{
-  font-family:Fraunces,Georgia,serif;font-weight:500;font-size:1.72em;line-height:1.12;
-  margin:.15em 0 .5em;letter-spacing:-.012em;
+  font-family:"Cormorant Garamond",Georgia,serif;font-weight:400;font-size:1.95em;
+  line-height:1.08;margin:.1em 0 .35em;letter-spacing:.005em;
 }
-.page p{margin:0 0 .75em;font-size:.86em;color:#43403A;max-width:32ch}
-.page .lead{font-size:.95em;color:#35322D}
+.page p{margin:0 0 .7em;font-size:.8em;color:#4A463E;max-width:34ch;font-weight:300}
 .runner{
-  font-family:Fraunces,Georgia,serif;font-style:italic;font-size:.72em;color:var(--abu);
-  border-bottom:1px solid rgba(110,106,97,.28);padding-bottom:.5em;
+  font-size:.56em;letter-spacing:.3em;color:var(--emas-tua);margin-bottom:.4em;
 }
-.folio{margin-top:auto;padding-top:.9em;font-size:.62em;color:var(--abu);display:flex;justify-content:space-between;align-items:baseline}
-.folio b{font-family:Fraunces,serif;font-weight:400;color:var(--tinta)}
+.folio{
+  margin-top:auto;padding-top:.8em;font-size:.58em;color:var(--abu);
+  display:flex;justify-content:space-between;align-items:center;letter-spacing:.18em;
+}
+.folio b{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:1.5em;color:var(--emas-tua);letter-spacing:0}
 
-/* daftar harga bergaya menu */
-.rows{list-style:none;margin:.2em 0 .9em;padding:0}
-.rows li{display:flex;align-items:baseline;gap:.35em;padding:.42em 0;border-bottom:1px dotted rgba(181,130,43,.5)}
-.rows .n{font-size:.86em}
-.rows .n small{display:block;color:var(--abu);font-size:.82em;line-height:1.35}
+/* ── foto ── */
+.ph{
+  position:relative;overflow:hidden;background:linear-gradient(140deg,#233A52,#0F1C2B 70%);
+  border:1px solid rgba(198,169,107,.4);flex:0 0 auto;
+}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph.kosong::after{
+  content:attr(data-label);position:absolute;inset:0;display:grid;place-items:center;
+  color:rgba(198,169,107,.75);font-size:.62em;letter-spacing:.16em;text-align:center;padding:.6em;
+}
+.band{height:30%;margin:.1em 0 .8em}
+.band.pendek{height:22%}
+.trio{display:flex;gap:.4em;margin:.2em 0 .8em}
+.trio .ph{flex:1;aspect-ratio:3/4}
+
+/* ── daftar harga ── */
+.rows{list-style:none;margin:.1em 0 .7em;padding:0}
+.rows li{display:flex;align-items:baseline;gap:.35em;padding:.4em 0;border-bottom:1px solid rgba(198,169,107,.35)}
+.rows .n{font-size:.82em}
+.rows .n small{display:block;color:var(--abu);font-size:.84em;line-height:1.4}
 .rows .dots{flex:1}
-.rows .p{font-family:Fraunces,Georgia,serif;font-size:.98em;color:var(--kunyit);white-space:nowrap}
+.rows .p{font-family:"Cormorant Garamond",Georgia,serif;font-size:1.12em;color:var(--emas-tua);white-space:nowrap}
 
-.note{font-size:.72em;color:var(--abu);border-left:2px solid var(--kunyit);padding-left:.7em;margin:.2em 0 .6em}
+.note{font-size:.66em;color:var(--abu);border-left:1px solid var(--emas);padding-left:.75em;margin:.1em 0 .55em;line-height:1.6}
 
-/* daftar isi */
-.toc{list-style:none;margin:.3em 0 0;padding:0}
-.toc li{display:flex;align-items:baseline;gap:.4em;padding:.46em 0;border-bottom:1px solid rgba(34,32,28,.1);font-size:.85em}
-.toc .dots{flex:1;border-bottom:1px dotted rgba(34,32,28,.28);transform:translateY(-.25em)}
-.toc b{font-family:Fraunces,serif;font-weight:400;color:var(--nila-mid)}
+/* ── daftar isi ── */
+.toc{list-style:none;margin:.2em 0 0;padding:0}
+.toc li{display:flex;align-items:baseline;gap:.4em;padding:.42em 0;font-size:.78em;border-bottom:1px solid rgba(30,28,23,.08)}
+.toc .dots{flex:1;border-bottom:1px dotted rgba(30,28,23,.25);transform:translateY(-.3em)}
+.toc b{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:1.25em;color:var(--emas-tua)}
 
-/* langkah bernomor (memang urutan) */
-.steps{list-style:none;margin:.2em 0 0;padding:0;counter-reset:s}
-.steps li{position:relative;padding:.5em 0 .5em 2.1em;counter-increment:s;font-size:.82em;border-bottom:1px solid rgba(34,32,28,.1)}
+/* ── langkah ── */
+.steps{list-style:none;margin:.1em 0 0;padding:0;counter-reset:s}
+.steps li{position:relative;padding:.48em 0 .48em 2.2em;counter-increment:s;font-size:.76em;border-bottom:1px solid rgba(30,28,23,.08)}
 .steps li::before{
-  content:counter(s);position:absolute;left:0;top:.5em;
-  font-family:Fraunces,serif;font-size:1.05em;color:var(--kunyit);
+  content:counter(s,decimal-leading-zero);position:absolute;left:0;top:.5em;
+  font-family:"Cormorant Garamond",serif;font-size:1.15em;color:var(--emas);
 }
-.steps b{display:block;font-weight:500;font-size:1.02em;margin-bottom:.05em}
-.steps span{color:#4A4740}
+.steps b{display:block;font-weight:500;font-size:1.05em;margin-bottom:.02em}
+.steps span{color:#4A463E}
 
-/* terapis */
-.who{display:flex;gap:.7em;padding:.55em 0;border-bottom:1px solid rgba(34,32,28,.1);align-items:flex-start}
-.who .ini{
-  flex:0 0 auto;width:2em;height:2em;border-radius:50%;display:grid;place-items:center;
-  background:var(--nila);color:var(--kertas);font-family:Fraunces,serif;font-size:.9em;
-}
-.who .txt{font-size:.78em;color:#4A4740}
-.who .txt b{display:block;font-size:1.08em;color:var(--tinta);font-weight:500}
-.who .txt i{font-style:normal;color:var(--kunyit)}
+/* ── terapis ── */
+.who{display:flex;gap:.7em;padding:.5em 0;border-bottom:1px solid rgba(30,28,23,.08);align-items:center}
+.who .ph{width:3.1em;height:3.1em;border-radius:50%;flex:0 0 auto}
+.who .ph.kosong::after{font-size:.5em;letter-spacing:.06em}
+.who .txt{font-size:.72em;color:#4A463E;line-height:1.5}
+.who .txt b{display:block;font-size:1.14em;color:var(--tinta);font-weight:500;font-family:"Cormorant Garamond",serif}
+.who .txt i{font-style:normal;color:var(--emas-tua)}
 
-.areas{display:flex;flex-wrap:wrap;gap:.3em;margin:.1em 0 .8em}
-.areas span{font-size:.7em;border:1px solid rgba(34,32,28,.18);border-radius:1em;padding:.2em .65em;color:#4A4740}
+.areas{display:flex;flex-wrap:wrap;gap:.28em;margin:.1em 0 .7em}
+.areas span{font-size:.62em;letter-spacing:.1em;border:1px solid rgba(198,169,107,.55);border-radius:2em;padding:.3em .8em;color:#4A463E}
 
-.qa{font-size:.78em;margin-bottom:.7em}
-.qa b{display:block;font-weight:500;margin-bottom:.1em}
-.qa span{color:#4A4740}
+.qa{font-size:.72em;margin-bottom:.55em;line-height:1.55}
+.qa b{display:block;font-weight:500;font-family:"Cormorant Garamond",serif;font-size:1.1em}
+.qa span{color:#4A463E}
 
 .cta{
-  display:inline-block;margin-top:.4em;background:var(--nila);color:var(--kertas);
-  text-decoration:none;font-size:.78em;padding:.62em 1.15em;border-radius:2em;
+  display:inline-block;margin-top:.35em;background:var(--malam);color:var(--gading);
+  text-decoration:none;font-size:.68em;letter-spacing:.16em;padding:.75em 1.4em;
+  border:1px solid var(--emas);
 }
-.cta:hover{background:var(--nila-mid)}
+.cta:hover{background:var(--malam-2)}
 
-/* sampul depan & belakang */
-.page.cover,.page.end{background:var(--nila);color:var(--kertas);justify-content:space-between}
-.page.cover::before,.page.end::before{
-  content:"";position:absolute;inset:0;opacity:.16;pointer-events:none;
-  background-image:radial-gradient(circle at 1px 1px,rgba(181,130,43,.9) 1px,transparent 0);
-  background-size:14px 14px;
+/* ── sampul ── */
+.page.sampul,.page.penutup{padding:0;color:var(--gading);background:var(--malam)}
+.page.sampul .ph,.page.penutup .ph{position:absolute;inset:0;border:0}
+.page.sampul .isi,.page.penutup .isi{
+  position:relative;z-index:2;height:100%;padding:2.1em 1.8em 1.5em;
+  display:flex;flex-direction:column;justify-content:space-between;text-align:center;align-items:center;
+  background:linear-gradient(180deg,rgba(9,17,27,.86) 0%,rgba(9,17,27,.6) 45%,rgba(9,17,27,.92) 100%);
 }
-.page.cover>*,.page.end>*{position:relative}
-.page.cover h1{
-  font-family:Fraunces,Georgia,serif;font-weight:400;font-size:2.5em;line-height:1.02;
-  margin:0;letter-spacing:-.02em;
+.page.sampul::before,.page.penutup::before{inset:.9em;border-color:rgba(198,169,107,.6);z-index:3}
+.sampul .logo{width:4.6em;opacity:.95}
+.sampul h1{
+  font-family:"Cormorant Garamond",Georgia,serif;font-weight:300;font-size:2.75em;line-height:1;
+  margin:0;letter-spacing:.02em;color:#F3EADA;
 }
-.page.cover h1 em{font-style:italic;display:block}
-.cover .top,.end .top{font-size:.78em;color:#C6D2EA}
-.cover .rule{width:2.6em;height:1px;background:var(--kunyit);margin:.9em 0}
-.cover .foot,.end .foot{font-size:.7em;color:#9FB0CE}
-.end h2{color:var(--kertas);font-size:1.5em}
-.end p{color:#C6D2EA;max-width:26ch}
-.end .cta{background:var(--kunyit);color:#1B1503;font-weight:500}
-.end .cta:hover{background:#CE9736}
+.sampul h1 em{font-style:italic;display:block;color:var(--emas)}
+.sampul .rule{width:3.4em;height:1px;background:var(--emas);margin:.85em auto}
+.sampul .sub{font-size:.68em;letter-spacing:.28em;color:#C8BCA4}
+.sampul .kaki{font-size:.6em;letter-spacing:.24em;color:rgba(198,169,107,.85)}
+.penutup h2{color:#F3EADA;font-size:1.7em;margin-bottom:.3em}
+.penutup p{color:#C8BCA4;max-width:26ch;font-size:.76em;margin-inline:auto}
+.penutup .cta{background:var(--emas);color:#14100A;border-color:var(--emas);font-weight:500}
+.penutup .cta:hover{background:#D6BC85}
+.penutup .kaki{font-size:.58em;letter-spacing:.2em;color:rgba(198,169,107,.85);line-height:2}
+.penutup .logo{width:3.6em;margin-bottom:.6em}
 
-/* ---------- mode satu halaman (ponsel) ---------- */
-.single{position:relative;width:min(92vw,400px);height:calc(min(92vw,400px)*1.36);overflow:hidden;
-  box-shadow:0 14px 34px rgba(0,0,0,.45)}
-.single .slide{position:absolute;inset:0;transition:transform var(--flip) cubic-bezier(.32,.72,.29,1);background:var(--kertas)}
-.single .page{--page-w:min(92vw,400px);font-size:calc(min(92vw,400px)/23);padding:1.7em 1.4em 1.2em}
-
-/* ---------- kontrol ---------- */
-.ctrl{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:.55rem;padding:1.1rem 1rem 1.4rem}
+/* ── kontrol & logo bawah ── */
+.ctrl{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:.5rem;padding:1.15rem .8rem .35rem;z-index:2}
 .ctrl button,.ctrl select{
-  font:inherit;font-size:.8rem;color:#DCE4F3;background:rgba(255,255,255,.07);
-  border:1px solid rgba(255,255,255,.16);border-radius:2em;padding:.5em 1em;cursor:pointer;
+  font:inherit;font-size:.72rem;letter-spacing:.12em;color:#DDD2BC;background:rgba(255,255,255,.05);
+  border:1px solid rgba(198,169,107,.4);border-radius:2em;padding:.55em 1.1em;cursor:pointer;
 }
-.ctrl button:hover:not(:disabled),.ctrl select:hover{background:rgba(255,255,255,.14)}
-.ctrl button:disabled{opacity:.32;cursor:default}
-.ctrl .count{font-size:.78rem;color:#93A2C0;min-width:9.5em;text-align:center}
-.ctrl select{max-width:11rem}
-:focus-visible{outline:2px solid var(--kunyit);outline-offset:2px}
+.ctrl button:hover:not(:disabled),.ctrl select:hover{background:rgba(198,169,107,.16)}
+.ctrl button:disabled{opacity:.28;cursor:default}
+.ctrl .count{font-size:.66rem;letter-spacing:.16em;color:#9E947F;min-width:8.5em;text-align:center}
+.ctrl select{max-width:10rem}
+:focus-visible{outline:1px solid var(--emas);outline-offset:3px}
+
+.kaki-logo{
+  flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:.3rem;
+  padding:.5rem 0 max(.7rem,env(safe-area-inset-bottom));z-index:2;
+}
+.kaki-logo img{height:34px;width:auto;opacity:.9}
+.kaki-logo span{font-size:.54rem;letter-spacing:.3em;color:rgba(198,169,107,.7)}
 
 @media (max-width:860px){
-  .stage{padding:.2rem .5rem 0;perspective:none}
-  .ctrl{padding:.9rem .6rem 1.1rem;gap:.4rem}
-  .ctrl .count{min-width:7.5em;font-size:.72rem}
-  .ctrl select{max-width:8rem;font-size:.72rem}
+  .bar{padding:.7rem .6rem .1rem}
+  .bar .mark b{font-size:1.1rem}
+  .ctrl{gap:.35rem;padding:.85rem .5rem .2rem}
+  .ctrl button,.ctrl select{font-size:.64rem;padding:.5em .85em}
+  .ctrl .count{min-width:6.6em;font-size:.6rem}
+  .ctrl select{max-width:7rem}
+  .kaki-logo img{height:28px}
 }
-@media (max-height:620px) and (min-width:861px){:root{--page-h:min(72vh,520px)}}
 </style>
 </head>
 <body>
 
 <header class="bar">
-  <div class="mark">Mahyra Massage<span>Home Wellness &amp; Therapy</span></div>
-  <div class="spacer"></div>
-  <a class="back" href="https://mahyrarelaksia.com">Kembali ke situs</a>
+  <div class="mark"><b>MAHYRA RELAKSIA</b><i>HOME WELLNESS &amp; THERAPY</i></div>
 </header>
 
 <main class="stage" id="stage"></main>
 
 <nav class="ctrl">
-  <button id="prev" aria-label="Halaman sebelumnya">‹ Sebelumnya</button>
+  <button id="prev" aria-label="Halaman sebelumnya">‹</button>
   <span class="count" id="count"></span>
-  <button id="next" aria-label="Halaman berikutnya">Berikutnya ›</button>
+  <button id="next" aria-label="Halaman berikutnya">›</button>
   <select id="jump" aria-label="Lompat ke halaman"></select>
 </nav>
 
+<footer class="kaki-logo">
+  <img src="logo.png" alt="Mahyra Relaksia" onerror="this.style.display='none'">
+  <span>MALANG &amp; SURABAYA</span>
+</footer>
+
 <script>
-/* ============================================================
-   GANTI NOMOR WHATSAPP DI BAWAH INI (format 62, tanpa + atau spasi)
-   ============================================================ */
+/* ══════════════════════════════════════════════════════════
+   1. GANTI NOMOR WHATSAPP (format 62, tanpa + atau spasi)
+   ══════════════════════════════════════════════════════════ */
 const WA_NOMOR = "6281234567890";
 
-const wa = (teks) => "https://wa.me/" + WA_NOMOR + "?text=" + encodeURIComponent(teks);
+/* ══════════════════════════════════════════════════════════
+   2. FOTO — unggah ke folder /foto dengan nama persis seperti ini:
+      foto/sampul.jpg      foto/fullbody.jpg    foto/totok.jpg
+      foto/kepala.jpg      foto/refleksi.jpg    foto/paket.jpg
+      foto/couple.jpg      foto/dewi.jpg        foto/ayu.jpg
+      foto/bagas.jpg       foto/area.jpg        foto/penutup.jpg
+      Selama belum diunggah, kotaknya tampil kosong bertuliskan nama file.
+   ══════════════════════════════════════════════════════════ */
+const foto = (file, cls) =>
+  `<div class="ph ${cls||''}" data-label="foto/${file}">
+     <img src="foto/${file}" alt="" onerror="this.parentNode.classList.add('kosong');this.remove()">
+   </div>`;
 
-const folio = (n, sec) => `<div class="folio"><span>${sec}</span><b>${n}</b></div>`;
+const wa = t => "https://wa.me/" + WA_NOMOR + "?text=" + encodeURIComponent(t);
+const folio = (n, s) => `<div class="folio"><span>${s}</span><b>${n}</b></div>`;
 
 const PAGES = [
 { label:"Sampul", html:`
-  <div class="page cover">
-    <div class="top">Mahyra Massage · Malang &amp; Surabaya</div>
-    <div>
-      <h1>Katalog<em>Layanan</em><em>2026</em></h1>
-      <div class="rule"></div>
-      <div class="top">Pijat panggilan ke rumah.<br>Terapis bersertifikat, bayar setelah sesi.</div>
+  <div class="page sampul">
+    ${foto("sampul.jpg")}
+    <div class="isi">
+      <img class="logo" src="logo.png" alt="" onerror="this.style.display='none'">
+      <div>
+        <h1>Katalog<em>Layanan</em></h1>
+        <div class="rule"></div>
+        <div class="sub">TAHUN 2026</div>
+      </div>
+      <div class="kaki">PIJAT PANGGILAN KE RUMAH<br>MALANG &amp; SURABAYA</div>
     </div>
-    <div class="foot">Buka halaman berikutnya →</div>
   </div>`},
 
 { label:"Isi katalog", html:`
   <div class="page">
-    <div class="runner">Isi katalog</div>
-    <h2>Semua dikerjakan di rumah Anda</h2>
-    <p class="lead">Terapis datang membawa matras, minyak, dan handuk bersih. Anda cukup menyiapkan ruang sekitar 2×2 meter.</p>
+    <div class="runner">ISI KATALOG</div>
+    <h2>Semua dikerjakan<br>di rumah Anda</h2>
+    <p>Terapis datang membawa matras, minyak, dan handuk bersih. Anda cukup menyiapkan ruang sekitar dua kali dua meter.</p>
     <ul class="toc">
       <li>Full Body Massage <span class="dots"></span> <b>3</b></li>
       <li>Perawatan tambahan <span class="dots"></span> <b>4</b></li>
@@ -242,253 +311,289 @@ const PAGES = [
       <li>Cara pemesanan <span class="dots"></span> <b>8</b></li>
       <li>Area &amp; jam layanan <span class="dots"></span> <b>9</b></li>
     </ul>
-    ${folio(2,"Mahyra Massage")}
+    ${folio(2,"MAHYRA RELAKSIA")}
   </div>`},
 
 { label:"Full Body Massage", html:`
   <div class="page">
-    <div class="runner">Layanan</div>
+    <div class="runner">LAYANAN</div>
     <h2>Full Body Massage</h2>
-    <p>Pijat seluruh badan dengan tekanan yang disesuaikan. Sebutkan keluhan Anda di awal sesi — punggung, bahu, atau kaki.</p>
+    ${foto("fullbody.jpg","band")}
     <ul class="rows">
       <li><span class="n">1,5 jam</span><span class="dots"></span><span class="p">Rp 100.000</span></li>
       <li><span class="n">2 jam</span><span class="dots"></span><span class="p">Rp 120.000</span></li>
       <li><span class="n">2,5 jam</span><span class="dots"></span><span class="p">Rp 150.000</span></li>
     </ul>
-    <div class="note">Sudah termasuk peralatan, minyak, dan handuk. Tidak ada biaya transportasi di dalam area layanan.</div>
-    <a class="cta" href="${wa('Halo Mahyra, saya mau pesan Full Body Massage. Durasi: ')}" target="_blank" rel="noopener">Pesan lewat WhatsApp</a>
-    ${folio(3,"Full Body Massage")}
+    <div class="note">Sudah termasuk peralatan, minyak, dan handuk. Tanpa biaya transportasi di dalam area layanan.</div>
+    ${folio(3,"FULL BODY MASSAGE")}
   </div>`},
 
 { label:"Perawatan tambahan", html:`
   <div class="page">
-    <div class="runner">Layanan</div>
+    <div class="runner">LAYANAN</div>
     <h2>Perawatan tambahan</h2>
-    <p>Ketiganya bisa digabung ke dalam satu sesi Full Body. Sebutkan saat memesan, harga gabungan kami kabari di balasan konfirmasi.</p>
+    <div class="trio">
+      ${foto("totok.jpg")}${foto("kepala.jpg")}${foto("refleksi.jpg")}
+    </div>
     <ul class="rows">
-      <li><span class="n">Totok wajah<small>Melemaskan otot wajah dan rahang.</small></span></li>
-      <li><span class="n">Head massage<small>Kepala, leher, dan bahu — untuk yang lama duduk.</small></span></li>
-      <li><span class="n">Refleksi kaki<small>Titik telapak kaki, membantu tidur lebih nyenyak.</small></span></li>
+      <li><span class="n">Totok wajah<small>Melemaskan otot wajah dan rahang</small></span></li>
+      <li><span class="n">Head massage<small>Kepala, leher, dan bahu</small></span></li>
+      <li><span class="n">Refleksi kaki<small>Titik telapak kaki, membantu tidur</small></span></li>
     </ul>
-    <div class="note">Ingin ketiganya sekaligus? Lihat Paket Tiga Perawatan di halaman berikutnya.</div>
-    ${folio(4,"Perawatan tambahan")}
+    <div class="note">Ketiganya bisa digabung ke dalam satu sesi Full Body. Sebutkan saat memesan, harga gabungan kami kabari di balasan konfirmasi.</div>
+    ${folio(4,"PERAWATAN TAMBAHAN")}
   </div>`},
 
 { label:"Paket Tiga Perawatan", html:`
   <div class="page">
-    <div class="runner">Paket · paling sering diambil</div>
+    <div class="runner">PALING SERING DIAMBIL</div>
     <h2>Paket Tiga Perawatan</h2>
-    <p>Dua setengah jam, tiga perawatan sekaligus, satu harga.</p>
+    ${foto("paket.jpg","band pendek")}
     <ul class="rows">
       <li><span class="n">Paket Favorit<small>Badan, kepala, wajah</small></span><span class="dots"></span><span class="p">Rp 160.000</span></li>
       <li><span class="n">Paket Rileks<small>Badan, wajah, kaki</small></span><span class="dots"></span><span class="p">Rp 165.000</span></li>
       <li><span class="n">Paket Puas<small>Badan, kepala, kaki</small></span><span class="dots"></span><span class="p">Rp 165.000</span></li>
     </ul>
-    <a class="cta" href="${wa('Halo Mahyra, saya mau pesan Paket Tiga Perawatan. Paket: ')}" target="_blank" rel="noopener">Pesan lewat WhatsApp</a>
-    ${folio(5,"Paket Tiga Perawatan")}
+    <div class="note">Dua setengah jam, tiga perawatan sekaligus, satu harga.</div>
+    ${folio(5,"PAKET TIGA PERAWATAN")}
   </div>`},
 
 { label:"Couple", html:`
   <div class="page">
-    <div class="runner">Paket · untuk dua orang</div>
+    <div class="runner">UNTUK DUA ORANG</div>
     <h2>Couple</h2>
-    <p>Dua terapis datang bersamaan ke satu rumah. Layanan boleh berbeda untuk tiap orang — cocok untuk pasangan, atau ibu dan anak.</p>
+    ${foto("couple.jpg","band")}
+    <p>Dua terapis datang bersamaan ke satu rumah. Layanan boleh berbeda untuk tiap orang.</p>
     <ul class="rows">
       <li><span class="n">Couple<small>Dua terapis, satu waktu, satu rumah</small></span><span class="dots"></span><span class="p">mulai Rp 340.000</span></li>
     </ul>
-    <div class="note">Untuk tiga orang atau lebih — acara kantor atau arisan — kami siapkan beberapa terapis dengan penawaran khusus. Hubungi kami sepekan sebelumnya.</div>
-    <a class="cta" href="${wa('Halo Mahyra, saya mau pesan paket Couple untuk dua orang.')}" target="_blank" rel="noopener">Pesan lewat WhatsApp</a>
-    ${folio(6,"Couple")}
+    <div class="note">Tiga orang atau lebih — acara kantor atau arisan — kami siapkan beberapa terapis dengan penawaran khusus.</div>
+    ${folio(6,"COUPLE")}
   </div>`},
 
 { label:"Terapis kami", html:`
   <div class="page">
-    <div class="runner">Orang yang akan datang ke rumah Anda</div>
+    <div class="runner">YANG AKAN DATANG KE RUMAH ANDA</div>
     <h2>Terapis kami</h2>
-    <div class="who"><div class="ini">D</div><div class="txt"><b>Dewi Lestari</b>Terapis Senior · 6 tahun. Kehamilan dan pasca melahirkan, pegal punggung bawah dan kaki bengkak. <i>★ 4,9 · 1.240 sesi</i></div></div>
-    <div class="who"><div class="ini">A</div><div class="txt"><b>Ayu Puspita</b>Terapis · 3 tahun. Refleksi kaki dan keluhan duduk lama — leher kaku, bahu tegang. <i>★ 4,8 · 760 sesi</i></div></div>
-    <div class="who"><div class="ini">B</div><div class="txt"><b>Bagas Prakoso</b>Terapis Pria · 2 tahun. Tekanan kuat dan pemulihan olahraga, klien pria dan lansia. <i>★ 4,8 · 520 sesi</i></div></div>
+    <div class="who">${foto("dewi.jpg")}<div class="txt"><b>Dewi Lestari</b>Terapis Senior · 6 tahun. Kehamilan dan pasca melahirkan, pegal punggung bawah. <i>★ 4,9 · 1.240 sesi</i></div></div>
+    <div class="who">${foto("ayu.jpg")}<div class="txt"><b>Ayu Puspita</b>Terapis · 3 tahun. Refleksi kaki, leher kaku, dan bahu tegang. <i>★ 4,8 · 760 sesi</i></div></div>
+    <div class="who">${foto("bagas.jpg")}<div class="txt"><b>Bagas Prakoso</b>Terapis Pria · 2 tahun. Tekanan kuat dan pemulihan olahraga. <i>★ 4,8 · 520 sesi</i></div></div>
     <div class="note">Punya preferensi terapis wanita atau pria? Sebutkan saat memesan — selalu kami turuti.</div>
-    ${folio(7,"Terapis kami")}
+    ${folio(7,"TERAPIS KAMI")}
   </div>`},
 
 { label:"Cara pemesanan", html:`
   <div class="page">
-    <div class="runner">Selesai dalam semenit, tanpa unduh aplikasi</div>
+    <div class="runner">SELESAI DALAM SEMENIT</div>
     <h2>Cara pemesanan</h2>
     <ol class="steps">
       <li><b>Pilih dan kirim</b><span>Tentukan layanan, durasi, dan jam kedatangan lewat WhatsApp.</span></li>
       <li><b>Kami konfirmasi</b><span>Dalam 15 menit kami balas dengan nama terapis dan perkiraan waktu tiba.</span></li>
       <li><b>Terapis datang</b><span>Membawa matras, minyak, dan handuk bersih.</span></li>
-      <li><b>Bayar setelah selesai</b><span>Tunai, transfer, atau QRIS. Tidak ada biaya tersembunyi.</span></li>
+      <li><b>Bayar setelah selesai</b><span>Tunai, transfer, atau QRIS. Tanpa biaya tersembunyi.</span></li>
     </ol>
-    ${folio(8,"Cara pemesanan")}
+    <a class="cta" href="${wa('Halo Mahyra Relaksia, saya mau pesan sesi pijat panggilan.')}" target="_blank" rel="noopener">PESAN LEWAT WHATSAPP</a>
+    ${folio(8,"CARA PEMESANAN")}
   </div>`},
 
 { label:"Area & jam layanan", html:`
   <div class="page">
-    <div class="runner">Dua cabang, banyak wilayah</div>
+    <div class="runner">DUA CABANG, BANYAK WILAYAH</div>
     <h2>Area &amp; jam layanan</h2>
-    <div class="areas"><span>Malang kota</span><span>Lowokwaru</span><span>Klojen</span><span>Surabaya kota</span><span>Gubeng</span><span>sekitarnya</span></div>
-    <div class="qa"><b>09.00 – 22.00 WIB, setiap hari</b><span>Pemesanan terakhir pukul 20.30. Di luar area, masih bisa dilayani dengan tambahan biaya perjalanan.</span></div>
-    <div class="qa"><b>Berapa lama terapis sampai?</b><span>Rata-rata 30–60 menit setelah dikonfirmasi. Untuk jam sibuk, pesan dua jam sebelumnya.</span></div>
-    <div class="qa"><b>Aman untuk ibu hamil?</b><span>Aman pada kehamilan 4–8 bulan tanpa keluhan khusus. Bila kehamilan berisiko, mintalah izin dokter dulu.</span></div>
-    ${folio(9,"Area &amp; jam layanan")}
+    ${foto("area.jpg","band pendek")}
+    <div class="areas"><span>MALANG</span><span>LOWOKWARU</span><span>KLOJEN</span><span>SURABAYA</span><span>GUBENG</span></div>
+    <div class="qa"><b>09.00 – 22.00 WIB, setiap hari</b><span>Pemesanan terakhir pukul 20.30. Di luar area masih dilayani dengan tambahan biaya perjalanan.</span></div>
+    <div class="qa"><b>Aman untuk ibu hamil?</b><span>Aman pada kehamilan 4–8 bulan tanpa keluhan khusus. Bila berisiko, mintalah izin dokter dulu.</span></div>
+    ${folio(9,"AREA &amp; JAM LAYANAN")}
   </div>`},
 
 { label:"Pesan sekarang", html:`
-  <div class="page end">
-    <div class="top">Mahyra Massage · Malang &amp; Surabaya</div>
-    <div>
-      <h2>Badan Anda sudah minta istirahat</h2>
-      <p>Pilih waktunya, kami yang datang. Balasan konfirmasi rata-rata dalam 15 menit.</p>
-      <a class="cta" href="${wa('Halo Mahyra, saya mau pesan sesi pijat panggilan.')}" target="_blank" rel="noopener">Pesan lewat WhatsApp</a>
+  <div class="page penutup">
+    ${foto("penutup.jpg")}
+    <div class="isi">
+      <div class="sub" style="font-size:.62em;letter-spacing:.28em;color:rgba(198,169,107,.85)">MAHYRA RELAKSIA</div>
+      <div>
+        <img class="logo" src="logo.png" alt="" onerror="this.style.display='none'">
+        <h2>Badan Anda sudah<br>minta istirahat</h2>
+        <p>Pilih waktunya, kami yang datang. Balasan konfirmasi rata-rata dalam 15 menit.</p>
+        <a class="cta" href="${wa('Halo Mahyra Relaksia, saya mau pesan sesi pijat panggilan.')}" target="_blank" rel="noopener">PESAN LEWAT WHATSAPP</a>
+      </div>
+      <div class="kaki">mahyrarelaksia.com<br>09.00 – 22.00 SETIAP HARI</div>
     </div>
-    <div class="foot">mahyrarelaksia.com · Instagram @mahyramassage · 09.00–22.00 setiap hari</div>
   </div>`}
 ];
 
-/* -------------------- mesin flipbook -------------------- */
-const stage = document.getElementById("stage");
-const btnPrev = document.getElementById("prev");
-const btnNext = document.getElementById("next");
-const count = document.getElementById("count");
-const jump = document.getElementById("jump");
+/* ══════════════ mesin lembaran ══════════════ */
+const stage  = document.getElementById("stage");
+const bPrev  = document.getElementById("prev");
+const bNext  = document.getElementById("next");
+const count  = document.getElementById("count");
+const jump   = document.getElementById("jump");
+const root   = document.documentElement;
 
-const N = PAGES.length;              // jumlah halaman (genap)
-const LEAVES = Math.ceil(N / 2);
-let mode = null;                     // "spread" | "single"
-let flipped = 0;                     // jumlah lembar yang sudah dibalik
-let idx = 0;                         // halaman aktif di mode ponsel
+const N = PAGES.length;
+let mode = null;      // "spread" | "solo"
+let leaves = 0;       // jumlah lembar pada mode aktif
+let at = 0;           // jumlah lembar yang sudah dibalik
 let busy = false;
+let book = null;
 
-PAGES.forEach((p, i) => {
+PAGES.forEach((p,i) => {
   const o = document.createElement("option");
-  o.value = i; o.textContent = (i + 1) + ". " + p.label;
+  o.value = i; o.textContent = (i+1) + ". " + p.label;
   jump.appendChild(o);
 });
 
-function wantMode(){ return window.matchMedia("(min-width:861px)").matches ? "spread" : "single"; }
+const wantMode = () => window.matchMedia("(min-width:861px)").matches ? "spread" : "solo";
+const verso = `<div class="verso"><img src="logo.png" alt="" onerror="this.style.display='none'"></div>`;
+
+function ukur(){
+  const r = stage.getBoundingClientRect();
+  const h = r.height - 18, w = r.width - 20;
+  let pw = mode === "spread" ? Math.min(w/2, h/1.4) : Math.min(w, h/1.4);
+  pw = Math.max(210, Math.floor(pw));
+  root.style.setProperty("--page-w", pw + "px");
+  root.style.setProperty("--page-h", Math.round(pw*1.4) + "px");
+  root.style.setProperty("--book-w", (mode === "spread" ? pw*2 : pw) + "px");
+}
 
 function build(next){
   mode = next;
+  leaves = mode === "spread" ? Math.ceil(N/2) : N;
   stage.innerHTML = "";
-  if (mode === "spread"){
-    const book = document.createElement("div");
-    book.className = "book"; book.id = "book";
-    for (let i = 0; i < LEAVES; i++){
-      const leaf = document.createElement("div");
-      leaf.className = "leaf";
-      leaf.innerHTML =
-        '<div class="face front">' + (PAGES[2*i] ? PAGES[2*i].html : "") + '</div>' +
-        '<div class="face back">'  + (PAGES[2*i+1] ? PAGES[2*i+1].html : "") + '</div>';
-      book.appendChild(leaf);
-    }
-    stage.appendChild(book);
-  } else {
-    const wrap = document.createElement("div");
-    wrap.className = "single";
-    PAGES.forEach((p, i) => {
-      const s = document.createElement("div");
-      s.className = "slide"; s.dataset.i = i; s.innerHTML = p.html;
-      wrap.appendChild(s);
-    });
-    stage.appendChild(wrap);
-    addSwipe(wrap);
+  book = document.createElement("div");
+  book.className = "book " + mode;
+  for (let i = 0; i < leaves; i++){
+    const leaf = document.createElement("div");
+    leaf.className = "leaf";
+    const f = mode === "spread" ? (PAGES[2*i]   ? PAGES[2*i].html   : verso) : PAGES[i].html;
+    const b = mode === "spread" ? (PAGES[2*i+1] ? PAGES[2*i+1].html : verso) : verso;
+    leaf.innerHTML = '<div class="face front">'+f+'</div><div class="face back">'+b+'</div>';
+    book.appendChild(leaf);
   }
+  stage.appendChild(book);
+  ukur();
+  pasangGeser();
   render();
 }
 
 function render(){
-  if (mode === "spread"){
-    const book = document.getElementById("book");
-    const leaves = book.querySelectorAll(".leaf");
-    leaves.forEach((leaf, i) => {
-      const isFlipped = i < flipped;
-      leaf.classList.toggle("flipped", isFlipped);
-      leaf.style.zIndex = isFlipped ? (i + 1) : (LEAVES - i);
-    });
-    book.classList.toggle("at-first", flipped === 0);
-    book.classList.toggle("at-last", flipped === LEAVES);
+  const ls = book.querySelectorAll(".leaf");
+  ls.forEach((leaf,i) => {
+    const done = i < at;
+    leaf.classList.toggle("flipped", done);
+    leaf.style.zIndex = done ? (i+1) : (leaves - i);
+    if (!leaf.classList.contains("dragging")) leaf.style.transform = "";
+  });
+  book.classList.toggle("at-first", mode === "spread" && at === 0);
+  book.classList.toggle("at-last",  mode === "spread" && at === leaves);
 
-    const left = flipped === 0 ? null : 2 * flipped;      // nomor halaman (1-based)
-    const right = flipped === LEAVES ? null : 2 * flipped + 1;
-    count.textContent = left && right ? "Halaman " + left + "–" + right + " dari " + N
-                      : "Halaman " + (left || right) + " dari " + N;
-    jump.value = String(left ? left - 1 : 0);
-    btnPrev.disabled = flipped === 0;
-    btnNext.disabled = flipped === LEAVES;
+  if (mode === "spread"){
+    const kiri  = at === 0 ? null : 2*at;
+    const kanan = at === leaves ? null : 2*at + 1;
+    count.textContent = (kiri && kanan) ? kiri + "–" + kanan + " / " + N : (kiri || kanan) + " / " + N;
+    jump.value = String(kiri ? kiri-1 : 0);
   } else {
-    stage.querySelectorAll(".slide").forEach((s, i) => {
-      s.style.transform = "translateX(" + ((i - idx) * 100) + "%)";
-    });
-    count.textContent = "Halaman " + (idx + 1) + " dari " + N;
-    jump.value = String(idx);
-    btnPrev.disabled = idx === 0;
-    btnNext.disabled = idx === N - 1;
+    count.textContent = (at+1) + " / " + N;
+    jump.value = String(at);
   }
+  bPrev.disabled = at === 0;
+  bNext.disabled = at === (mode === "spread" ? leaves : N-1);
 }
 
 function go(dir){
   if (busy) return;
-  if (mode === "spread"){
-    const t = flipped + dir;
-    if (t < 0 || t > LEAVES) return;
-    const leaf = document.querySelectorAll(".leaf")[dir > 0 ? flipped : flipped - 1];
-    if (leaf){ leaf.style.zIndex = 100; }
-    flipped = t; busy = true;
-    render();
-    setTimeout(() => { busy = false; render(); }, 880);
-  } else {
-    const t = idx + dir;
-    if (t < 0 || t > N - 1) return;
-    idx = t; render();
-  }
+  const maks = mode === "spread" ? leaves : N-1;
+  const t = at + dir;
+  if (t < 0 || t > maks) return;
+  const leaf = book.querySelectorAll(".leaf")[dir > 0 ? at : at-1];
+  at = t; busy = true;
+  if (leaf) leaf.style.zIndex = 999;
+  render();
+  setTimeout(() => { busy = false; render(); }, 940);
 }
 
-function goTo(page){                 // page: indeks 0-based
-  if (mode === "spread"){
-    flipped = page === 0 ? 0 : Math.ceil(page / 2);
-    render();
-  } else { idx = page; render(); }
+function goTo(p){
+  if (busy) return;
+  at = mode === "spread" ? (p === 0 ? 0 : Math.ceil(p/2)) : p;
+  render();
 }
 
-function addSwipe(el){
-  let x0 = null, y0 = null;
-  el.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, {passive:true});
-  el.addEventListener("touchend", e => {
-    if (x0 === null) return;
-    const dx = e.changedTouches[0].clientX - x0;
-    const dy = e.changedTouches[0].clientY - y0;
-    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
-    x0 = null;
-  }, {passive:true});
+/* geser dengan jari / tetikus — halaman mengikuti gerakan tangan */
+function pasangGeser(){
+  let aktif = null, x0 = 0, y0 = 0, arah = 0, geser = false, lebar = 1;
+
+  book.addEventListener("pointerdown", e => {
+    if (busy || e.target.closest("a")) return;
+    x0 = e.clientX; y0 = e.clientY; geser = false; aktif = null;
+    lebar = book.getBoundingClientRect().width / (mode === "spread" ? 2 : 1);
+    book.setPointerCapture(e.pointerId);
+  });
+
+  book.addEventListener("pointermove", e => {
+    if (!x0) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    if (!geser){
+      if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) return;
+      geser = true;
+      arah = dx < 0 ? 1 : -1;
+      const maks = mode === "spread" ? leaves : N-1;
+      const t = at + arah;
+      if (t < 0 || t > maks){ geser = false; x0 = 0; return; }
+      aktif = book.querySelectorAll(".leaf")[arah > 0 ? at : at-1];
+      if (!aktif){ geser = false; x0 = 0; return; }
+      aktif.classList.add("dragging");
+      aktif.style.zIndex = 999;
+    }
+    const p = Math.min(1, Math.max(0, Math.abs(dx)/lebar));
+    const deg = arah > 0 ? -180*p : -180*(1-p);
+    aktif.style.transform = "rotateY(" + deg + "deg)";
+  });
+
+  const lepas = e => {
+    if (!x0) return;
+    const dx = e.clientX - x0;
+    if (geser && aktif){
+      const p = Math.min(1, Math.abs(dx)/lebar);
+      aktif.classList.remove("dragging");
+      aktif.style.transform = "";
+      if (p > .3) { at += arah; }
+      busy = true; render();
+      setTimeout(() => { busy = false; render(); }, 940);
+    } else if (Math.abs(dx) < 8){
+      const r = book.getBoundingClientRect();
+      go(e.clientX - r.left > r.width/2 ? 1 : -1);
+    }
+    x0 = 0; geser = false; aktif = null;
+  };
+  book.addEventListener("pointerup", lepas);
+  book.addEventListener("pointercancel", () => { 
+    if (aktif){ aktif.classList.remove("dragging"); aktif.style.transform = ""; }
+    x0 = 0; geser = false; aktif = null; render();
+  });
 }
 
-btnPrev.addEventListener("click", () => go(-1));
-btnNext.addEventListener("click", () => go(1));
+bPrev.addEventListener("click", () => go(-1));
+bNext.addEventListener("click", () => go(1));
 jump.addEventListener("change", () => goTo(Number(jump.value)));
 document.addEventListener("keydown", e => {
   if (e.key === "ArrowRight") go(1);
-  if (e.key === "ArrowLeft") go(-1);
-});
-stage.addEventListener("click", e => {
-  if (e.target.closest("a")) return;
-  const r = stage.getBoundingClientRect();
-  go(e.clientX - r.left > r.width / 2 ? 1 : -1);
+  if (e.key === "ArrowLeft")  go(-1);
 });
 
 build(wantMode());
+
 let rt;
 window.addEventListener("resize", () => {
   clearTimeout(rt);
   rt = setTimeout(() => {
     const w = wantMode();
-    if (w === mode) return;
-    const cur = mode === "spread" ? (flipped === 0 ? 0 : 2 * flipped - 1) : idx;
-    if (w === "spread"){ flipped = cur === 0 ? 0 : Math.ceil(cur / 2); } else { idx = cur; }
+    if (w === mode){ ukur(); return; }
+    const hal = mode === "spread" ? (at === 0 ? 0 : 2*at - 1) : at;   // halaman aktif, 0-based
     build(w);
-  }, 200);
+    at = w === "spread" ? (hal === 0 ? 0 : Math.ceil(hal/2)) : hal;
+    render();
+  }, 180);
 });
 </script>
 </body>
