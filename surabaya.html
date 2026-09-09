@@ -134,6 +134,10 @@ body{
 .bulat .ph{width:2.1em;height:2.1em;border-radius:50%;border:1px solid rgba(217,180,91,.45)}
 .bulat .ph.kosong::after{font-size:.36em;letter-spacing:0}
 .bulat figcaption{font-size:.4em;color:var(--kabut);margin-top:.1em}
+.bulat.empat{gap:.22em}
+.bulat.empat figure,.bulat.empat .ph{width:1.8em}
+.bulat.empat .ph{height:1.8em}
+.bulat.empat figcaption{font-size:.36em}
 
 .harga{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(12,27,56,.6)}
 .harga.dua{grid-template-columns:repeat(2,1fr)}
@@ -238,8 +242,8 @@ const WA_NOMOR = "6285778082138";
       Besar (1200×1600): sampul.jpg fullbody.jpg totok.jpg head.jpg
                          reflexy.jpg paket.jpg couple.jpg oil.jpg
                          area.jpg penutup.jpg latar.jpg
-      Bulat (600×600):   bahu.jpg punggung.jpg kepala.jpg
-                         wajah.jpg kaki.jpg leher.jpg
+      Bulat (600×600):   bahu.jpg punggung.jpg kepala.jpg wajah.jpg
+                         kaki.jpg leher.jpg tangan.jpg
    ══════════════════════════════════════════════════════════ */
 const foto = (f, cls) =>
   `<div class="ph ${cls||''}" data-label="foto/${f}"><img src="foto/${f}" alt="" onerror="this.parentNode.classList.add('kosong');this.remove()"></div>`;
@@ -262,7 +266,7 @@ const kartu = ({nama, tag, gambar, mirror, termasuk, manfaat, fokus, waktu, harg
       <hr class="garis">
       <div class="fokus"><span>Fokus Pijat:</span>${
         Array.isArray(fokus)
-          ? `<div class="bulat">${fokus.map(x=>`<figure>${foto(x[0])}<figcaption>${x[1]}</figcaption></figure>`).join("")}</div>`
+          ? `<div class="bulat ${fokus.length>3?'empat':''}">${fokus.map(x=>`<figure>${foto(x[0])}<figcaption>${x[1]}</figcaption></figure>`).join("")}</div>`
           : `<span class="teks">${fokus}</span>`
       }</div>
     </div>
@@ -378,7 +382,7 @@ const JENIS = {
     nama:"Signature Relax", tag:"Badan Pegal", gambar:"fullbody.jpg",
     termasuk:["Full Body Massage","Pijat Tradisional","Oil &amp; Aromatherapy"],
     manfaat:["Otot badan lebih lemas","Pegal berkurang"],
-    fokus:[["bahu.jpg","Bahu"],["punggung.jpg","Punggung"],["kaki.jpg","Kaki"]]
+    fokus:[["kaki.jpg","Kaki"],["punggung.jpg","Punggung"],["kepala.jpg","Kepala"],["tangan.jpg","Tangan"]]
   },
   rad:{
     nama:"Radiance Ritual", tag:"Wajah Lelah", gambar:"totok.jpg",
