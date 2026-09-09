@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Katalog Layanan — Mahyra Relaksia</title>
+<meta name="description" content="Katalog layanan Mahyra Relaksia. Home service premium massage, all area Surabaya dan Sidoarjo.">
+<meta property="og:title" content="Katalog Layanan — Mahyra Relaksia">
+<meta property="og:description" content="Home service premium massage, all area Surabaya & Sidoarjo. Harga sudah termasuk transport, oil, dan perlengkapan.">
+<meta property="og:image" content="https://mahyrarelaksia.com/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0C1B38;
+  --navy-2:#14294F;
+  --navy-3:#060D1C;
+  --emas:#D9B45B;
+  --emas-terang:#F4E4B4;
+  --emas-tua:#A8822F;
+  --putih:#FFFFFF;
+  --kabut:#CFD8E6;
+  --page-w:360px;
+  --page-h:504px;
+  --flip:.68s;
+  --ease:cubic-bezier(.28,.74,.26,1);
+}
+@media (prefers-reduced-motion:reduce){:root{--flip:.001s}}
+*{box-sizing:border-box}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{
+  margin:0;color:var(--putih);font-family:Jost,system-ui,-apple-system,sans-serif;font-weight:300;
+  display:flex;flex-direction:column;height:100dvh;
+  background:radial-gradient(130% 90% at 50% -10%,#1B3763 0%,#060D1C 62%),#050A16;
+}
+
+.bar{flex:0 0 auto;display:flex;justify-content:center;padding:.8rem .8rem .05rem;z-index:3}
+.bar .mark{text-align:center;line-height:1.2}
+.bar .mark b{font-family:"Cormorant Garamond",Georgia,serif;font-weight:400;font-size:1.25rem;letter-spacing:.14em;color:var(--emas-terang);display:block}
+.bar .mark i{font-style:normal;font-size:.55rem;letter-spacing:.32em;color:var(--emas-tua);display:block;margin-top:.26rem}
+
+.stage{flex:1 1 auto;display:grid;place-items:center;min-height:0;perspective:2400px;position:relative;z-index:1}
+.buku{position:relative;width:var(--book-w);height:var(--page-h);touch-action:none;transition:transform var(--flip) var(--ease)}
+.buku.at-first{transform:translateX(calc(var(--page-w)/2))}
+.buku.at-last{transform:translateX(calc(var(--page-w)/-2))}
+.buku::after{content:"";position:absolute;left:4%;right:4%;bottom:-14px;height:26px;z-index:0;background:radial-gradient(50% 50% at 50% 50%,rgba(0,0,0,.75),transparent 72%);filter:blur(4px)}
+
+/* lapisan halaman yang diam */
+.lapis{position:absolute;top:0;height:100%;width:var(--page-w);overflow:hidden;background:var(--navy-3)}
+.lapis.kiri{left:0;box-shadow:inset -14px 0 24px -20px #000}
+.lapis.kanan{right:0;box-shadow:inset 14px 0 24px -20px #000}
+.solo .lapis.kiri{display:none}
+
+/* lembaran yang sedang dilipat dari pojok */
+.lembar{position:absolute;inset:0;pointer-events:none;z-index:5}
+.muka{position:absolute;top:0;right:0;height:100%;width:var(--page-w);overflow:hidden;background:var(--navy-3);
+  box-shadow:inset 14px 0 24px -20px #000;will-change:clip-path}
+.balik-klip{position:absolute;inset:0;will-change:clip-path;filter:drop-shadow(-2px -3px 7px rgba(0,0,0,.55))}
+.balik-ref{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
+.balik-isi{position:absolute;top:0;right:0;height:100%;width:var(--page-w);overflow:hidden;
+  background:var(--navy-3);transform:scaleX(-1)}
+.balik-bayang{position:absolute;inset:0;pointer-events:none}
+.isi-hal{width:100%;height:100%}
+.balik-isi{box-shadow:inset 14px 0 24px -20px #000}
+.verso{width:100%;height:100%;display:grid;place-items:center;background:radial-gradient(120% 90% at 50% 0%,#14294F,#060D1C 70%)}
+.verso img{width:30%;opacity:.14}
+.hint-teks{position:absolute;bottom:-1.5rem;left:50%;transform:translateX(-50%);font-size:.58rem;letter-spacing:.26em;color:rgba(217,180,91,.9);white-space:nowrap;transition:opacity .4s;pointer-events:none;z-index:4}
+.hint-teks.pergi{opacity:0}
+
+/* ── halaman ── */
+.page{
+  width:100%;height:100%;position:relative;color:var(--putih);
+  font-size:calc(var(--page-w)/24);line-height:1.4;
+  padding:.9em .8em .8em;display:flex;flex-direction:column;
+  background:linear-gradient(165deg,#16305C 0%,#0A1630 48%,#060D1C 100%);
+}
+.latar{position:absolute;inset:0;background-image:url("foto/latar.jpg");background-size:cover;background-position:center;opacity:.16;pointer-events:none}
+.page>*{position:relative;z-index:1}
+.kop{display:flex;flex-direction:column;align-items:center;flex:0 0 auto;margin-bottom:.5em}
+.kop img{height:2.1em;width:auto}
+.kop span{font-size:.5em;letter-spacing:.3em;color:var(--emas);margin-top:.25em}
+.runner{font-size:.5em;letter-spacing:.3em;color:var(--emas);text-align:center;margin-bottom:.4em}
+.judul{font-family:"Cormorant Garamond",Georgia,serif;font-weight:400;font-size:1.6em;line-height:1.1;text-align:center;color:var(--emas-terang);margin:0 0 .3em}
+.page p{margin:0 0 .5em;font-size:.66em;color:var(--kabut)}
+.folio{margin-top:auto;padding-top:.5em;display:flex;justify-content:space-between;align-items:center;font-size:.46em;letter-spacing:.2em;color:var(--emas-tua)}
+.folio b{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:1.7em;letter-spacing:0}
+
+/* ══ KARTU — tata letak persis seperti poster ══ */
+.tumpuk{flex:1;min-height:0;display:flex;flex-direction:column;gap:.55em}
+.kartu{
+  flex:1;min-height:0;display:grid;
+  grid-template-columns:38% 1fr;grid-template-rows:auto minmax(0,1fr) auto;
+  border-radius:.45em;overflow:hidden;box-shadow:0 5px 16px rgba(0,0,0,.5);
+  background:linear-gradient(150deg,#12264A,#0A1730);
+}
+.kartu.mirror{grid-template-columns:1fr 38%}
+.kepala{grid-column:1/-1;grid-row:1;display:flex;align-items:stretch}
+.kepala .nama{
+  flex:1;background:linear-gradient(100deg,#F9F0D4 0%,var(--emas-terang) 28%,var(--emas) 72%,var(--emas-tua) 100%);
+  color:var(--navy);font-family:"Cormorant Garamond",serif;font-size:1.05em;
+  padding:.2em .5em;display:grid;place-items:center;text-align:center;
+}
+.kepala .tag{
+  flex:0 0 auto;background:var(--putih);color:var(--navy);font-family:"Cormorant Garamond",serif;
+  font-size:.88em;padding:.24em .7em;display:grid;place-items:center;
+}
+.f-foto{grid-column:1;grid-row:2;overflow:hidden}
+.f-isi {grid-column:2;grid-row:2;min-width:0;min-height:0;overflow:hidden;padding:.4em .5em;display:flex;flex-direction:column}
+.f-dur {grid-column:1;grid-row:3;align-self:end}
+.f-hrg {grid-column:2;grid-row:3;align-self:end}
+.mirror .f-foto{grid-column:2}
+.mirror .f-isi {grid-column:1}
+.mirror .f-dur {grid-column:2}
+.mirror .f-hrg {grid-column:1}
+
+.f-foto .ph{width:100%;height:100%;border:0;border-radius:0}
+.f-dur{display:flex;align-items:center;gap:.35em;padding:.3em .45em;background:var(--navy);border-top:1px solid rgba(217,180,91,.25)}
+.f-dur svg{width:1.5em;height:1.5em;flex:0 0 auto;stroke:var(--emas);fill:none;stroke-width:1.5}
+.f-dur span{font-size:.55em;color:var(--kabut);line-height:1.2}
+.f-dur b{display:block;font-family:"Cormorant Garamond",serif;font-weight:400;font-size:1.4em;color:var(--putih)}
+
+.duo{display:flex;gap:.45em;flex:0 1 auto;min-height:0;overflow:hidden}
+.duo>div{flex:1;min-width:0}
+.duo h4{margin:0 0 .1em;font-size:.52em;font-weight:500;color:var(--putih)}
+.duo ul{margin:0;padding-left:.75em;font-size:.5em;color:var(--kabut);line-height:1.35}
+.duo li b{font-weight:500;color:var(--emas-terang)}
+.garis{border:0;border-top:1px solid rgba(217,180,91,.35);margin:.25em 0}
+.fokus{display:flex;align-items:center;gap:.4em;margin-top:auto;flex:0 0 auto;min-height:0}
+.fokus>span{font-size:.52em;font-weight:500;color:var(--putih);flex:0 0 auto}
+.fokus .teks{font-size:.52em;color:var(--kabut)}
+.bulat{display:flex;gap:.3em}
+.bulat figure{margin:0;width:2.1em;text-align:center}
+.bulat .ph{width:2.1em;height:2.1em;border-radius:50%;border:1px solid rgba(217,180,91,.45)}
+.bulat .ph.kosong::after{font-size:.36em;letter-spacing:0}
+.bulat figcaption{font-size:.4em;color:var(--kabut);margin-top:.1em}
+
+.harga{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(12,27,56,.6)}
+.harga.dua{grid-template-columns:repeat(2,1fr)}
+.harga.satu{grid-template-columns:1fr}
+.harga.satu b{font-size:1.5em;line-height:1.05}
+.harga.satu span{font-size:.46em;letter-spacing:.14em}
+.kepala .nama small{font-size:.72em;opacity:.8}
+.harga div{background:linear-gradient(180deg,#FBF1D5,#E4CB86);color:var(--navy);text-align:center;padding:.24em .15em .32em}
+.harga span{display:block;font-size:.5em;letter-spacing:.05em;color:#6B551E}
+.harga b{display:block;font-family:"Cormorant Garamond",serif;font-weight:500;font-size:1.12em;line-height:1.1}
+
+/* foto */
+.ph{position:relative;overflow:hidden;border:1px solid rgba(217,180,91,.3);background:linear-gradient(150deg,#1C3966,#081228 75%)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph.kosong::after{content:attr(data-label);position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:rgba(217,180,91,.6);font-size:.5em;letter-spacing:.08em;padding:.3em}
+.band{height:22%;margin-bottom:.5em;border-radius:.35em}
+
+/* halaman teks */
+.termasuk{border:1px solid rgba(217,180,91,.45);border-radius:.4em;padding:.55em .7em;margin-bottom:.55em;background:rgba(12,27,56,.55)}
+.termasuk ul{margin:0;padding:0}
+.termasuk li{list-style:none;font-size:.6em;padding:.16em 0 .16em 1.25em;position:relative;color:var(--putih)}
+.termasuk li::before{content:"✓";position:absolute;left:0;color:var(--emas)}
+.toc{list-style:none;margin:.05em 0 0;padding:0}
+.toc li{display:flex;align-items:baseline;gap:.4em;padding:.26em 0;font-size:.62em;border-bottom:1px solid rgba(217,180,91,.16);color:var(--kabut)}
+.toc .dots{flex:1;border-bottom:1px dotted rgba(217,180,91,.3);transform:translateY(-.3em)}
+.toc b{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:1.25em;color:var(--emas)}
+.steps{list-style:none;margin:.05em 0 0;padding:0;counter-reset:s}
+.steps li{position:relative;padding:.34em 0 .34em 1.9em;counter-increment:s;font-size:.62em;border-bottom:1px solid rgba(217,180,91,.16);color:var(--kabut)}
+.steps li::before{content:counter(s,decimal-leading-zero);position:absolute;left:0;top:.36em;font-family:"Cormorant Garamond",serif;font-size:1.25em;color:var(--emas)}
+.steps b{display:block;font-weight:400;font-size:1.08em;color:var(--putih)}
+.areas{display:flex;flex-wrap:wrap;gap:.25em;margin:.15em 0 .5em;justify-content:center}
+.areas span{font-size:.52em;letter-spacing:.1em;border:1px solid rgba(217,180,91,.5);border-radius:2em;padding:.26em .7em;color:var(--kabut)}
+.qa{font-size:.6em;margin-bottom:.35em;line-height:1.4;color:var(--kabut)}
+.qa b{display:block;font-family:"Cormorant Garamond",serif;font-size:1.2em;color:var(--emas-terang);font-weight:400}
+.cta{display:inline-block;background:linear-gradient(180deg,#FBF1D5,#E4CB86);color:var(--navy);text-decoration:none;font-size:.58em;letter-spacing:.14em;padding:.7em 1.3em;border-radius:2em;font-weight:500}
+.tengah{text-align:center}
+
+/* sampul */
+.page.sampul,.page.penutup{padding:0}
+.sampul .ph,.penutup .ph{position:absolute;inset:0;border:0;z-index:0}
+.sampul .isi,.penutup .isi{position:relative;z-index:2;height:100%;padding:1.8em 1.4em 1.2em;display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;background:linear-gradient(180deg,rgba(6,13,28,.9) 0%,rgba(6,13,28,.55) 42%,rgba(6,13,28,.95) 100%)}
+.sampul .logo{width:4em}
+.penutup .logo{width:3em;margin-bottom:.4em}
+.sampul h1{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:2.35em;line-height:1;margin:0;color:var(--putih)}
+.sampul h1 em{font-style:italic;display:block;color:var(--emas)}
+.sampul .rule{width:3em;height:1px;background:var(--emas);margin:.7em auto}
+.sampul .sub{font-size:.58em;letter-spacing:.28em;color:var(--kabut)}
+.sampul .kaki,.penutup .kaki{font-size:.5em;letter-spacing:.22em;color:rgba(217,180,91,.85);line-height:2}
+.penutup .judul{font-size:1.45em}
+
+/* kontrol */
+.ctrl{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:.5rem;padding:1.5rem .8rem .25rem;z-index:3}
+.ctrl button,.ctrl select{font:inherit;font-size:.68rem;letter-spacing:.12em;color:var(--emas-terang);background:rgba(217,180,91,.08);border:1px solid rgba(217,180,91,.4);border-radius:2em;padding:.5em 1em;cursor:pointer}
+.ctrl button:hover:not(:disabled),.ctrl select:hover{background:rgba(217,180,91,.2)}
+.ctrl button:disabled{opacity:.28;cursor:default}
+.ctrl .count{font-size:.62rem;letter-spacing:.16em;color:var(--emas-tua);min-width:7em;text-align:center}
+.ctrl select{max-width:9rem}
+:focus-visible{outline:1px solid var(--emas);outline-offset:3px}
+.kaki-logo{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:.26rem;padding:.35rem 0 max(.6rem,env(safe-area-inset-bottom));z-index:3}
+.kaki-logo img{height:30px;width:auto;opacity:.92}
+.kaki-logo span{font-size:.48rem;letter-spacing:.3em;color:rgba(217,180,91,.65)}
+
+@media (max-width:860px){
+  .bar{padding:.55rem .6rem 0}
+  .bar .mark b{font-size:1rem}
+  .ctrl{gap:.35rem;padding:1.25rem .5rem .1rem}
+  .ctrl button,.ctrl select{font-size:.58rem;padding:.46em .78em}
+  .ctrl .count{min-width:5.4em;font-size:.54rem}
+  .ctrl select{max-width:6rem}
+  .kaki-logo img{height:22px}
+}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="mark"><b>MAHYRA RELAKSIA</b><i>HOME SERVICE PREMIUM MASSAGE</i></div>
+</header>
+
+<main class="stage" id="stage"></main>
+
+<nav class="ctrl">
+  <button id="prev" aria-label="Halaman sebelumnya">‹</button>
+  <span class="count" id="count"></span>
+  <button id="next" aria-label="Halaman berikutnya">›</button>
+  <select id="jump" aria-label="Lompat ke halaman"></select>
+</nav>
+
+<footer class="kaki-logo">
+  <img src="logo.png" alt="Mahyra Relaksia" onerror="this.style.display='none'">
+  <span>SURABAYA &amp; SIDOARJO</span>
+</footer>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   1. NOMOR WHATSAPP — ganti dengan nomor asli (awalan 62)
+   ══════════════════════════════════════════════════════════ */
+const WA_NOMOR = "6281234567890";
+
+/* ══════════════════════════════════════════════════════════
+   2. FOTO — folder /foto, nama persis seperti ini:
+      Besar (1200×1600): sampul.jpg fullbody.jpg totok.jpg head.jpg
+                         reflexy.jpg paket.jpg couple.jpg oil.jpg
+                         area.jpg penutup.jpg latar.jpg
+      Bulat (600×600):   bahu.jpg punggung.jpg kepala.jpg
+                         wajah.jpg kaki.jpg leher.jpg
+   ══════════════════════════════════════════════════════════ */
+const foto = (f, cls) =>
+  `<div class="ph ${cls||''}" data-label="foto/${f}"><img src="foto/${f}" alt="" onerror="this.parentNode.classList.add('kosong');this.remove()"></div>`;
+
+const wa = t => "https://wa.me/" + WA_NOMOR + "?text=" + encodeURIComponent(t);
+const folio = (n,s) => `<div class="folio"><span>${s}</span><b>${n}</b></div>`;
+const jam = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
+const kop = `<div class="kop"><img src="logo.png" alt="" onerror="this.style.display='none'"><span>MAHYRA RELAKSIA</span></div>`;
+
+/* satu kartu harga — grid: kepala / foto + isi / durasi + harga */
+const kartu = ({nama, tag, gambar, mirror, termasuk, manfaat, fokus, waktu, harga}) => `
+  <div class="kartu ${mirror?'mirror':''}">
+    <div class="kepala"><div class="nama">${nama}</div><div class="tag">${tag}</div></div>
+    <div class="f-foto">${foto(gambar)}</div>
+    <div class="f-isi">
+      <div class="duo">
+        <div><h4>Treatment termasuk:</h4><ul>${termasuk.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+        <div><h4>Manfaat Utama:</h4><ul>${manfaat.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+      </div>
+      <hr class="garis">
+      <div class="fokus"><span>Fokus Pijat:</span>${
+        Array.isArray(fokus)
+          ? `<div class="bulat">${fokus.map(x=>`<figure>${foto(x[0])}<figcaption>${x[1]}</figcaption></figure>`).join("")}</div>`
+          : `<span class="teks">${fokus}</span>`
+      }</div>
+    </div>
+    <div class="f-dur">${jam}<span>Durasi:<b>${waktu}</b></span></div>
+    <div class="f-hrg">
+      <div class="harga ${harga.length===1?'satu':harga.length===2?'dua':''}">
+        ${harga.map(h=>`<div><span>${h[0]}</span><b>${h[1]}</b></div>`).join("")}
+      </div>
+    </div>
+  </div>`;
+
+const halamanKartu = (n, sec, a, b) => `
+  <div class="page">
+    <div class="latar"></div>
+    ${kop}
+    <div class="tumpuk">${kartu(a)}${b ? kartu(b) : ""}</div>
+    ${folio(n, sec)}
+  </div>`;
+
+const PAGES = [
+{ label:"Sampul", html:`
+  <div class="page sampul">
+    ${foto("sampul.jpg")}
+    <div class="isi">
+      <img class="logo" src="logo.png" alt="" onerror="this.style.display='none'">
+      <div>
+        <h1>Katalog<em>Layanan</em></h1>
+        <div class="rule"></div>
+        <div class="sub">EDISI 2026</div>
+      </div>
+      <div class="kaki">HOME SERVICE PREMIUM MASSAGE<br>ALL AREA SURABAYA &amp; SIDOARJO</div>
+    </div>
+  </div>`},
+
+{ label:"Harga sudah termasuk", html:`
+  <div class="page">
+    <div class="latar"></div>
+    <div class="runner">HOME SERVICE PREMIUM MASSAGE</div>
+    <div class="judul">Harga Sudah Termasuk</div>
+    <div class="termasuk">
+      <ul>
+        <li>Transport all area Surabaya &amp; Sidoarjo</li>
+        <li>Oil massage</li>
+        <li>Perlengkapan pijat: matras, kemben, haircap, handuk</li>
+        <li>Aromatherapy selama sesi</li>
+      </ul>
+    </div>
+    ${foto("oil.jpg","band")}
+    <ul class="toc">
+      <li>Signature Relax <span class="dots"></span> <b>3</b></li>
+      <li>Radiance Ritual <span class="dots"></span> <b>4</b></li>
+      <li>After Office Recovery <span class="dots"></span> <b>6</b></li>
+      <li>Deep Sleep Reflexy <span class="dots"></span> <b>7</b></li>
+      <li>Triple Treatment <span class="dots"></span> <b>9</b></li>
+      <li>Couple Serenity <span class="dots"></span> <b>10</b></li>
+      <li>Cara pemesanan <span class="dots"></span> <b>11</b></li>
+    </ul>
+    ${folio(2,"ISI KATALOG")}
+  </div>`},
+
+{ label:"Cara pemesanan", html:`
+  <div class="page">
+    <div class="latar"></div>
+    <div class="runner">SELESAI DALAM SEMENIT</div>
+    <div class="judul">Cara Pemesanan</div>
+    <ol class="steps">
+      <li><b>Pilih dan kirim</b>Tentukan layanan, durasi, dan jam kedatangan lewat WhatsApp.</li>
+      <li><b>Kami konfirmasi</b>Dalam 15 menit kami balas dengan nama terapis dan perkiraan tiba.</li>
+      <li><b>Terapis datang</b>Membawa matras, kemben, haircap, handuk, dan oil.</li>
+      <li><b>Bayar setelah selesai</b>Tunai, transfer, atau QRIS. Tanpa biaya tersembunyi.</li>
+    </ol>
+    <div class="tengah" style="margin-top:.6em">
+      <a class="cta" href="${wa('Halo Mahyra Relaksia, saya mau pesan sesi pijat panggilan.')}" target="_blank" rel="noopener">PESAN LEWAT WHATSAPP</a>
+    </div>
+    ${folio(11,"CARA PEMESANAN")}
+  </div>`},
+
+{ label:"Area & jam layanan", html:`
+  <div class="page">
+    <div class="latar"></div>
+    <div class="runner">ALL AREA</div>
+    <div class="judul">Area &amp; Jam Layanan</div>
+    <div class="areas"><span>SURABAYA</span><span>SIDOARJO</span></div>
+    ${foto("area.jpg","band")}
+    <div class="qa"><b>09.00 – 22.00 WIB, setiap hari</b>Pemesanan terakhir pukul 20.30. Di luar area masih dilayani dengan tambahan biaya perjalanan.</div>
+    <div class="qa"><b>Ingin menambah waktu?</b>Tambah 30 menit Rp 30.000, tambah 1 jam Rp 50.000. Bisa diminta langsung ke terapis saat sesi berjalan.</div>
+    <div class="qa"><b>Aman untuk ibu hamil?</b>Aman pada kehamilan 4–8 bulan tanpa keluhan khusus. Bila kehamilan berisiko, mintalah izin dokter dahulu.</div>
+    ${folio(12,"AREA &amp; JAM LAYANAN")}
+  </div>`},
+
+{ label:"Pesan sekarang", html:`
+  <div class="page penutup">
+    ${foto("penutup.jpg")}
+    <div class="isi">
+      <div class="kaki">MAHYRA RELAKSIA</div>
+      <div>
+        <img class="logo" src="logo.png" alt="" onerror="this.style.display='none'">
+        <div class="judul">Badan Anda sudah<br>minta istirahat</div>
+        <p style="max-width:26ch;margin-inline:auto">Pilih waktunya, kami yang datang. Balasan konfirmasi rata-rata 15 menit.</p>
+        <a class="cta" href="${wa('Halo Mahyra Relaksia, saya mau pesan sesi pijat panggilan.')}" target="_blank" rel="noopener">PESAN LEWAT WHATSAPP</a>
+      </div>
+      <div class="kaki">mahyrarelaksia.com<br>ALL AREA SURABAYA &amp; SIDOARJO</div>
+    </div>
+  </div>`}
+];
+
+/* ══════════════════════════════════════════════════════════
+   DAFTAR HARGA — satu kartu berisi satu durasi dan satu harga.
+   Untuk mengubah harga, cukup ganti angkanya di daftar ini.
+   ══════════════════════════════════════════════════════════ */
+const JENIS = {
+  sig:{
+    nama:"Signature Relax", tag:"Badan Pegal", gambar:"fullbody.jpg",
+    termasuk:["Full Body Massage","Pijat Tradisional","Oil &amp; Aromatherapy"],
+    manfaat:["Otot badan lebih lemas","Pegal berkurang"],
+    fokus:[["bahu.jpg","Bahu"],["punggung.jpg","Punggung"],["kaki.jpg","Kaki"]]
+  },
+  rad:{
+    nama:"Radiance Ritual", tag:"Wajah Lelah", gambar:"totok.jpg",
+    termasuk:["Full Body Massage","<b>Totok Wajah</b>","Oil &amp; Aromatherapy"],
+    manfaat:["Otot wajah lebih rileks","Wajah terasa segar"],
+    fokus:[["wajah.jpg","Wajah"],["leher.jpg","Leher"],["punggung.jpg","Punggung"]]
+  },
+  off:{
+    nama:"After Office Recovery", tag:"Capek Kerja", gambar:"head.jpg",
+    termasuk:["Full Body Massage","<b>Head &amp; Scalp Massage</b>","Oil &amp; Aromatherapy"],
+    manfaat:["Bahu &amp; kepala lebih ringan","Pikiran lebih tenang"],
+    fokus:[["kepala.jpg","Kepala"],["leher.jpg","Leher"],["bahu.jpg","Bahu"]]
+  },
+  slp:{
+    nama:"Deep Sleep Reflexy", tag:"Susah Tidur", gambar:"reflexy.jpg",
+    termasuk:["Full Body Massage","<b>Foot Reflexy</b>","Essential Oil"],
+    manfaat:["Kaki lebih ringan","Kualitas tidur membaik"],
+    fokus:"Titik saraf rileks seluruh tubuh"
+  }
+};
+
+const buat = (k, o) => Object.assign({}, JENIS[k], {
+  nama: JENIS[k].nama + ` <small>· ${o.durasi}</small>`,
+  waktu: o.durasi,
+  gambar: o.gambar || JENIS[k].gambar,
+  mirror: o.mirror,
+  termasuk: o.extra ? JENIS[k].termasuk.concat(o.extra) : JENIS[k].termasuk,
+  harga: [["HARGA HOME SERVICE", o.harga]]
+});
+
+const LAYANAN = [
+  buat("sig",{durasi:"60 Menit",  harga:"Rp 100.000"}),
+  buat("sig",{durasi:"90 Menit",  harga:"Rp 130.000", gambar:"fullbody-2.jpg", mirror:true, extra:["Waktu lebih lama di area keluhan"]}),
+  buat("sig",{durasi:"120 Menit", harga:"Rp 180.000", extra:["Peregangan penutup"]}),
+
+  buat("rad",{durasi:"90 Menit",  harga:"Rp 120.000", mirror:true}),
+  buat("rad",{durasi:"120 Menit", harga:"Rp 135.000", gambar:"totok-2.jpg", extra:["Pijat bahu lebih lama"]}),
+  buat("rad",{durasi:"150 Menit", harga:"Rp 155.000", mirror:true, extra:["Totok wajah sesi penuh"]}),
+
+  buat("off",{durasi:"90 Menit",  harga:"Rp 120.000"}),
+  buat("off",{durasi:"120 Menit", harga:"Rp 135.000", gambar:"head-2.jpg", mirror:true, extra:["Pijat leher lebih lama"]}),
+  buat("off",{durasi:"150 Menit", harga:"Rp 155.000", extra:["Peregangan bahu penutup"]}),
+
+  buat("slp",{durasi:"90 Menit",  harga:"Rp 120.000", mirror:true}),
+  buat("slp",{durasi:"120 Menit", harga:"Rp 135.000", gambar:"reflexy-2.jpg"}),
+  buat("slp",{durasi:"150 Menit", harga:"Rp 155.000", mirror:true, extra:["Refleksi kaki sesi penuh"]}),
+
+  { nama:"Triple Treatment Favorit <small>· 150 Menit</small>", tag:"Paling Laris", gambar:"paket.jpg",
+    termasuk:["Full Body Massage","Head Massage","Totok Wajah"],
+    manfaat:["Tiga perawatan satu sesi","Satu harga, tanpa tambahan"],
+    fokus:[["punggung.jpg","Badan"],["kepala.jpg","Kepala"],["wajah.jpg","Wajah"]],
+    waktu:"150 Menit", harga:[["HARGA HOME SERVICE","Rp 160.000"]] },
+
+  { nama:"Triple Treatment Rileks <small>· 150 Menit</small>", tag:"Badan Pegal", gambar:"paket-2.jpg", mirror:true,
+    termasuk:["Full Body Massage","Totok Wajah","Foot Reflexy"],
+    manfaat:["Badan dan kaki lebih ringan","Wajah terasa segar"],
+    fokus:[["punggung.jpg","Badan"],["wajah.jpg","Wajah"],["kaki.jpg","Kaki"]],
+    waktu:"150 Menit", harga:[["HARGA HOME SERVICE","Rp 165.000"]] },
+
+  { nama:"Triple Treatment Puas <small>· 150 Menit</small>", tag:"Capek Kerja", gambar:"paket.jpg",
+    termasuk:["Full Body Massage","Head Massage","Foot Reflexy"],
+    manfaat:["Kepala dan kaki lebih ringan","Tidur lebih nyenyak"],
+    fokus:[["punggung.jpg","Badan"],["kepala.jpg","Kepala"],["kaki.jpg","Kaki"]],
+    waktu:"150 Menit", harga:[["HARGA HOME SERVICE","Rp 165.000"]] },
+
+  { nama:"Couple Serenity", tag:"Berdua", gambar:"couple.jpg", mirror:true,
+    termasuk:["Dua terapis bersamaan","Layanan boleh berbeda","Oil &amp; Aromatherapy"],
+    manfaat:["Selesai bersamaan","Cocok untuk pasangan"],
+    fokus:"Menyesuaikan permintaan masing-masing",
+    waktu:"Menyesuaikan", harga:[["MULAI DARI","Rp 340.000"]] }
+];
+
+/* dua kartu per halaman, disisipkan setelah halaman daftar isi */
+const halamanLayanan = [];
+for (let i = 0; i < LAYANAN.length; i += 2){
+  const a = LAYANAN[i], b = LAYANAN[i+1];
+  const n = 3 + i/2;
+  halamanLayanan.push({
+    label: a.nama.replace(/<[^>]+>/g,"").trim(),
+    html: halamanKartu(n, "PRICE LIST", a, b)
+  });
+}
+PAGES.splice(2, 0, ...halamanLayanan);
+
+/* ══════════════════════════════════════════════════════════
+   MESIN LIPAT POJOK
+   Halaman tidak diputar pada engsel, tetapi dilipat dari pojok
+   kanan bawah. Garis lipatan dihitung sebagai sumbu simetri
+   antara pojok asli dan titik tarikan jari, lalu bagian yang
+   terlipat digambar sebagai pantulan kertas terhadap garis itu.
+   ══════════════════════════════════════════════════════════ */
+const stage = document.getElementById("stage");
+const bPrev = document.getElementById("prev");
+const bNext = document.getElementById("next");
+const count = document.getElementById("count");
+const jump  = document.getElementById("jump");
+const root  = document.documentElement;
+
+const N     = PAGES.length;
+const DUR   = 760;      // lama satu kali membalik
+const TDIAM = .055;     // seberapa besar pojok tetap terlipat saat diam
+const ANGKAT= .5;       // seberapa tinggi pojok terangkat di tengah gerakan
+
+let mode = null, lembarTotal = 0, at = 0;
+let pw = 0, ph = 0, x0 = 0, bw = 0;
+let busy = false, pernah = false, raf = null, rafBebas = false, sedangIntip = false;
+let buku, elKiri, elKanan, elLembar, elMuka, elKlip, elRef, elIsi, elBayang, hint;
+
+PAGES.forEach((p,i) => {
+  const o = document.createElement("option");
+  o.value = i; o.textContent = (i+1) + ". " + p.label;
+  jump.appendChild(o);
+});
+
+const wantMode = () => window.matchMedia("(min-width:861px)").matches ? "spread" : "solo";
+
+/* Tiap halaman dibuat SEKALI saja, lalu dipindah-pindah antar lapisan.
+   Ini yang menghilangkan kedipan: gambar tidak pernah dimuat ulang. */
+const nodeHal = PAGES.map(p => {
+  const d = document.createElement("div");
+  d.className = "isi-hal";
+  d.innerHTML = p.html;
+  return d;
+});
+const nodeVerso = document.createElement("div");
+nodeVerso.className = "isi-hal";
+nodeVerso.innerHTML = `<div class="verso"><img src="logo.png" alt="" onerror="this.style.display='none'"></div>`;
+
+const ambil = i => (i >= 0 && i < N) ? nodeHal[i] : null;
+function taruh(el, node){
+  if (!node){ if (el.firstChild) el.replaceChildren(); return; }
+  if (el.firstChild === node && el.childNodes.length === 1) return;
+  el.replaceChildren(node);
+}
+
+/* ── ukuran ── */
+function ukur(){
+  const r = stage.getBoundingClientRect();
+  const h = r.height - 30, w = r.width - 20;
+  let p = mode === "spread" ? Math.min(w/2, h/1.4) : Math.min(w, h/1.4);
+  p = Math.max(210, Math.floor(p));
+  pw = p; ph = Math.round(p*1.4);
+  x0 = mode === "spread" ? pw : 0;
+  bw = mode === "spread" ? pw*2 : pw;
+  root.style.setProperty("--page-w", pw + "px");
+  root.style.setProperty("--page-h", ph + "px");
+  root.style.setProperty("--book-w", bw + "px");
+}
+
+/* ── susun rangka ── */
+function build(next){
+  mode = next;
+  lembarTotal = mode === "spread" ? Math.ceil(N/2) : N;
+  stage.innerHTML = "";
+  buku = document.createElement("div");
+  buku.className = "buku " + mode;
+  buku.innerHTML =
+    '<div class="lapis kiri"></div><div class="lapis kanan"></div>' +
+    '<div class="lembar">' +
+      '<div class="muka"></div>' +
+      '<div class="balik-klip">' +
+        '<div class="balik-ref"><div class="balik-isi"></div></div>' +
+        '<div class="balik-bayang"></div>' +
+      '</div>' +
+    '</div>';
+  stage.appendChild(buku);
+  elKiri   = buku.querySelector(".lapis.kiri");
+  elKanan  = buku.querySelector(".lapis.kanan");
+  elLembar = buku.querySelector(".lembar");
+  elMuka   = buku.querySelector(".muka");
+  elKlip   = buku.querySelector(".balik-klip");
+  elRef    = buku.querySelector(".balik-ref");
+  elIsi    = buku.querySelector(".balik-isi");
+  elBayang = buku.querySelector(".balik-bayang");
+
+  hint = document.createElement("div");
+  hint.className = "hint-teks";
+  hint.textContent = "GESER POJOK UNTUK MEMBUKA";
+  if (pernah) hint.classList.add("pergi");
+  stage.appendChild(hint);
+
+  ukur();
+  pasangGeser();
+  tampil();
+  if (!pernah) setTimeout(() => intip(3), 700);
+}
+
+/* ── isi tiap lapisan untuk satu lembar ── */
+function pasangIsi(s){
+  if (mode === "spread"){
+    taruh(elKiri,  ambil(2*s-1) || ambil(2*s-2));
+    taruh(elKanan, ambil(2*s+2));
+    taruh(elMuka,  ambil(2*s));
+    taruh(elIsi,   ambil(2*s+1) || nodeVerso);
+  } else {
+    taruh(elKanan, ambil(s+1));
+    taruh(elMuka,  ambil(s));
+    taruh(elIsi,   nodeVerso);
+  }
+}
+
+/* ── keadaan diam ── */
+function tampil(halus){
+  const adaLembar = mode === "spread" ? (at < lembarTotal) : (at < N-1);
+  if (adaLembar){
+    pasangIsi(at);
+    elLembar.style.display = "";
+    if (halus) animasi(0, TDIAM, 320, null, false);
+    else lipat(titik(TDIAM));
+  } else {
+    elLembar.style.display = "none";
+    if (mode === "spread"){
+      taruh(elKiri,  ambil(2*at-1) || ambil(2*at-2));
+      taruh(elKanan, ambil(2*at));
+    } else {
+      taruh(elKanan, ambil(at));
+    }
+  }
+  status();
+}
+
+function status(){
+  buku.classList.toggle("at-first", mode === "spread" && at === 0);
+  buku.classList.toggle("at-last",  mode === "spread" && at === lembarTotal);
+  if (mode === "spread"){
+    const kiri = at === 0 ? null : 2*at, kanan = at === lembarTotal ? null : 2*at + 1;
+    count.textContent = (kiri && kanan) ? kiri + "–" + kanan + " / " + N : (kiri || kanan) + " / " + N;
+    jump.value = String(kiri ? kiri-1 : 0);
+  } else {
+    count.textContent = (at+1) + " / " + N;
+    jump.value = String(at);
+  }
+  bPrev.disabled = at === 0;
+  bNext.disabled = at === (mode === "spread" ? lembarTotal : N-1);
+}
+
+/* ── jalur pojok: t = 0 rata di kanan, t = 1 terbuka penuh ── */
+function titik(t){
+  return {
+    x: x0 + pw - 2*pw*t,
+    y: ph - Math.sin(Math.PI*t) * ph * ANGKAT
+  };
+}
+
+/* potong segi banyak dengan setengah bidang */
+function potong(pts, sd, tanda){
+  const out = [];
+  for (let i = 0; i < pts.length; i++){
+    const A = pts[i], B = pts[(i+1) % pts.length];
+    const da = sd(A[0],A[1]) * tanda, db = sd(B[0],B[1]) * tanda;
+    if (da >= 0) out.push(A);
+    if ((da >= 0) !== (db >= 0)){
+      const s = da / (da - db);
+      out.push([A[0] + s*(B[0]-A[0]), A[1] + s*(B[1]-A[1])]);
+    }
+  }
+  return out;
+}
+const segi = pts => pts.length < 3
+  ? "polygon(0 0,0 0,0 0)"
+  : "polygon(" + pts.map(p => p[0].toFixed(1)+"px "+p[1].toFixed(1)+"px").join(",") + ")";
+
+/* ── hitung dan gambar lipatan ── */
+function lipat(P){
+  const fx = x0 + pw, fy = ph;
+  let dx = P.x - fx, dy = P.y - fy;
+  let len = Math.hypot(dx, dy);
+  if (len < 1.5){                       // benar-benar rata
+    elMuka.style.clipPath = "none";
+    elKlip.style.clipPath = "polygon(0 0,0 0,0 0)";
+    return;
+  }
+  const nx = dx/len, ny = dy/len;
+  const mx = (fx + P.x)/2, my = (fy + P.y)/2;
+  const sd = (x,y) => (x-mx)*nx + (y-my)*ny;
+  const kotak = [[x0,0],[x0+pw,0],[x0+pw,ph],[x0,ph]];
+
+  const rata    = potong(kotak, sd,  1);   // bagian yang masih menempel
+  const terlipat= potong(kotak, sd, -1);   // bagian yang terangkat
+
+  elMuka.style.clipPath = segi(rata.map(p => [p[0]-x0, p[1]]));
+
+  const cermin = terlipat.map(([x,y]) => {
+    const d = 2*sd(x,y);
+    return [x - d*nx, y - d*ny];
+  });
+  elKlip.style.clipPath = segi(cermin);
+
+  const a = 1 - 2*nx*nx, b = -2*nx*ny, d2 = 1 - 2*ny*ny;
+  const tx = mx - (a*mx + b*my), ty = my - (b*mx + d2*my);
+  elRef.style.transform = `matrix(${a.toFixed(5)},${b.toFixed(5)},${b.toFixed(5)},${d2.toFixed(5)},${tx.toFixed(2)},${ty.toFixed(2)})`;
+
+  const sudut = Math.atan2(nx, -ny) * 180 / Math.PI;   // arah lipatan dalam sudut CSS
+  const t = Math.min(1, Math.max(0, (fx - P.x) / (2*pw)));
+  const k = Math.pow(1 - t, .7);                       // bayangan menghilang saat mendarat
+  elKlip.style.filter = `drop-shadow(-2px -3px 7px rgba(0,0,0,${(.55*k).toFixed(3)}))`;
+  elBayang.style.background =
+    `linear-gradient(${sudut.toFixed(1)}deg,` +
+    `rgba(255,255,255,${(.16*k).toFixed(3)}) 0%,` +
+    `rgba(0,0,0,${(.42*k).toFixed(3)}) 3%,` +
+    `rgba(0,0,0,${(.22*k).toFixed(3)}) 38%,` +
+    `rgba(0,0,0,${(.04*k).toFixed(3)}) 100%)`;
+}
+
+/* ── animasi ── */
+function animasi(t1, t2, lama, selesai, kunci){
+  if (raf) cancelAnimationFrame(raf);
+  rafBebas = (kunci === false);
+  if (!rafBebas) busy = true;
+  const mulai = performance.now();
+  const langkah = now => {
+    const k = Math.min(1, (now - mulai) / lama);
+    const e = 1 - Math.pow(1 - k, 3);
+    lipat(titik(t1 + (t2 - t1) * e));
+    if (k < 1) raf = requestAnimationFrame(langkah);
+    else { raf = null; rafBebas = false; if (kunci !== false) busy = false; selesai && selesai(); }
+  };
+  raf = requestAnimationFrame(langkah);
+}
+
+/* pojok mengintip saat halaman baru dibuka */
+function intip(sisa){
+  if (sisa <= 0 || pernah) { sedangIntip = false; return; }
+  sedangIntip = true;
+  animasi(TDIAM, .3, 900, () =>
+    animasi(.3, TDIAM, 800, () => setTimeout(() => intip(sisa-1), 420), false), false);
+}
+
+function sudahDisentuh(){
+  if (rafBebas && raf){          // hentikan gerakan pojok, jangan ganggu balikan yang sedang jalan
+    cancelAnimationFrame(raf); raf = null; rafBebas = false;
+    sedangIntip = false;
+    lipat(titik(TDIAM));
+  }
+  if (pernah) return;
+  pernah = true;
+  if (hint) hint.classList.add("pergi");
+}
+
+/* ── pindah halaman ── */
+function go(dir){
+  sudahDisentuh();
+  if (busy) return;
+  const maks = mode === "spread" ? lembarTotal : N-1;
+  if (at + dir < 0 || at + dir > maks) return;
+  if (dir > 0){
+    pasangIsi(at);
+    elLembar.style.display = "";
+    at++; status();
+    animasi(TDIAM, 1, DUR, () => tampil(true));
+  } else {
+    at--; status();
+    pasangIsi(at);
+    elLembar.style.display = "";
+    lipat(titik(1));
+    animasi(1, TDIAM, DUR, () => tampil(true));
+  }
+}
+
+function goTo(p){
+  sudahDisentuh();
+  if (busy) return;
+  at = mode === "spread" ? (p === 0 ? 0 : Math.ceil(p/2)) : p;
+  tampil();
+}
+
+/* ── tarikan jari ── */
+function pasangGeser(){
+  let x1 = 0, y1 = 0, t0 = 0, arah = 0, geser = false, siap = false, P = null;
+
+  const pangkal = () => arah > 0 ? titik(0) : titik(1);
+
+  buku.addEventListener("pointerdown", e => {
+    if (e.target.closest("a")) return;
+    sudahDisentuh();
+    if (busy) return;
+    x1 = e.clientX; y1 = e.clientY; t0 = performance.now();
+    geser = false; siap = true; P = null;
+    buku.setPointerCapture(e.pointerId);
+  });
+
+  buku.addEventListener("pointermove", e => {
+    if (!siap) return;
+    const dx = e.clientX - x1, dy = e.clientY - y1;
+    if (!geser){
+      if (Math.abs(dx) < 5 || Math.abs(dx) < Math.abs(dy)) return;
+      arah = dx < 0 ? 1 : -1;
+      const maks = mode === "spread" ? lembarTotal : N-1;
+      if (at + arah < 0 || at + arah > maks){ siap = false; return; }
+      geser = true;
+      if (arah > 0){
+        pasangIsi(at);
+      } else {
+        pasangIsi(at-1);
+        lipat(titik(1));
+      }
+      elLembar.style.display = "";
+    }
+    const b = pangkal();
+    P = {
+      x: Math.min(x0 + pw, Math.max(x0 + pw - 2*pw, b.x + dx)),
+      y: Math.min(ph,      Math.max(0,              b.y + dy))
+    };
+    lipat(P);
+  });
+
+  const lepas = e => {
+    if (!siap) return;
+    const dx = (e.clientX || x1) - x1;
+    if (geser && P){
+      const t = Math.min(1, Math.max(0, (x0 + pw - P.x) / (2*pw)));
+      const laju = Math.abs(dx) / Math.max(1, performance.now() - t0);
+      const jadi = arah > 0 ? (t > .22 || laju > .4) : (t < .78 || laju > .4);
+      if (arah > 0){
+        if (jadi){ at++; status(); animasi(t, 1, DUR*(1-t)+180, () => tampil(true)); }
+        else animasi(t, TDIAM, DUR*t+180, () => tampil(true));
+      } else {
+        if (jadi){ at--; status(); animasi(t, TDIAM, DUR*t+180, () => tampil(true)); }
+        else animasi(t, 1, DUR*(1-t)+180, () => tampil(true));
+      }
+    } else if (Math.abs(dx) < 8){
+      const r = buku.getBoundingClientRect();
+      go(e.clientX - r.left > r.width/2 ? 1 : -1);
+    }
+    siap = false; geser = false; P = null;
+  };
+  buku.addEventListener("pointerup", lepas);
+  buku.addEventListener("pointercancel", () => { siap = false; geser = false; P = null; tampil(); });
+}
+
+bPrev.addEventListener("click", () => go(-1));
+bNext.addEventListener("click", () => go(1));
+jump.addEventListener("change", () => goTo(Number(jump.value)));
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") go(1);
+  if (e.key === "ArrowLeft")  go(-1);
+});
+
+build(wantMode());
+
+let rt;
+window.addEventListener("resize", () => {
+  clearTimeout(rt);
+  rt = setTimeout(() => {
+    const w = wantMode();
+    if (w === mode){ ukur(); tampil(); return; }
+    const hal = mode === "spread" ? (at === 0 ? 0 : 2*at - 1) : at;
+    build(w);
+    at = w === "spread" ? (hal === 0 ? 0 : Math.ceil(hal/2)) : hal;
+    tampil();
+  }, 180);
+});
+</script>
+</body>
+</html>
