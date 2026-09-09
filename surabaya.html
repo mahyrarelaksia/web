@@ -7,7 +7,7 @@
 <meta name="description" content="Katalog layanan Mahyra Relaksia. Home service premium massage, all area Surabaya dan Sidoarjo.">
 <meta property="og:title" content="Katalog Layanan — Mahyra Relaksia">
 <meta property="og:description" content="Home service premium massage, all area Surabaya & Sidoarjo. Harga sudah termasuk transport, oil, dan perlengkapan.">
-<meta property="og:image" content="https://mahyrarelaksia.com/logo-putih.jpg">
+<meta property="og:image" content="https://mahyrarelaksia.com/logo-puith.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
@@ -227,7 +227,7 @@ body{
 </nav>
 
 <footer class="kaki-logo">
-  <img src="logo-putih.jpg" alt="Mahyra Relaksia" onerror="this.style.display='none'">
+  <img src="logo-puith.png" alt="Mahyra Relaksia" onerror="this.src.indexOf('logo-putih.png')<0?this.src='logo-putih.png':this.style.display='none'">
   <span>SURABAYA &amp; SIDOARJO</span>
 </footer>
 
@@ -251,7 +251,7 @@ const foto = (f, cls) =>
 const wa = t => "https://wa.me/" + WA_NOMOR + "?text=" + encodeURIComponent(t);
 const folio = (n,s) => `<div class="folio"><span>${s}</span><b>${n}</b></div>`;
 const jam = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
-const kop = `<div class="kop"><img src="logo-putih.jpg" alt="" onerror="this.style.display='none'"><span>MAHYRA RELAKSIA</span></div>`;
+const kop = `<div class="kop"><img src="logo-puith.png" alt="" onerror="this.src.indexOf('logo-putih.png')<0?this.src='logo-putih.png':this.style.display='none'"><span>MAHYRA RELAKSIA</span></div>`;
 
 /* satu kartu harga — grid: kepala / foto + isi / durasi + harga */
 const kartu = ({nama, tag, gambar, mirror, termasuk, manfaat, fokus, waktu, harga}) => `
@@ -291,7 +291,7 @@ const PAGES = [
   <div class="page sampul">
     ${foto("sampul.jpg")}
     <div class="isi">
-      <img class="logo" src="logo-putih.jpg" alt="" onerror="this.style.display='none'">
+      <img class="logo" src="logo-puith.png" alt="" onerror="this.src.indexOf('logo-putih.png')<0?this.src='logo-putih.png':this.style.display='none'">
       <div>
         <h1>Katalog<em>Layanan</em></h1>
         <div class="rule"></div>
@@ -363,7 +363,7 @@ const PAGES = [
     <div class="isi">
       <div class="kaki">MAHYRA RELAKSIA</div>
       <div>
-        <img class="logo" src="logo-putih.jpg" alt="" onerror="this.style.display='none'">
+        <img class="logo" src="logo-puith.png" alt="" onerror="this.src.indexOf('logo-putih.png')<0?this.src='logo-putih.png':this.style.display='none'">
         <div class="judul">Badan Anda sudah<br>minta istirahat</div>
         <p style="max-width:26ch;margin-inline:auto">Pilih waktunya, kami yang datang. Balasan konfirmasi rata-rata 5 menit.</p>
         <a class="cta" href="${wa('Halo Mahyra Relaksia, saya mau pesan sesi pijat panggilan.')}" target="_blank" rel="noopener">PESAN LEWAT WHATSAPP</a>
@@ -509,7 +509,7 @@ const nodeHal = PAGES.map(p => {
 });
 const nodeVerso = document.createElement("div");
 nodeVerso.className = "isi-hal";
-nodeVerso.innerHTML = `<div class="verso"><img src="logo-putih.jpg" alt="" onerror="this.style.display='none'"></div>`;
+nodeVerso.innerHTML = `<div class="verso"><img src="logo-puith.png" alt="" onerror="this.src.indexOf('logo-putih.png')<0?this.src='logo-putih.png':this.style.display='none'"></div>`;
 
 const ambil = i => (i >= 0 && i < N) ? nodeHal[i] : null;
 function taruh(el, node){
