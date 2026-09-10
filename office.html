@@ -510,32 +510,28 @@ const F={
    {k:'status',l:'Status',t:'sel',o:['aktif','nonaktif']}],
   cols:[{k:'kode'},{k:'nama'},{k:'kota'},{k:'telepon'},{k:'jam',l:'Jam',fn:r=>r.jam_buka+'–'+r.jam_tutup},{k:'status',t:'tag'}]},
  jabatan:{title:'Jabatan',sub:'Struktur jabatan, gaji acuan, dan komisi bawaan.',
-  fields:[{k:'kode',l:'Kode'},{k:'nama',l:'Nama jabatan'},{k:'level',l:'Level',t:'num'},{k:'is_terapis',l:'Terhitung terapis',t:'bool'},
-   {k:'gaji_pokok_default',l:'Gaji pokok acuan',t:'rp'},{k:'tunjangan_default',l:'Tunjangan acuan',t:'rp'},
-   {k:'uang_makan_harian',l:'Uang makan / hari',t:'rp'},{k:'persen_komisi',l:'Komisi (%)',t:'num'},
+  fields:[{k:'kode',l:'Kode'},{k:'nama',l:'Nama jabatan'},{k:'level',l:'Level',t:'num'},
+   {k:'is_terapis',l:'Terhitung terapis',t:'bool'},
    {k:'lingkup',l:'Lingkup data',t:'sel',o:['semua','cabang','sendiri']},
-   {k:'tipe_gaji',l:'Tipe gaji',t:'sel',o:['bulanan','harian','training']},
-   {k:'gaji_harian',l:'Upah per hari efektif',t:'rp'},
-   {k:'potongan_harian',l:'Potongan per hari tanpa orderan',t:'rp'},
-   {k:'fee_per_order',l:'Imbalan tetap per orderan',t:'rp'},
    {k:'deskripsi',l:'Uraian tugas',t:'area'}],
-  cols:[{k:'kode'},{k:'nama'},{k:'level'},{k:'gaji_pokok_default',l:'Gaji pokok',t:'rp'},{k:'tunjangan_default',l:'Tunjangan',t:'rp'},
-   {k:'komisi',l:'Komisi',fn:r=>r.persen_komisi+'%'},
+  info:'Pengaturan gaji tidak lagi di sini. Atur lewat menu Keuangan → Skema Gaji, supaya satu jabatan bisa punya aturan berbeda di tiap cabang.',
+  cols:[{k:'kode'},{k:'nama'},{k:'level'},
+   {k:'jenis',l:'Jenis',fn:r=>r.is_terapis?'<span class="tag info">Terapis</span>':'<span class="tag">Non-terapis</span>'},
    {k:'lingkup',l:'Lingkup',fn:r=>`<span class="tag info">${cap(r.lingkup||'cabang')}</span>`},
-   {k:'gaji',l:'Skema gaji',fn:r=>ringkasSkema(r)}]},
+   {k:'skema',l:'Skema gaji terpasang',fn:r=>skemaJabatan(r.id)}]},
  karyawan:{title:'Karyawan',sub:'Data staf dan terapis, sekaligus tempat membuat akun login terapis.',
   fields:[{k:'nik',l:'NIK'},{k:'nama',l:'Nama lengkap'},{k:'jabatan_id',l:'Jabatan',t:'ref',ref:'jabatan'},
    {k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},{k:'role',l:'Hak akses',t:'sel',o:['owner','admin','manajer','kasir','terapis']},
    {k:'jenis_kelamin',l:'Jenis kelamin',t:'sel',o:['L','P']},{k:'telepon',l:'Telepon'},{k:'email',l:'Email'},
-   {k:'alamat',l:'Alamat',t:'area'},{k:'tgl_masuk',l:'Tanggal masuk',t:'date'},{k:'gaji_pokok',l:'Gaji pokok',t:'rp'},
-   {k:'tunjangan',l:'Tunjangan',t:'rp'},{k:'persen_komisi',l:'Komisi (%)',t:'num'},
-   {k:'tipe_gaji',l:'Tipe gaji (kosong = ikut jabatan)',t:'sel',o:['','bulanan','harian','training']},
-   {k:'gaji_harian',l:'Upah harian khusus',t:'rp'},{k:'potongan_harian',l:'Potongan harian khusus',t:'rp'},
-   {k:'fee_per_order',l:'Imbalan per orderan khusus',t:'rp'},{k:'bank_nama',l:'Bank'},
-   {k:'bank_rekening',l:'No. rekening'},{k:'status',l:'Status',t:'sel',o:['aktif','nonaktif','cuti_panjang']}],
+   {k:'alamat',l:'Alamat',t:'area'},{k:'tgl_masuk',l:'Tanggal masuk',t:'date'},
+   {k:'bank_nama',l:'Bank'},{k:'bank_rekening',l:'No. rekening'},
+   {k:'status',l:'Status',t:'sel',o:['aktif','nonaktif','cuti_panjang']}],
+  info:'Gaji mengikuti Skema Gaji sesuai jabatan dan cabang orang ini. Ubah lewat menu Keuangan → Skema Gaji.',
   cols:[{k:'nik'},{k:'nama'},{k:'jab',l:'Jabatan',fn:r=>nm('jabatan',r.jabatan_id)},
    {k:'cab',l:'Cabang',fn:r=>nm('cabang',r.cabang_id)},{k:'role',t:'tag'},
    {k:'akun',l:'Akun login',fn:r=>r.user_id?`<span class="tag ok">${esc(r.email||'aktif')}</span>`:'<span class="tag warn">Belum ada</span>'},
+   {k:'skema',l:'Skema gaji',fn:r=>{const s=skemaBerlaku(r);
+     return s?`<span class="tag ok">${esc(s.nama)}</span>`:'<span class="tag bad">Belum ada skema</span>'}},
    {k:'status',t:'tag'}],
   extra:r=>`<button class="btn ${r.user_id?'ghost':'amber'} sm" onclick="formAkun('${r.id}')">${r.user_id?'Ubah akun':'Buat akun'}</button>`},
  layanan:{title:'Layanan & Tarif',sub:'Menu perawatan, durasi, harga, dan komisi terapis.',
@@ -615,6 +611,10 @@ const F={
  hak_akses:{title:'Hak Akses & Peran',sub:'Atur apa yang boleh dilihat dan diubah tiap jabatan, serta seberapa luas datanya.',
   fields:[],cols:[]},
  skema_gaji:{title:'Skema Gaji',sub:'Aturan penggajian per jabatan dan cabang. Satu jabatan boleh punya aturan berbeda di tiap cabang.',
+  info:'<strong>Bulanan</strong> — gaji pokok tetap sebulan, dipotong bila hari kerjanya kurang. Untuk admin, kasir, kepala cabang.<br>'+
+       '<strong>Harian</strong> — dibayar per hari kerja efektif, tanpa gaji pokok. Untuk terapis tetap.<br>'+
+       '<strong>Training</strong> — gaji pokok dikurangi potongan untuk tiap hari yang tidak bekerja. Untuk terapis masa percobaan.<br>'+
+       'Isi hanya kolom yang dipakai; sisanya biarkan nol.',
   fields:[{k:'nama',l:'Nama skema'},
    {k:'jabatan_id',l:'Jabatan',t:'ref',ref:'jabatan'},
    {k:'cabang_id',l:'Cabang (kosongkan bila berlaku semua)',t:'ref',ref:'cabang'},
@@ -693,6 +693,8 @@ function openForm(key,id){
   const r=id?get(key,id):{cabang_id:ME.cabang_id,...(BAWAAN[key]||{})};
   sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">${id?'Ubah':'Tambah'} ${m.title}</h3>
    <p class="hint" style="margin-bottom:16px">${m.sub}</p>
+   ${m.info?`<div class="card" style="background:var(--mist);box-shadow:none;padding:12px;margin-bottom:16px">
+     <p class="hint" style="margin:0">${m.info}</p></div>`:''}
    ${m.fields.map(f=>fieldHtml(f,r[f.k])).join('')}
    <div class="row" style="margin-top:8px"><button class="btn" onclick="saveForm()">Simpan</button>
      <button class="btn ghost" onclick="closeModal()">Batal</button>
@@ -1635,6 +1637,13 @@ async function diagnosa(){
   }
   el.innerHTML=tableHtml(baris,[{k:'item',l:'Yang diperiksa'},
     {k:'hasil',l:'Hasil',fn:r=>`<span class="tag ${r.ok?'ok':'bad'}">${esc(r.hasil)}</span>`}]);
+}
+
+/* Skema apa saja yang terpasang untuk sebuah jabatan */
+function skemaJabatan(jabatanId){
+  const s=DB.skema_gaji.filter(x=>x.jabatan_id===jabatanId&&x.aktif!==false);
+  if(!s.length) return '<span class="tag bad">Belum diatur</span>';
+  return s.map(x=>`<span class="tag ${x.cabang_id?'info':'ok'}">${x.cabang_id?esc(nm('cabang',x.cabang_id)):'Semua cabang'}</span>`).join(' ');
 }
 
 /* Ringkasan komponen sebuah skema gaji */
