@@ -192,7 +192,7 @@ const sb = LIVE ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layanan',pelanggan:'pelanggan',
  shift:'shift',jadwal:'jadwal_kerja',pesanan:'pesanan',item:'pesanan_item',absensi:'absensi',izin:'izin',
  komisi:'komisi',bonus:'bonus',aturan_bonus:'aturan_bonus',gaji:'gaji',kasbon:'kasbon',
- absen_log:'absen_log'};
+ absen_log:'absen_log',skema_gaji:'skema_gaji'};
 
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
 const rp=n=>'Rp '+(Number(n)||0).toLocaleString('id-ID');
@@ -213,7 +213,7 @@ const get=(t,id)=>DB[t].find(x=>x.id===id);
 const nm=(t,id,f='nama')=>{const r=get(t,id);return r?r[f]:'-'};
 
 const DB={cabang:[],jabatan:[],karyawan:[],layanan:[],pelanggan:[],shift:[],jadwal:[],pesanan:[],item:[],
- absensi:[],izin:[],komisi:[],bonus:[],aturan_bonus:[],gaji:[],kasbon:[],absen_log:[]};
+ absensi:[],izin:[],komisi:[],bonus:[],aturan_bonus:[],gaji:[],kasbon:[],absen_log:[],skema_gaji:[]};
 
 const AKUN_DEMO={'dewi@mahyra.id':{pw:'terapis123',id:'k3'},'ayu@mahyra.id':{pw:'terapis123',id:'k4'}};
 
@@ -370,7 +370,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.08.05.1';
+const VERSI_APP='2026.09.10.2';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -568,7 +568,7 @@ absen(){
   const logHari=DB.absen_log.filter(a=>a.karyawan_id===ME.id&&String(a.tanggal).slice(0,10)===today())
     .sort((a,b)=>new Date(b.waktu)-new Date(a.waktu));
   const semua=DB.absen_log.filter(a=>a.karyawan_id===ME.id);
-  const hariEfektif=new Set(semua.filter(a=>String(a.tanggal).startsWith(periode())).map(a=>String(a.tanggal).slice(0,10))).size;
+  const hariEfektif=hariKerjaSaya(periode());
   const aktif=myItem().filter(i=>i.status==='berjalan');
   const antre=myItem().filter(i=>i.status==='menunggu');
   const sk=skemaGaji();
@@ -579,8 +579,12 @@ absen(){
     <div class="row" style="justify-content:center;margin-top:16px">
       ${aktif.length?`<button class="btn amber besar blok" onclick="bukaAbsen('${aktif[0].id}','pulang')">Check out pekerjaan berjalan</button>`
        :antre.length?`<button class="btn besar blok" onclick="bukaAbsen('${antre[0].id}','masuk')">Check in orderan berikutnya</button>`
-       :`<button class="btn ghost besar blok" onclick="go('kerja')">Belum ada orderan hari ini</button>`}
+       :sudahAbsenHarian()?`<button class="btn ghost besar blok" onclick="bukaAbsen(null,'pulang')">Absen pulang</button>`
+       :`<button class="btn besar blok" onclick="bukaAbsen(null,'masuk')">Absen masuk hari ini</button>`}
     </div>
+    ${(!aktif.length&&!antre.length)?`<p class="hint" style="margin-top:10px">
+      Belum ada orderan hari ini. Tetap absen masuk agar hari ini terhitung sebagai hari kerja
+      dan gaji harian Anda tetap dihitung.</p>`:''}
   </div>
   <div class="grid g4" style="margin-top:14px">
     ${stat('Check in hari ini',logHari.filter(a=>a.tipe==='masuk').length,'orderan dimulai','oranye')}
@@ -631,18 +635,29 @@ jadwal(){
 komisi(){
   const my=DB.komisi.filter(c=>c.karyawan_id===ME.id), bln=my.filter(c=>c.periode===periode());
   const sk=skemaGaji();
+  const hariBln=hariKerjaSaya(periode());
   return `<div class="card" style="margin-bottom:14px"><div class="head"><h3>Skema penghasilan Anda</h3>
-    <span class="tag info">${sk.tipe==='training'?'Terapis training':sk.tipe==='harian'?'Terapis tetap':'Bulanan'}</span></div>
+    <span class="tag ${sk.ada?'info':'warn'}">${sk.ada?esc(sk.nama):'skema belum diatur'}</span></div>
+    <p class="hint" style="margin-bottom:10px">${esc(nm('jabatan',ME.jabatan_id))} ·
+      ${esc(nm('cabang',ME.cabang_id))} · ${sk.tipe==='training'?'masa training':sk.tipe==='harian'?'harian':'bulanan'}</p>
     ${[sk.pokok>0?['Gaji pokok bulanan',rp(sk.pokok)]:null,
        sk.harian>0?['Gaji harian per hari kerja',rp(sk.harian)]:null,
-       sk.potongan>0?['Potongan harian bila izin atau tidak bekerja',rp(sk.potongan)]:null,
+       sk.tunjangan>0?['Tunjangan tetap sebulan',rp(sk.tunjangan)]:null,
+       sk.uangMakan>0?['Uang makan per hari kerja',rp(sk.uangMakan)]:null,
        sk.fee>0?['Imbalan per orderan selesai',rp(sk.fee)]:null,
        (sk.fee<=0&&sk.persen>0)?['Komisi dari nilai order',sk.persen+'%']:null,
+       sk.potongan>0?['Potongan per hari tidak masuk',rp(sk.potongan)]:null,
+       sk.minimal>0?['Gaji minimal sebulan',rp(sk.minimal)]:null,
        ['Bonus lainnya','tips, transport, lembur']]
       .filter(Boolean).map(([l,v])=>`<div class="list-item"><div style="flex:1">${l}</div><strong>${v}</strong></div>`).join('')}
-    <p class="hint" style="margin-top:10px">Hari kerja dihitung dari hari yang punya minimal satu orderan selesai.
-      Hari saat Anda izin atau tidak bekerja dikenai potongan harian di atas.
-      Bonus tips, transport, dan lembur diberikan kantor per orderan dan langsung masuk slip gaji.</p></div>
+    ${sk.harian>0?`<div class="list-item" style="border-top:2px solid var(--jade);margin-top:4px">
+      <div style="flex:1"><strong>Gaji harian terkumpul</strong>
+        <div class="hint">${hariBln} hari kerja × ${rp(sk.harian)}</div></div>
+      <strong class="rp">${rp(sk.harian*hariBln)}</strong></div>`:''}
+    <p class="hint" style="margin-top:10px">Hari kerja dihitung dari hari Anda absen masuk —
+      tetap terhitung meski hari itu tidak ada orderan.
+      ${sk.minimal>0?`Bila total sebulan di bawah ${rp(sk.minimal)}, yang dibayarkan tetap gaji minimal tersebut. `:''}
+      Bonus tips, transport, dan lembur diberikan kantor dan langsung masuk slip gaji.</p></div>
   <div class="grid g2">
     ${stat('Komisi bulan ini',rp(sum(bln,'nominal')),bln.length+' layanan')}
     ${stat('Belum dibayarkan',rp(sum(my.filter(c=>!c.dibayar),'nominal')),'akan masuk slip gaji','a')}</div>
@@ -771,20 +786,49 @@ function targetSaya(){
       || daftar.find(t=>!t.karyawan_id&&t.cabang_id===ME.cabang_id&&t.periode===periode())
       || null;
 }
+/* Skema yang berlaku: skema cabang+jabatan, lalu skema jabatan semua cabang */
+/* Hari kerja: hari dengan absen masuk, atau hari dengan orderan selesai */
+function hariKerjaSaya(per){
+  const hari=new Set();
+  DB.absen_log.filter(a=>a.karyawan_id===ME.id&&String(a.tanggal).startsWith(per))
+    .forEach(a=>hari.add(String(a.tanggal).slice(0,10)));
+  DB.absensi.filter(a=>a.karyawan_id===ME.id&&String(a.tanggal).startsWith(per)&&a.jam_masuk)
+    .forEach(a=>hari.add(String(a.tanggal).slice(0,10)));
+  myItem().filter(i=>i.status==='selesai'&&String(i.jam_selesai||'').startsWith(per))
+    .forEach(i=>hari.add(String(i.jam_selesai).slice(0,10)));
+  return hari.size;
+}
 function skemaGaji(){
+  const aktif=(DB.skema_gaji||[]).filter(s=>s.aktif!==false&&s.jabatan_id===ME.jabatan_id);
+  const s=aktif.find(x=>x.cabang_id===ME.cabang_id)||aktif.find(x=>!x.cabang_id)||{};
   const j=get('jabatan',ME.jabatan_id)||{};
+  const N=v=>Number(v||0);
   return {
-    tipe: ME.tipe_gaji||j.tipe_gaji||'bulanan',
-    pokok: ME.gaji_pokok??j.gaji_pokok_default??0,
-    harian: ME.gaji_harian??j.gaji_harian??0,
-    potongan: ME.potongan_harian??j.potongan_harian??0,
-    fee: ME.fee_per_order??j.fee_per_order??0,
-    persen: ME.persen_komisi??j.persen_komisi??0
+    ada: !!s.id,
+    nama: s.nama||j.nama||'—',
+    tipe: ME.tipe_gaji||s.tipe_gaji||'bulanan',
+    pokok:    N(ME.gaji_pokok??s.gaji_pokok),
+    harian:   N(ME.gaji_harian??s.gaji_harian),
+    tunjangan:N(ME.tunjangan??s.tunjangan),
+    uangMakan:N(s.uang_makan),
+    potongan: N(ME.potongan_harian??s.potongan_harian),
+    fee:      N(ME.fee_per_order??s.fee_per_order),
+    persen:   N(ME.persen_komisi??s.persen_komisi),
+    minimal:  N(s.gaji_minimal),
+    hariKerja:N(s.hari_kerja)||26,
+    cabang:   s.cabang_id?nm('cabang',s.cabang_id):'semua cabang'
   };
 }
+/* Sudah absen masuk hari ini, dengan atau tanpa orderan? */
+function sudahAbsenHarian(){
+  return DB.absen_log.some(a=>a.karyawan_id===ME.id
+    &&String(a.tanggal).slice(0,10)===today()&&a.tipe==='masuk');
+}
 function jejakAbsen(a){
+  const harian=!a.pesanan_item_id;
   return `<div class="jejak" style="align-items:center">
-    <div style="flex:1"><span class="jam">${jamDari(a.waktu)}</span></div>
+    <div style="flex:1"><span class="jam">${jamDari(a.waktu)}</span>
+      ${harian?'<div class="hint">absen harian, tanpa orderan</div>':''}</div>
     ${a.tipe==='masuk'?'<span class="tag ok">Check in</span>':'<span class="tag warn">Check out</span>'}
   </div>`;
 }
@@ -891,10 +935,14 @@ function listKerja(items){
 let KAM={aliran:null,foto:null,posisi:null,alamat:'',item:null,tipe:'masuk'};
 
 async function bukaAbsen(itemId,tipe){
-  KAM={aliran:null,foto:null,posisi:null,alamat:'',item:itemId,tipe};
-  const i=get('item',itemId), l=i?get('layanan',i.layanan_id):null;
-  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:3px">${tipe==='masuk'?'Check in':'Check out'} pekerjaan</h3>
-    <p class="hint" style="margin-bottom:14px">${esc(l?.nama||'-')} · ${esc(get('pesanan',i?.pesanan_id)?.nomor||'')}</p>
+  KAM={aliran:null,foto:null,posisi:null,alamat:'',item:itemId||null,tipe};
+  const i=itemId?get('item',itemId):null, l=i?get('layanan',i.layanan_id):null;
+  const judul=itemId?(tipe==='masuk'?'Check in pekerjaan':'Check out pekerjaan')
+                    :(tipe==='masuk'?'Absen masuk':'Absen pulang');
+  const ket=itemId?`${esc(l?.nama||'-')} · ${esc(get('pesanan',i?.pesanan_id)?.nomor||'')}`
+                  :`${esc(nm('cabang',ME.cabang_id))} · tanpa orderan`;
+  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:3px">${judul}</h3>
+    <p class="hint" style="margin-bottom:14px">${ket}</p>
     <div class="kam" id="kotakKam">
       <video id="vid" autoplay playsinline muted></video>
       <div class="sinyal" id="sinyal">${jam()}</div>
@@ -959,7 +1007,7 @@ async function kirimAbsen(){
     // satu parameter jsonb: menghindari galat penentuan tipe saat ada nilai kosong
     const muatan={item:KAM.item,tipe:KAM.tipe,foto:KAM.foto||null,
       lat:p.lat??null,lng:p.lng??null,alamat:KAM.alamat||null,akurasi:p.akurasi??null};
-    let {error}=await sb.rpc('absen_order',{p:muatan});
+    let {error}=await sb.rpc(KAM.item?'absen_order':'absen_harian',{p:muatan});
     if(error){
       console.warn('absen_order gagal, memakai jalur cadangan:',error.message);
       const cadangan=await absenCadangan(muatan);
@@ -969,10 +1017,11 @@ async function kirimAbsen(){
   }else{
     DB.absen_log.push({id:uid(),karyawan_id:ME.id,pesanan_item_id:KAM.item,cabang_id:ME.cabang_id,
       tanggal:today(),tipe:KAM.tipe,waktu:new Date().toISOString(),foto:KAM.foto,
-      lat:p.lat,lng:p.lng,alamat:KAM.alamat,akurasi_meter:p.akurasi});
-    const i=get('item',KAM.item);
-    if(KAM.tipe==='masuk'){ await simpan('item',{...i,status:'berjalan',jam_mulai:new Date().toISOString()}); }
-    else { await selesaikanItem(i); }
+      lat:p.lat,lng:p.lng,alamat:KAM.alamat,akurasi_meter:p.akurasi,
+      catatan:KAM.item?null:'Absen harian'});
+    const i=KAM.item?get('item',KAM.item):null;
+    if(i){ if(KAM.tipe==='masuk') await simpan('item',{...i,status:'berjalan',jam_mulai:new Date().toISOString()});
+           else await selesaikanItem(i); }
     let a=DB.absensi.find(x=>x.karyawan_id===ME.id&&String(x.tanggal).slice(0,10)===today());
     const log=DB.absen_log.filter(x=>x.karyawan_id===ME.id&&x.tanggal===today());
     const masuk=log.find(x=>x.tipe==='masuk'), pulang=[...log].reverse().find(x=>x.tipe==='pulang');
@@ -980,8 +1029,11 @@ async function kirimAbsen(){
       jam_masuk:masuk?new Date(masuk.waktu).toTimeString().slice(0,5):'',
       jam_pulang:pulang?new Date(pulang.waktu).toTimeString().slice(0,5):'',status:'hadir'});
   }
+  const adaItem=!!KAM.item;
   tutupAbsen(); render();
-  toast(KAM.tipe==='masuk'?'Check in tercatat':'Check out tercatat, pekerjaan selesai');
+  toast(KAM.tipe==='masuk'
+    ? (adaItem?'Check in tercatat':'Absen masuk tercatat, hari ini terhitung hari kerja')
+    : (adaItem?'Check out tercatat, pekerjaan selesai':'Absen pulang tercatat'));
 }
 /* Jalur cadangan bila fungsi absen_order belum terpasang di database:
    tulis langsung ke tabel, lalu perbarui status pekerjaannya. */
