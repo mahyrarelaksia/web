@@ -1678,18 +1678,15 @@ function ringkasSkema(j){
 /* Skema yang berlaku untuk seorang karyawan (penimpa karyawan menang) */
 function skemaKaryawan(k){
   const s=skemaBerlaku(k)||{}, j=get('jabatan',k.jabatan_id)||{};
-  const ambil=(a,b,c)=>Number(k[a]??s[b]??j[c]??0);
-  return { nama:s.nama||j.nama||'—',
-    tipe:k.tipe_gaji||s.tipe_gaji||j.tipe_gaji||'bulanan',
-    pokok:ambil('gaji_pokok','gaji_pokok','gaji_pokok_default'),
-    harian:ambil('gaji_harian','gaji_harian','gaji_harian'),
-    tunjangan:Number(k.tunjangan??s.tunjangan??j.tunjangan_default??0),
-    potongan:ambil('potongan_harian','potongan_harian','potongan_harian'),
-    fee:ambil('fee_per_order','fee_per_order','fee_per_order'),
-    persen:ambil('persen_komisi','persen_komisi','persen_komisi'),
-    uangMakan:Number(s.uang_makan??j.uang_makan_harian??0),
-    minimal:Number(s.gaji_minimal||0),
-    hariKerja:Number(s.hari_kerja||26) };
+  const N=v=>Number(v||0);
+  // Skema gaji adalah satu-satunya sumber angka.
+  return { nama:s.nama||j.nama||'—', ada:!!s.id,
+    tipe:s.tipe_gaji||'bulanan',
+    pokok:N(s.gaji_pokok), harian:N(s.gaji_harian),
+    tunjangan:N(s.tunjangan), potongan:N(s.potongan_harian),
+    fee:N(s.fee_per_order), persen:N(s.persen_komisi),
+    uangMakan:N(s.uang_makan), minimal:N(s.gaji_minimal),
+    hariKerja:N(s.hari_kerja)||26 };
 }
 /* Hari kerja efektif: hari dengan minimal satu orderan selesai atau check in */
 function hariEfektif(karyawanId,per){
