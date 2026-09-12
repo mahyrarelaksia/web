@@ -109,6 +109,22 @@ main{padding:16px 14px 116px;width:100%}
 .kartu-kerja .rinci div{display:flex;justify-content:space-between;gap:8px;font-size:12px}
 .kartu-kerja .rinci span{color:var(--muted)}
 .kartu-kerja .rinci b{font-weight:600;font-variant-numeric:tabular-nums}
+.kalender{margin-top:4px}
+.kal-kepala{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px}
+.kal-kepala span{text-align:center;font-size:10px;font-weight:600;color:var(--muted);
+ text-transform:uppercase;letter-spacing:.06em;padding:3px 0}
+.kal-isi{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.kal-hari{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ border-radius:9px;font-size:12px;background:#fff;border:1px solid var(--line);color:var(--ink);position:relative}
+.kal-hari.kosong{background:none;border:0}
+.kal-hari.libur{background:linear-gradient(160deg,#EEF4FA,#D8E6F5);border-color:#BDD5EE;
+ color:var(--laut,#1B4A82);font-weight:600}
+.kal-hari.minggu{color:#B5687A}
+.kal-hari.kini{outline:2px solid var(--jade);outline-offset:-2px;font-weight:700}
+.kal-hari i{position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:#2F6FBF;font-style:normal}
+.kal-ket{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.kal-ket div{display:flex;gap:9px;align-items:flex-start;font-size:12.5px}
+.kal-ket .tgl{font-weight:600;white-space:nowrap;min-width:58px}
 .kartu-bonus{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:14px;
  padding:12px 13px;margin-bottom:8px;background:#fff}
 .kartu-bonus h4{font-size:14px;font-weight:600;line-height:1.3}
@@ -309,17 +325,21 @@ async function pasangSekarang(){
 function tutupAjakan(tunda){
   const k = document.getElementById('ajakPasang');
   if (k) k.classList.remove('on');
-  // ditunda sehari, lalu ditawarkan lagi di perangkat yang sama
-  if (tunda) { try { localStorage.setItem('mahyra_tunda_pasang', Date.now() + 864e5); } catch (_) {} }
+  // ditunda 30 menit, lalu ditawarkan lagi selama aplikasi belum dipasang
+  if (tunda) { try { localStorage.setItem('mahyra_tunda_pasang', Date.now() + 18e5); } catch (_) {} }
 }
 
 /* Dipanggil setelah berhasil masuk */
 function cekPasang(){
   if (sudahTerpasang()) return;
-  let tunda = 0;
-  try { tunda = Number(localStorage.getItem('mahyra_tunda_pasang') || 0); } catch (_) {}
-  if (Date.now() < tunda) return;
-  setTimeout(() => ajakPasang(), 2500);
+  const coba = () => {
+    if (sudahTerpasang()) return;
+    let tunda = 0;
+    try { tunda = Number(localStorage.getItem('mahyra_tunda_pasang') || 0); } catch (_) {}
+    if (Date.now() >= tunda) ajakPasang();
+  };
+  setTimeout(coba, 2500);
+  setInterval(coba, 3e5);          // periksa tiap 5 menit; muncul lagi setelah 30 menit
 }
 
 /* Izin notifikasi, diminta setelah masuk agar tidak mengagetkan */
@@ -527,7 +547,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.12.2';
+const VERSI_APP='2026.09.12.3';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -734,7 +754,8 @@ dash(){
        ||'<p class="hint">Skema gaji Anda belum memuat bonus tambahan.</p>'}</div></div></div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Kerjaan hari ini</h3>
     <button class="btn ghost sm" onclick="go('kerja')">Lihat semua</button></div>
-    ${listKerja(my.filter(i=>i.status!=='selesai'&&i.status!=='batal'))}</div>`;
+    ${listKerja(my.filter(i=>i.status!=='selesai'&&i.status!=='batal'))}</div>
+  ${kalenderLibur()}`;
 },
 absen(){
   const A=absenHariIni();
@@ -1277,6 +1298,72 @@ async function selesaikanItem(i){
   const p=get('pesanan',i.pesanan_id);
   if(p&&DB.item.filter(x=>x.pesanan_id===p.id).every(x=>x.status==='selesai'))
     await simpan('pesanan',{...p,status:'selesai'});
+}
+
+/* ===================== KALENDER LIBUR ===================== */
+let KAL_BULAN=null;   // 'YYYY-MM'
+function geserBulan(n){
+  const [y,m]=(KAL_BULAN||periode()).split('-').map(Number);
+  const d=new Date(y,m-1+n,1);
+  KAL_BULAN=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  render();
+}
+function kalenderLibur(){
+  const per=KAL_BULAN||periode();
+  const [y,m]=per.split('-').map(Number);
+  const awal=new Date(y,m-1,1), jmlHari=new Date(y,m,0).getDate();
+  const mulai=awal.getDay();                         // 0 = Minggu
+  const namaBulan=awal.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+
+  // kumpulkan hari libur pada bulan ini
+  const peta={};
+  (DB.libur||[]).forEach(l=>{
+    if(l.karyawan_id&&l.karyawan_id!==ME.id) return;
+    if(l.cabang_id&&l.cabang_id!==ME.cabang_id) return;
+    const a=new Date(String(l.tanggal).slice(0,10)+'T00:00');
+    const b=new Date(String(l.tgl_selesai||l.tanggal).slice(0,10)+'T00:00');
+    for(let d=new Date(a); d<=b; d.setDate(d.getDate()+1)){
+      if(d.getFullYear()===y&&d.getMonth()===m-1) peta[d.getDate()]=l;
+    }
+  });
+
+  const sel=[];
+  for(let i=0;i<mulai;i++) sel.push('<div class="kal-hari kosong"></div>');
+  for(let d=1; d<=jmlHari; d++){
+    const tglIni=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const kelas=['kal-hari'];
+    if(peta[d]) kelas.push('libur');
+    if(new Date(y,m-1,d).getDay()===0) kelas.push('minggu');
+    if(tglIni===today()) kelas.push('kini');
+    sel.push(`<div class="${kelas.join(' ')}">${d}${peta[d]?'<i></i>':''}</div>`);
+  }
+
+  const daftar=Object.entries(peta)
+    .filter(([d,l],i,arr)=>arr.findIndex(([,x])=>x.id===l.id)===i)   // satu baris per libur
+    .map(([d,l])=>{
+      const a=new Date(String(l.tanggal).slice(0,10)+'T00:00');
+      const b=new Date(String(l.tgl_selesai||l.tanggal).slice(0,10)+'T00:00');
+      const teks=a.getTime()===b.getTime()
+        ? a.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'short'})
+        : a.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' – '+
+          b.toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+      return `<div><span class="tgl">${teks}</span><span>${esc(l.keterangan||cap(l.jenis))}</span></div>`;
+    });
+
+  return `<div class="card" style="margin-top:14px">
+    <div class="head"><h3>Jadwal libur saya</h3>
+      <div class="row" style="flex-wrap:nowrap">
+        <button class="btn ghost sm" onclick="geserBulan(-1)">‹</button>
+        <span class="tag info" style="align-self:center">${namaBulan}</span>
+        <button class="btn ghost sm" onclick="geserBulan(1)">›</button></div></div>
+    <div class="kalender">
+      <div class="kal-kepala">${['Min','Sen','Sel','Rab','Kam','Jum','Sab']
+        .map(h=>`<span>${h}</span>`).join('')}</div>
+      <div class="kal-isi">${sel.join('')}</div>
+    </div>
+    ${daftar.length?`<div class="kal-ket">${daftar.join('')}</div>`
+      :'<p class="hint" style="margin-top:10px">Tidak ada jadwal libur pada bulan ini.</p>'}
+  </div>`;
 }
 
 /* ===================== HARI LIBUR ===================== */
