@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mahyra Terapis">
 <link rel="icon" type="image/png" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="apple-touch-icon" href="/icon-apple.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -280,7 +280,7 @@ function ajakPasang(){
 
   kotak.innerHTML = `
     <button class="tutup" onclick="tutupAjakan(true)" aria-label="Tutup">&times;</button>
-    <img src="logo.png" alt="Mahyra Massage">
+    <img src="/icon-192.png" alt="Ikon aplikasi">
     <div style="flex:1;min-width:0">
       <h5>Pasang ${NAMA_APP} di ponsel ini</h5>
       <p>Bisa dibuka langsung dari layar utama seperti aplikasi biasa,
@@ -342,8 +342,8 @@ async function notifSistem(judul, pesan, url){
 const sb = LIVE ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layanan',pelanggan:'pelanggan',
  shift:'shift',jadwal:'jadwal_kerja',pesanan:'pesanan',item:'pesanan_item',absensi:'absensi',izin:'izin',
- komisi:'komisi',bonus:'bonus',aturan_bonus:'aturan_bonus',gaji:'gaji',kasbon:'kasbon',
- absen_log:'absen_log',skema_gaji:'skema_gaji',notifikasi:'notifikasi'};
+ komisi:'komisi',bonus:'bonus',gaji:'gaji',kasbon:'kasbon',
+ absen_log:'absen_log',skema_gaji:'skema_gaji',notifikasi:'notifikasi',libur:'libur'};
 
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
 const rp=n=>'Rp '+(Number(n)||0).toLocaleString('id-ID');
@@ -364,7 +364,7 @@ const get=(t,id)=>DB[t].find(x=>x.id===id);
 const nm=(t,id,f='nama')=>{const r=get(t,id);return r?r[f]:'-'};
 
 const DB={cabang:[],jabatan:[],karyawan:[],layanan:[],pelanggan:[],shift:[],jadwal:[],pesanan:[],item:[],
- absensi:[],izin:[],komisi:[],bonus:[],aturan_bonus:[],gaji:[],kasbon:[],absen_log:[],skema_gaji:[],notifikasi:[]};
+ absensi:[],izin:[],komisi:[],bonus:[],gaji:[],kasbon:[],absen_log:[],skema_gaji:[],notifikasi:[],libur:[]};
 
 const AKUN_DEMO={'dewi@mahyra.id':{pw:'terapis123',id:'k3'},'ayu@mahyra.id':{pw:'terapis123',id:'k4'}};
 
@@ -521,12 +521,13 @@ function bukaAplikasi(){
   setInterval(()=>periksaNotif(false), 45000);   // periksa tiap 45 detik
   cekPasang();
   mintaIzinNotif();
+  setTimeout(tampilkanLibur, 900);
 }
 async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); location.reload(); }
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.12.1';
+const VERSI_APP='2026.09.12.2';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -694,7 +695,14 @@ dash(){
   const rat=sel.filter(i=>i.rating), avg=rat.length?(sum(rat,'rating')/rat.length).toFixed(1):'—';
   const tg=targetSaya();
   const pct=tg&&tg.target?Math.min(100,Math.round(sel.length/tg.target*100)):0;
-  return `<div class="grid g4">
+  const lbr=liburHariIni();
+  return `${lbr?`<div class="card" style="background:linear-gradient(160deg,#EEF4FA,#DCE9F6);
+      border:1px solid #C6DAF0;margin-bottom:14px">
+      <div class="row" style="align-items:center;gap:12px">
+        <div style="font-size:26px">☾</div>
+        <div style="flex:1"><strong style="font-size:15px">Hari ini libur</strong>
+          <div class="hint">${esc(lbr.keterangan||'')}</div></div></div></div>`:''}
+  <div class="grid g4">
     ${stat('Order selesai',sel.length,'periode '+periode())}
     ${stat('Komisi bulan ini',rp(sum(kom,'nominal')),'ketuk untuk rincian','a',"go('komisi')")}
     ${stat('Bonus bulan ini',rp(sum(bon,'nominal')),'ketuk untuk rincian','g',"go('bonus')")}
@@ -717,11 +725,13 @@ dash(){
         :'Skema gaji Anda belum memuat bonus target order.'}</p>
       ${tg&&tg.semua.length>1?`<div class="hint" style="margin-top:6px">Ambang berikutnya:
         ${tg.semua.map(a=>`${a.target} order → ${rp(a.nominal)}`).join(' · ')}</div>`:''}
-      <div style="margin-top:14px">${skemaAktif(sel.length).slice(0,3).map(a=>
-        `<div class="list-item"><span class="dot" style="background:var(--amber)"></span><div style="flex:1">
-          <strong>${esc(a.nama)}</strong><div class="hint">${esc(syaratBonus(a))}</div></div>
+      <div style="margin-top:14px">${daftarBonusSkema().map(a=>
+        `<div class="list-item"><span class="dot" style="background:${a.tercapai?'var(--ok)':'var(--amber)'}"></span>
+          <div style="flex:1"><strong>${esc(a.nama)}</strong>
+            ${a.tercapai?'<span class="tag ok">Tercapai</span>':''}
+            <div class="hint">${esc(a.syarat)}</div></div>
           <span class="rp">${rp(a.nominal)}</span></div>`).join('')
-       ||'<p class="hint">Belum ada skema bonus yang aktif. Kantor dapat menambahkannya kapan saja.</p>'}</div></div></div>
+       ||'<p class="hint">Skema gaji Anda belum memuat bonus tambahan.</p>'}</div></div></div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Kerjaan hari ini</h3>
     <button class="btn ghost sm" onclick="go('kerja')">Lihat semua</button></div>
     ${listKerja(my.filter(i=>i.status!=='selesai'&&i.status!=='batal'))}</div>`;
@@ -1041,48 +1051,29 @@ function tglBonus(b){
   const p=b.pesanan_id?get('pesanan',b.pesanan_id):null;
   return p?.tanggal||b.created_at||b.periode+'-01';
 }
-/* Skema aktif, diurutkan dari yang paling dekat tercapai */
-function skemaAktif(jmlOrder){
-  return (DB.aturan_bonus||[]).filter(a=>a.aktif!==false)
-    .slice()
-    .sort((a,b)=>{
-      const sisaA=a.jenis==='target'&&a.target>0?Math.max(0,a.target-jmlOrder):9e9;
-      const sisaB=b.jenis==='target'&&b.target>0?Math.max(0,b.target-jmlOrder):9e9;
-      if(sisaA!==sisaB) return sisaA-sisaB;
-      return (a.nominal||0)-(b.nominal||0);
-    });
-}
-/* Syarat yang kosong dilengkapi otomatis dari jenis dan targetnya */
-function syaratBonus(a){
-  if(a.syarat&&String(a.syarat).trim()&&a.syarat!=='-') return a.syarat;
-  const t=a.target||0;
-  if(a.jenis==='target')    return `Menyelesaikan minimal ${t} orderan dalam sebulan`;
-  if(a.jenis==='kehadiran') return `Hadir penuh ${t||26} hari kerja dalam sebulan`;
-  if(a.jenis==='rating')    return `Rata-rata penilaian pelanggan minimal ${t}`;
-  if(a.jenis==='lembur')    return 'Mengambil shift tambahan di luar jadwal';
-  if(a.jenis==='referral')  return 'Merekomendasikan terapis baru yang lolos masa percobaan';
-  return 'Syarat ditetapkan kantor';
-}
-
 /* Bonus yang melekat pada skema gaji saya. Kosong = bagian ini tidak muncul. */
-function bonusSkemaSaya(jmlOrder){
-  const sk=skemaGaji(), b=[];
+function daftarBonusSkema(){
+  const sk=skemaGaji(), sel=myItem().filter(i=>i.status==='selesai').length, b=[];
   if(sk.bonusT1Order>0) b.push({nama:'Bonus target '+sk.bonusT1Order+' order',
     syarat:'Menyelesaikan minimal '+sk.bonusT1Order+' orderan dalam sebulan',
-    target:sk.bonusT1Order,nominal:sk.bonusT1Nominal});
+    target:sk.bonusT1Order,nominal:sk.bonusT1Nominal,tercapai:sel>=sk.bonusT1Order});
   if(sk.bonusT2Order>0) b.push({nama:'Bonus target '+sk.bonusT2Order+' order',
     syarat:'Menyelesaikan minimal '+sk.bonusT2Order+' orderan dalam sebulan',
-    target:sk.bonusT2Order,nominal:sk.bonusT2Nominal});
+    target:sk.bonusT2Order,nominal:sk.bonusT2Nominal,tercapai:sel>=sk.bonusT2Order});
   if(sk.bonusMotor>0) b.push({nama:'Bonus service motor',
-    syarat:'Diberikan tiap bulan selama Anda bekerja',target:0,nominal:sk.bonusMotor});
+    syarat:'Diberikan tiap bulan selama Anda bekerja',target:0,nominal:sk.bonusMotor,tercapai:true});
   if(sk.bonusBpjs>0) b.push({nama:'BPJS',
-    syarat:'Iuran ditanggung perusahaan tiap bulan',target:0,nominal:sk.bonusBpjs});
+    syarat:'Iuran ditanggung perusahaan tiap bulan',target:0,nominal:sk.bonusBpjs,tercapai:true});
+  return b;
+}
+function bonusSkemaSaya(jmlOrder){
+  const sk=skemaGaji(), b=daftarBonusSkema();
   if(!b.length) return '';
   return `<div class="card" style="margin-top:14px"><div class="head"><h3>Bonus dari skema Anda</h3>
     <span class="tag info">${esc(sk.nama)}</span></div>
     ${b.map(x=>{
       const capai=x.target>0?Math.min(100,Math.round(jmlOrder/x.target*100)):null;
-      const tercapai=x.target>0&&jmlOrder>=x.target;
+      const tercapai=x.tercapai;
       return `<div class="list-item"><span class="dot" style="background:${tercapai?'var(--ok)':'var(--amber)'}"></span>
         <div style="flex:1"><strong>${esc(x.nama)}</strong>
           ${tercapai?'<span class="tag ok">Tercapai</span>':''}
@@ -1286,6 +1277,43 @@ async function selesaikanItem(i){
   const p=get('pesanan',i.pesanan_id);
   if(p&&DB.item.filter(x=>x.pesanan_id===p.id).every(x=>x.status==='selesai'))
     await simpan('pesanan',{...p,status:'selesai'});
+}
+
+/* ===================== HARI LIBUR ===================== */
+function liburHariIni(tanggal){
+  const d=tanggal||today();
+  return (DB.libur||[]).find(l=>{
+    const mulai=String(l.tanggal).slice(0,10);
+    const akhir=String(l.tgl_selesai||l.tanggal).slice(0,10);
+    if(d<mulai||d>akhir) return false;
+    if(l.karyawan_id&&l.karyawan_id!==ME.id) return false;
+    if(l.cabang_id&&l.cabang_id!==ME.cabang_id) return false;
+    return true;
+  })||null;
+}
+function tampilkanLibur(){
+  const l=liburHariIni(); if(!l) return;
+  let sudah=null;
+  try{ sudah=localStorage.getItem('mahyra_libur'); }catch(_){}
+  if(sudah===today()) return;                    // cukup sekali sehari
+  const judul={libur:'Hari ini libur',cuti_bersama:'Cuti bersama',
+    tutup:'Cabang tutup hari ini',pelatihan:'Hari ini ada pelatihan'}[l.jenis]||'Hari ini libur';
+  sheet.innerHTML=`<div style="text-align:center;padding:8px 4px">
+      <div style="font-size:44px;line-height:1;margin-bottom:10px">☾</div>
+      <h3 style="font-size:23px;margin-bottom:6px">${judul}</h3>
+      <p class="hint" style="margin-bottom:4px">${new Date().toLocaleDateString('id-ID',
+        {weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
+      <p style="font-size:14.5px;margin:14px 0 4px">${esc(l.keterangan||'')}</p>
+      ${String(l.tgl_selesai||'')&&String(l.tgl_selesai).slice(0,10)!==String(l.tanggal).slice(0,10)
+        ? `<p class="hint">Berlaku ${tgl(l.tanggal)} sampai ${tgl(l.tgl_selesai)}</p>`:''}
+      <p class="hint" style="margin-top:14px">Tidak perlu absen hari ini. Selamat beristirahat.</p>
+      <button class="btn besar blok" style="margin-top:16px" onclick="tutupLibur()">Mengerti</button>
+    </div>`;
+  modal.classList.add('on');
+}
+function tutupLibur(){
+  try{ localStorage.setItem('mahyra_libur',today()); }catch(_){}
+  closeModal();
 }
 
 /* ===================== NOTIFIKASI ===================== */
