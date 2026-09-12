@@ -6,8 +6,8 @@
    Taruh berkas ini di akar situs, sejajar dengan office.html
    dan terapis.html, agar cakupannya meliputi seluruh halaman.
    ===================================================================== */
-const VERSI = 'mahyra-v3';
-const INTI  = ['/logo.png', '/icon-192.png', '/icon-512.png',
+const VERSI = 'mahyra-v4';
+const INTI  = ['/logo.png', '/icon-192.png', '/icon-512.png', '/icon-badge.png',
                '/manifest-office.json', '/manifest-terapis.json'];
 
 self.addEventListener('install', e => {
@@ -47,6 +47,32 @@ self.addEventListener('fetch', e => {
   })());
 });
 
+/* Pesan dorong dari server — tetap muncul walau aplikasi tertutup */
+self.addEventListener('push', e => {
+  let d = { judul: 'Mahyra Massage', pesan: '', url: '/terapis' };
+  try { if (e.data) d = { ...d, ...e.data.json() }; }
+  catch (_) { if (e.data) d.pesan = e.data.text(); }
+
+  e.waitUntil(self.registration.showNotification(d.judul, {
+    body: d.pesan,
+    icon: '/icon-192.png',
+    badge: '/icon-badge.png',
+    tag: 'mahyra-' + (d.tipe || 'info'),
+    renotify: true,
+    vibrate: [90, 60, 90],
+    requireInteraction: d.tipe === 'order',
+    data: { url: d.url || '/terapis' }
+  }));
+});
+
+/* Bila langganan diperbarui peramban, daftarkan ulang */
+self.addEventListener('pushsubscriptionchange', e => {
+  e.waitUntil((async () => {
+    const daftar = await self.clients.matchAll({ includeUncontrolled: true });
+    daftar.forEach(c => c.postMessage({ tipe: 'push-berubah' }));
+  })());
+});
+
 /* Notifikasi dari halaman (dipakai portal terapis saat ada orderan baru) */
 self.addEventListener('message', e => {
   const d = e.data || {};
@@ -54,7 +80,7 @@ self.addEventListener('message', e => {
   self.registration.showNotification(d.judul || 'Mahyra Massage', {
     body: d.pesan || '',
     icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    badge: '/icon-badge.png',
     tag: d.tag || 'mahyra',
     renotify: true,
     vibrate: [90, 60, 90],
