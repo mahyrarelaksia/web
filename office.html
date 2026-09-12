@@ -136,7 +136,9 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 @media(max-width:760px){
   aside{display:none}
   .shell{grid-template-columns:1fr}
-  main{padding:14px 14px 108px}
+  main{padding:14px 14px 96px}
+  #app{padding-bottom:0}
+  body{overflow-x:hidden}
   .mobbar{display:flex;align-items:center;gap:10px;background:linear-gradient(170deg,#4C8FD6,#2F6FBF 60%,#1F4C86);
     color:#fff;padding:12px 14px 14px;position:sticky;top:0;z-index:30;border-radius:0 0 20px 20px}
   .mobbar .judul{flex:1;min-width:0}
@@ -146,18 +148,23 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
   .mobbar .lonceng .titik{border-color:#2F6FBF}
   .who{display:none}
   .topbar{margin-bottom:12px}
-  .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:40;display:grid;
-    grid-template-columns:repeat(5,1fr);align-items:end;background:rgba(255,255,255,.97);
-    backdrop-filter:blur(8px);border-top:1px solid var(--line);
-    padding:8px 6px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -8px 26px rgba(31,64,120,.09)}
-  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 2px;border-radius:13px;
-    cursor:pointer;color:#93A4BD;font-size:10px;font-weight:600;-webkit-tap-highlight-color:transparent}
-  .tab .ic{font-size:18px;line-height:1}
+  .tabbar{position:fixed;bottom:0;left:0;right:0;width:100%;z-index:60;display:grid;
+    grid-template-columns:repeat(5,1fr);align-items:end;background:#fff;
+    border-top:1px solid var(--line);margin:0;
+    padding:7px 4px calc(7px + env(safe-area-inset-bottom));
+    box-shadow:0 -6px 22px rgba(31,64,120,.1)}
+  .tab{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;
+    padding:4px 2px;border-radius:12px;cursor:pointer;color:#93A4BD;font-size:9.5px;font-weight:600;
+    line-height:1.2;text-align:center;min-width:0;-webkit-tap-highlight-color:transparent}
+  .tab span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .tab .ic{font-size:17px;line-height:1;height:20px;display:grid;place-items:center}
   .tab.on{color:var(--jade)}
-  .tab.pusat{margin-top:-32px;color:var(--jade)}
-  .tab.pusat .ic{width:58px;height:58px;border-radius:22px;display:grid;place-items:center;font-size:25px;
+  .tab.pusat{color:var(--jade);position:relative}
+  .tab.pusat .ic{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);
+    width:54px;height:54px;border-radius:20px;display:grid;place-items:center;font-size:24px;
     color:#fff;background:linear-gradient(150deg,#8FC6EC,#2F6FBF 62%,#1F4C86);border:4px solid #fff;
-    box-shadow:0 10px 24px rgba(47,111,191,.4)}
+    box-shadow:0 8px 20px rgba(47,111,191,.38)}
+  .tab.pusat span:last-child{margin-top:38px}
   .tab.pusat:active .ic{transform:scale(.94)}
   .menulist{display:grid;gap:6px;margin-top:6px}
   .menulist button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);
@@ -344,6 +351,47 @@ function tutupAjakan(tunda){
   if (tunda) { try { localStorage.setItem('mahyra_tunda_pasang', Date.now() + 18e5); } catch (_) {} }
 }
 
+
+/* ---------- Web Push: notifikasi tetap masuk walau aplikasi ditutup ----------
+   Isi VAPID_PUBLIC dengan kunci publik dari Edge Function kirim-push.
+   Dibiarkan kosong berarti hanya notifikasi saat aplikasi terbuka. */
+const VAPID_PUBLIC = "";
+
+function urlBase64ToUint8Array(base64){
+  const pad='='.repeat((4-base64.length%4)%4);
+  const b64=(base64+pad).replace(/-/g,'+').replace(/_/g,'/');
+  const mentah=atob(b64), arr=new Uint8Array(mentah.length);
+  for(let i=0;i<mentah.length;i++) arr[i]=mentah.charCodeAt(i);
+  return arr;
+}
+async function daftarPush(){
+  if(!VAPID_PUBLIC || !LIVE || !ME) return;
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if(Notification.permission !== 'granted') return;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC)
+      });
+    }
+    const j=sub.toJSON();
+    await sb.from('push_langganan').upsert({
+      karyawan_id:ME.id, endpoint:j.endpoint,
+      p256dh:j.keys.p256dh, auth:j.keys.auth,
+      perangkat:navigator.userAgent.slice(0,120), dipakai:new Date().toISOString()
+    },{onConflict:'endpoint'});
+  }catch(e){ console.warn('Langganan notifikasi dilewati:',e); }
+}
+/* Peramban kadang memperbarui langganan sendiri */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', e=>{
+    if(e.data && e.data.tipe==='push-berubah') daftarPush();
+  });
+}
+
 /* Dipanggil setelah berhasil masuk */
 function cekPasang(){
   if (sudahTerpasang()) return;
@@ -359,8 +407,11 @@ function cekPasang(){
 
 /* Izin notifikasi, diminta setelah masuk agar tidak mengagetkan */
 async function mintaIzinNotif(){
-  if (!('Notification' in window) || Notification.permission !== 'default') return;
-  try { await Notification.requestPermission(); } catch (_) {}
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch (_) {}
+  }
+  if (Notification.permission === 'granted') daftarPush();
 }
 
 /* Kirim notifikasi lewat service worker supaya tetap muncul di latar belakang */
@@ -974,29 +1025,33 @@ function halamanPertama(){
   return 'tanpa_akses';
 }
 /* ---- Tab bawah untuk layar kecil. Isinya menyesuaikan hak akses. ---- */
+/* Lima slot tetap: dua kiri, tombol Order di tengah, satu kanan, lalu Menu. */
 const TAB_PILIHAN=[
-  ['dash','◈','Beranda'], ['order','◎','Order'], ['m_pelanggan','☺','Pelanggan'],
-  ['m_absensi','✓','Absensi'], ['kas','₪','Kas'], ['laporan','▣','Laporan']];
+  ['dash','◈','Beranda'], ['m_pelanggan','☺','Pelanggan'], ['m_absensi','✓','Absensi'],
+  ['kas','₪','Kas'], ['laporan','▣','Laporan'], ['m_jadwal','▤','Jadwal']];
 function daftarTab(){
   const bisa=TAB_PILIHAN.filter(([id])=>boleh(id.startsWith('m_')?id.slice(2):id,'lihat'));
-  const utama=bisa.filter(([id])=>id!=='order').slice(0,4);
-  const buat=boleh('order','tambah');
-  // dua di kiri, tombol tengah, dua di kanan
-  const kiri=utama.slice(0,2), kanan=utama.slice(2,4);
-  return {kiri,kanan,buat};
+  return { kiri:bisa.slice(0,2), kanan:bisa.slice(2,3),
+           buat:boleh('order','tambah'), lihatOrder:boleh('order','lihat') };
 }
 function buildTab(){
   const bar=document.getElementById('tabbar'); if(!bar) return;
-  const {kiri,kanan,buat}=daftarTab();
+  const {kiri,kanan,buat,lihatOrder}=daftarTab();
   const sel=n=>`<div class="tab" id="tb_${n[0]}" onclick="go('${n[0]}')">
     <span class="ic">${n[1]}</span><span>${n[2]}</span></div>`;
-  bar.innerHTML=
-    kiri.map(sel).join('')
-    + (buat?`<div class="tab pusat" id="tb_order" onclick="formOrder()">
-        <span class="ic">+</span><span>Order</span></div>`
-       :`<div class="tab" id="tb_order" onclick="go('order')"><span class="ic">◎</span><span>Order</span></div>`)
-    + kanan.map(sel).join('')
-    + `<div class="tab" id="tb_menu" onclick="bukaMenuOffice()"><span class="ic">☰</span><span>Menu</span></div>`;
+  const kosong='<div class="tab" style="visibility:hidden"><span class="ic">·</span><span>·</span></div>';
+  const tengah = buat
+    ? `<div class="tab pusat" id="tb_order" onclick="formOrder()">
+         <span class="ic">+</span><span>Buat order</span></div>`
+    : lihatOrder
+      ? `<div class="tab" id="tb_order" onclick="go('order')"><span class="ic">◎</span><span>Order</span></div>`
+      : kosong;
+
+  const sisiKiri  = [...kiri.map(sel)];  while(sisiKiri.length<2)  sisiKiri.push(kosong);
+  const sisiKanan = [...kanan.map(sel)]; while(sisiKanan.length<1) sisiKanan.push(kosong);
+
+  bar.innerHTML = sisiKiri.join('') + tengah + sisiKanan.join('')
+    + `<div class="tab" id="tb_menu" onclick="bukaMenuOffice()"><span class="ic">☰</span><span>Lainnya</span></div>`;
 }
 /* Seluruh menu, untuk layar kecil */
 function bukaMenuOffice(){
