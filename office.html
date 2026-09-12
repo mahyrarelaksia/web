@@ -107,9 +107,64 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
  font-size:17px;cursor:pointer;line-height:1;padding:4px}
 .langkah-ios{background:var(--mist);border-radius:12px;padding:11px 13px;margin-top:8px;font-size:12.5px;line-height:1.7}
 .langkah-ios b{font-weight:600}
+.pop{position:fixed;left:50%;transform:translateX(-50%) translateY(-140%);top:12px;z-index:95;
+ width:calc(100% - 28px);max-width:440px;background:#fff;border-radius:18px;padding:14px 16px;
+ box-shadow:0 18px 44px rgba(16,44,80,.28);border:1px solid var(--line);
+ display:flex;gap:12px;align-items:flex-start;transition:transform .35s cubic-bezier(.2,.8,.3,1)}
+.pop.on{transform:translateX(-50%) translateY(0)}
+.pop .ikon{width:40px;height:40px;border-radius:13px;flex:none;display:grid;place-items:center;font-size:19px;
+ background:linear-gradient(150deg,#4C8FD6,#1F4C86);color:#fff}
+.pop h5{font-size:14px;font-weight:600}
+.pop p{font-size:12.5px;color:var(--muted);margin-top:2px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:99}
 .toast.on{opacity:1}
 .hanya-mobil{display:none}
+/* ---- Tampilan aplikasi untuk layar kecil ---- */
+.tabbar{display:none}
+.lonceng{position:relative;width:36px;height:36px;border-radius:12px;flex:none;cursor:pointer;
+ background:var(--mist);border:1px solid var(--line);color:var(--jade);
+ display:grid;place-items:center;font-size:16px;-webkit-tap-highlight-color:transparent}
+.lonceng:active{transform:scale(.94)}
+.lonceng .titik{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;
+ background:#C0707E;color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;
+ padding:0 5px;border:2px solid #fff}
+.notif-item{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.notif-item:last-child{border-bottom:0}
+.notif-item.baru{background:linear-gradient(90deg,rgba(47,111,191,.08),transparent);
+ margin:0 -8px;padding:12px 8px;border-radius:10px}
+.notif-item h5{font-size:13.5px;font-weight:600;line-height:1.35}
+@media(max-width:760px){
+  aside{display:none}
+  .shell{grid-template-columns:1fr}
+  main{padding:14px 14px 108px}
+  .mobbar{display:flex;align-items:center;gap:10px;background:linear-gradient(170deg,#4C8FD6,#2F6FBF 60%,#1F4C86);
+    color:#fff;padding:12px 14px 14px;position:sticky;top:0;z-index:30;border-radius:0 0 20px 20px}
+  .mobbar .judul{flex:1;min-width:0}
+  .mobbar .judul b{font-size:14.5px;display:block;line-height:1.2}
+  .mobbar .judul span{font-size:11px;color:#DCEAF8}
+  .mobbar .lonceng{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.34);color:#fff}
+  .mobbar .lonceng .titik{border-color:#2F6FBF}
+  .who{display:none}
+  .topbar{margin-bottom:12px}
+  .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:40;display:grid;
+    grid-template-columns:repeat(5,1fr);align-items:end;background:rgba(255,255,255,.97);
+    backdrop-filter:blur(8px);border-top:1px solid var(--line);
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -8px 26px rgba(31,64,120,.09)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 2px;border-radius:13px;
+    cursor:pointer;color:#93A4BD;font-size:10px;font-weight:600;-webkit-tap-highlight-color:transparent}
+  .tab .ic{font-size:18px;line-height:1}
+  .tab.on{color:var(--jade)}
+  .tab.pusat{margin-top:-32px;color:var(--jade)}
+  .tab.pusat .ic{width:58px;height:58px;border-radius:22px;display:grid;place-items:center;font-size:25px;
+    color:#fff;background:linear-gradient(150deg,#8FC6EC,#2F6FBF 62%,#1F4C86);border:4px solid #fff;
+    box-shadow:0 10px 24px rgba(47,111,191,.4)}
+  .tab.pusat:active .ic{transform:scale(.94)}
+  .menulist{display:grid;gap:6px;margin-top:6px}
+  .menulist button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);
+    background:#fff;padding:13px 14px;border-radius:14px;cursor:pointer;font-weight:600;font-size:13.5px}
+  .menulist .ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;flex:none;
+    background:#E8F1FC;color:var(--jade);font-size:14px}
+}
 .biaya-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .pos{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
 .pos .kepala{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}
@@ -173,19 +228,31 @@ main{padding:14px}
 </div>
 
 <div id="app">
-  <div class="mobbar"><button onclick="document.querySelector('aside').classList.toggle('open')">☰</button>
-    <strong style="font-family:Fraunces,serif">Office</strong></div>
+  <div class="mobbar">
+    <div class="mark" style="width:36px;height:36px"><img src="logo.png" alt="Mahyra"></div>
+    <div class="judul"><b id="mobNama">Office</b><span id="mobPeran"></span></div>
+    <button class="lonceng" onclick="bukaNotif()" aria-label="Notifikasi">
+      <span>🔔</span><span class="titik" id="jmlNotif" style="display:none">0</span></button>
+  </div>
   <div class="shell">
     <aside id="side"></aside>
     <main>
       <div class="topbar">
         <div><h1 id="pgTitle">Dashboard</h1><p id="pgSub"></p></div>
-        <div class="who"><div class="av" id="meAv">M</div>
+        <div class="who">
+          <button class="lonceng" onclick="bukaNotif()" aria-label="Notifikasi">
+            <span>🔔</span><span class="titik" id="jmlNotif2" style="display:none">0</span></button>
+          <div class="av" id="meAv">M</div>
           <div><div style="font-weight:600" id="meName"></div><div class="hint" id="meRole"></div></div>
           <button class="btn ghost sm" onclick="keluar()">Keluar</button></div>
       </div>
       <div id="view"></div>
     </main>
+  </div>
+  <nav class="tabbar" id="tabbar"></nav>
+  <div class="pop" id="popNotif" onclick="dariPop()">
+    <div class="ikon">◎</div>
+    <div style="flex:1;min-width:0"><h5 id="popJudul"></h5><p id="popPesan"></p></div>
   </div>
 </div>
 
@@ -273,17 +340,21 @@ async function pasangSekarang(){
 function tutupAjakan(tunda){
   const k = document.getElementById('ajakPasang');
   if (k) k.classList.remove('on');
-  // ditunda sehari, lalu ditawarkan lagi di perangkat yang sama
-  if (tunda) { try { localStorage.setItem('mahyra_tunda_pasang', Date.now() + 864e5); } catch (_) {} }
+  // ditunda 30 menit, lalu ditawarkan lagi selama aplikasi belum dipasang
+  if (tunda) { try { localStorage.setItem('mahyra_tunda_pasang', Date.now() + 18e5); } catch (_) {} }
 }
 
 /* Dipanggil setelah berhasil masuk */
 function cekPasang(){
   if (sudahTerpasang()) return;
-  let tunda = 0;
-  try { tunda = Number(localStorage.getItem('mahyra_tunda_pasang') || 0); } catch (_) {}
-  if (Date.now() < tunda) return;
-  setTimeout(() => ajakPasang(), 2500);
+  const coba = () => {
+    if (sudahTerpasang()) return;
+    let tunda = 0;
+    try { tunda = Number(localStorage.getItem('mahyra_tunda_pasang') || 0); } catch (_) {}
+    if (Date.now() >= tunda) ajakPasang();
+  };
+  setTimeout(coba, 2500);
+  setInterval(coba, 3e5);          // periksa tiap 5 menit; muncul lagi setelah 30 menit
 }
 
 /* Izin notifikasi, diminta setelah masuk agar tidak mengagetkan */
@@ -311,7 +382,7 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
  komisi:'komisi',bonus:'bonus',aturan_bonus:'aturan_bonus',gaji:'gaji',kasbon:'kasbon',
  kategori_pengeluaran:'kategori_pengeluaran',pengeluaran:'pengeluaran',kas:'kas',target:'target',
  hak_akses:'hak_akses',absen_log:'absen_log',pengaturan:'pengaturan',skema_gaji:'skema_gaji',
- libur:'libur'};
+ libur:'libur',notifikasi:'notifikasi'};
 
 /* ------------------ MODUL & MESIN HAK AKSES ------------------ */
 const MODUL=[
@@ -432,7 +503,7 @@ const nm=(t,id,f='nama')=>{const r=get(t,id);return r?r[f]:'-'};
 /* ------------------------- data (demo seed) ------------------------- */
 const DB={cabang:[],jabatan:[],karyawan:[],layanan:[],pelanggan:[],shift:[],jadwal:[],pesanan:[],item:[],
  absensi:[],izin:[],komisi:[],bonus:[],aturan_bonus:[],gaji:[],kasbon:[],kategori_pengeluaran:[],
- pengeluaran:[],kas:[],target:[],hak_akses:[],absen_log:[],pengaturan:[],skema_gaji:[],libur:[]};
+ pengeluaran:[],kas:[],target:[],hak_akses:[],absen_log:[],pengaturan:[],skema_gaji:[],libur:[],notifikasi:[]};
 
 const AKUN_DEMO={ 'owner@mahyra.id':{pw:'mahyra123',id:'k1'}, 'admin@mahyra.id':{pw:'mahyra123',id:'k2'},
                   'kasir@mahyra.id':{pw:'mahyra123',id:'k6'} };
@@ -521,6 +592,13 @@ function seedDemo(){
 /* Kolom foto tidak ikut diunduh; diambil hanya saat dibuka. */
 const KOLOM={absen_log:'id,karyawan_id,pesanan_item_id,cabang_id,tanggal,tipe,waktu,lat,lng,alamat,akurasi_meter'};
 const FOTO={};
+async function muatTabel(daftar){
+  if(!LIVE) return;
+  await Promise.all(daftar.map(async k=>{
+    const {data,error}=await sb.from(TBL[k]).select(KOLOM[k]||'*');
+    if(!error) DB[k]=data||[];
+  }));
+}
 async function muatSemua(){
   if(!LIVE) return;
   const galat=[];
@@ -583,6 +661,74 @@ async function jelaskanPenolakan(key,row){
   modal.classList.add('on');
 }
 
+/* ===================== NOTIFIKASI ===================== */
+let NOTIF=[], NOTIF_DILIHAT=new Set(), jedaNotif=null, POP_ANTRE=null;
+
+function muatDilihat(){
+  try{ NOTIF_DILIHAT=new Set(JSON.parse(localStorage.getItem('mahyra_notif_office')||'[]')); }
+  catch(_){ NOTIF_DILIHAT=new Set(); }
+}
+function simpanDilihat(){
+  try{ localStorage.setItem('mahyra_notif_office',JSON.stringify([...NOTIF_DILIHAT].slice(-200))); }catch(_){}
+}
+function notifSaya(){
+  return (DB.notifikasi||[]).filter(n=>n.karyawan_id===ME.id)
+    .map(n=>({id:n.id,judul:n.judul,pesan:n.pesan,waktu:n.created_at,tipe:n.tipe}))
+    .sort((a,b)=>new Date(b.waktu)-new Date(a.waktu)).slice(0,40);
+}
+function belumDibaca(){ return NOTIF.filter(n=>!NOTIF_DILIHAT.has(n.id)); }
+function gambarLonceng(){
+  const n=belumDibaca().length;
+  ['jmlNotif','jmlNotif2'].forEach(id=>{
+    const t=document.getElementById(id); if(!t) return;
+    t.textContent=n>9?'9+':n; t.style.display=n?'grid':'none';
+  });
+}
+function bukaNotif(){
+  const baru=new Set(belumDibaca().map(n=>n.id));
+  const ikon={order:'◎',checkin:'✓',izin:'✎',bonus:'★',libur:'☾'};
+  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:3px">Notifikasi</h3>
+    <p class="hint" style="margin-bottom:14px">${NOTIF.length?NOTIF.length+' catatan terbaru':'Belum ada notifikasi'}</p>
+    ${NOTIF.map(n=>`<div class="notif-item ${baru.has(n.id)?'baru':''}">
+      <span class="dot" style="background:${baru.has(n.id)?'var(--jade)':'var(--line)'};margin-top:6px"></span>
+      <div style="flex:1;min-width:0"><h5>${ikon[n.tipe]||'•'} ${esc(n.judul)}</h5>
+        <div class="hint">${esc(n.pesan||'')}</div>
+        <div class="hint" style="font-size:11px;margin-top:3px">${n.waktu?tgl(String(n.waktu).slice(0,10)):''}</div>
+      </div></div>`).join('')
+     ||'<div class="empty"><div class="disp">Belum ada notifikasi</div><div>Check in terapis dan keputusan izin akan muncul di sini.</div></div>'}
+    <button class="btn ghost" style="width:100%;margin-top:14px" onclick="closeModal()">Tutup</button>`;
+  modal.classList.add('on');
+  tandaiDibaca();
+}
+async function tandaiDibaca(){
+  NOTIF.forEach(n=>NOTIF_DILIHAT.add(n.id));
+  simpanDilihat(); gambarLonceng();
+  if(LIVE){
+    const perlu=(DB.notifikasi||[]).filter(n=>n.karyawan_id===ME.id&&!n.dibaca).map(n=>n.id);
+    if(perlu.length){ await sb.from('notifikasi').update({dibaca:true}).in('id',perlu);
+      DB.notifikasi.forEach(n=>{ if(perlu.includes(n.id)) n.dibaca=true; }); }
+  }
+}
+function tampilkanPop(n){
+  POP_ANTRE=n;
+  const j=document.getElementById('popJudul'), p=document.getElementById('popPesan');
+  if(!j) return;
+  j.textContent=n.judul; p.textContent=n.pesan||'';
+  const k=document.getElementById('popNotif'); k.classList.add('on');
+  clearTimeout(jedaNotif); jedaNotif=setTimeout(()=>k.classList.remove('on'),6000);
+  try{ navigator.vibrate&&navigator.vibrate([80,50,80]); }catch(_){}
+  notifSistem(n.judul, n.pesan, '/office');
+}
+function dariPop(){ document.getElementById('popNotif').classList.remove('on'); if(POP_ANTRE) bukaNotif(); }
+async function periksaNotif(pertama){
+  if(LIVE) await muatTabel(['notifikasi']);
+  const sebelum=new Set(NOTIF.map(n=>n.id));
+  NOTIF=notifSaya(); gambarLonceng();
+  if(pertama) return;
+  const baru=NOTIF.filter(n=>!sebelum.has(n.id)&&!NOTIF_DILIHAT.has(n.id));
+  if(baru.length) tampilkanPop(baru[0]);
+}
+
 /* ---------------------------- LOGIN ---------------------------- */
 let ME=null, PAGE='dash', SEARCH='';
 
@@ -623,8 +769,13 @@ async function masuk(){
     document.getElementById('app').style.display='block';
     meName.textContent=ME.nama; meRole.textContent=nm('jabatan',ME.jabatan_id); meAv.textContent=ME.nama[0];
     try{ muatModel(); }catch(e){ console.warn('Model biaya dilewati:',e); }
-    buildSide(); go(halamanPertama());
-    cekPasang();
+    buildSide(); buildTab(); go(halamanPertama());
+    const mn=document.getElementById('mobNama'), mp=document.getElementById('mobPeran');
+    if(mn) mn.textContent=ME.nama;
+    if(mp) mp.textContent=nm('jabatan',ME.jabatan_id)+' · '+nm('cabang',ME.cabang_id);
+    muatDilihat(); periksaNotif(true);
+    setInterval(()=>periksaNotif(false), 45000);
+    cekPasang(); mintaIzinNotif();
   }catch(e){ err.textContent=e.message; err.classList.add('on'); }
   btnLogin.disabled=false; btnLogin.textContent='Masuk';
 }
@@ -822,10 +973,57 @@ function halamanPertama(){
       if(boleh(id.startsWith('m_')?id.slice(2):id,'lihat')) return id;
   return 'tanpa_akses';
 }
+/* ---- Tab bawah untuk layar kecil. Isinya menyesuaikan hak akses. ---- */
+const TAB_PILIHAN=[
+  ['dash','◈','Beranda'], ['order','◎','Order'], ['m_pelanggan','☺','Pelanggan'],
+  ['m_absensi','✓','Absensi'], ['kas','₪','Kas'], ['laporan','▣','Laporan']];
+function daftarTab(){
+  const bisa=TAB_PILIHAN.filter(([id])=>boleh(id.startsWith('m_')?id.slice(2):id,'lihat'));
+  const utama=bisa.filter(([id])=>id!=='order').slice(0,4);
+  const buat=boleh('order','tambah');
+  // dua di kiri, tombol tengah, dua di kanan
+  const kiri=utama.slice(0,2), kanan=utama.slice(2,4);
+  return {kiri,kanan,buat};
+}
+function buildTab(){
+  const bar=document.getElementById('tabbar'); if(!bar) return;
+  const {kiri,kanan,buat}=daftarTab();
+  const sel=n=>`<div class="tab" id="tb_${n[0]}" onclick="go('${n[0]}')">
+    <span class="ic">${n[1]}</span><span>${n[2]}</span></div>`;
+  bar.innerHTML=
+    kiri.map(sel).join('')
+    + (buat?`<div class="tab pusat" id="tb_order" onclick="formOrder()">
+        <span class="ic">+</span><span>Order</span></div>`
+       :`<div class="tab" id="tb_order" onclick="go('order')"><span class="ic">◎</span><span>Order</span></div>`)
+    + kanan.map(sel).join('')
+    + `<div class="tab" id="tb_menu" onclick="bukaMenuOffice()"><span class="ic">☰</span><span>Menu</span></div>`;
+}
+/* Seluruh menu, untuk layar kecil */
+function bukaMenuOffice(){
+  const isi=MENU.map(([g,it])=>{
+    const bisa=it.filter(([id])=>boleh(id.startsWith('m_')?id.slice(2):id,'lihat'));
+    if(!bisa.length) return '';
+    return `<div class="navgrp" style="color:var(--muted);margin:14px 0 6px">${g}</div>
+      <div class="menulist">${bisa.map(([id,ic,l])=>
+      `<button onclick="closeModal();go('${id}')"><span class="ic">${ic}</span>${l}</button>`).join('')}</div>`;
+  }).join('');
+  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:3px">Menu</h3>
+    <p class="hint" style="margin-bottom:6px">${esc(ME.nama)} · ${esc(nm('jabatan',ME.jabatan_id))}</p>
+    ${isi}
+    <div class="menulist" style="margin-top:16px">
+      <button onclick="keluar()" style="color:var(--bad);border-color:#F3DDE1">
+        <span class="ic" style="background:#FAEAEC;color:var(--bad)">⏻</span>Keluar dari akun</button></div>
+    <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`;
+  modal.classList.add('on');
+}
+
 function go(p){ PAGE=p; SEARCH='';
   document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
   document.getElementById('nv_'+p)?.classList.add('on');
-  document.querySelector('aside').classList.remove('open'); render(); window.scrollTo(0,0); }
+  document.querySelectorAll('.tab').forEach(n=>n.classList.remove('on'));
+  (document.getElementById('tb_'+p)||document.getElementById('tb_menu'))?.classList.add('on');
+  document.querySelector('aside')?.classList.remove('open');
+  render(); window.scrollTo(0,0); }
 
 /* ------------------------ form & tabel ------------------------ */
 let EDIT={mod:null,id:null};
