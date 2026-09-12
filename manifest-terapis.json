@@ -10,14 +10,40 @@
   "background_color": "#EEF2F0",
   "theme_color": "#2F6FBF",
   "lang": "id",
-  "categories": ["business", "lifestyle"],
+  "categories": [
+    "business",
+    "lifestyle"
+  ],
   "icons": [
-    { "src": "/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Absen masuk", "short_name": "Absen", "url": "/terapis#absen" },
-    { "name": "Kerjaan saya", "short_name": "Kerjaan", "url": "/terapis#kerja" }
+    {
+      "name": "Absen masuk",
+      "short_name": "Absen",
+      "url": "/terapis#absen"
+    },
+    {
+      "name": "Kerjaan saya",
+      "short_name": "Kerjaan",
+      "url": "/terapis#kerja"
+    }
   ]
 }
