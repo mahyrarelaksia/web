@@ -7,7 +7,8 @@
    dan terapis.html, agar cakupannya meliputi seluruh halaman.
    ===================================================================== */
 const VERSI = 'mahyra-v3';
-const INTI  = ['/logo.png', '/manifest-office.json', '/manifest-terapis.json'];
+const INTI  = ['/logo.png', '/icon-192.png', '/icon-512.png',
+               '/manifest-office.json', '/manifest-terapis.json'];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -52,8 +53,8 @@ self.addEventListener('message', e => {
   if (d.tipe !== 'notif') return;
   self.registration.showNotification(d.judul || 'Mahyra Massage', {
     body: d.pesan || '',
-    icon: '/logo.png',
-    badge: '/logo.png',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
     tag: d.tag || 'mahyra',
     renotify: true,
     vibrate: [90, 60, 90],
