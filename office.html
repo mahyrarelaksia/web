@@ -34,6 +34,8 @@ aside .mark{background:rgba(255,255,255,.94);border-color:rgba(255,255,255,.55)}
 .card-login input{padding:15px 17px;font-size:16.5px;border-radius:14px;border-width:1.5px}
 .card-login .btn{padding:15px 22px;font-size:15.5px;border-radius:14px}
 .card-login .tagline{font-size:14px}
+.versi{text-align:center;font-size:11.5px;color:var(--muted);margin-top:16px;letter-spacing:.03em}
+.versi b{font-weight:600;color:var(--jade)}
 
 #app{display:none;min-height:100vh}
 .shell{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
@@ -258,6 +260,7 @@ main{padding:14px}
     <div class="field"><label for="em">Email</label><input id="em" type="email" placeholder="admin@mahyra.id" autocomplete="username"></div>
     <div class="field"><label for="pw">Kata sandi</label><input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')masuk()"></div>
     <button class="btn" style="width:100%" id="btnLogin" onclick="masuk()">Masuk</button>
+    <p class="versi" id="versiApp"></p>
   </div>
 </div>
 
@@ -305,6 +308,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
+const VERSI_APP = "2026.09.13.3";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -520,7 +524,12 @@ function opsiRef(ref){
 /* --------------------------- utilitas --------------------------- */
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
 const rp=n=>'Rp '+(Number(n)||0).toLocaleString('id-ID');
-const today=()=>new Date().toISOString().slice(0,10);
+/* Tanggal menurut waktu perangkat, bukan UTC.
+   Memakai toISOString membuat jam 00.00–07.00 WIB terbaca sebagai hari kemarin. */
+const today=()=>{ const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const tglLokal=d=>{ const x=new Date(d);
+  return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
 const periode=()=>today().slice(0,7);
 const jam=()=>new Date().toTimeString().slice(0,5);
 const tgl=d=>d?new Date(String(d).slice(0,10)+'T00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
@@ -787,14 +796,40 @@ async function tandaiDibaca(){
       DB.notifikasi.forEach(n=>{ if(perlu.includes(n.id)) n.dibaca=true; }); }
   }
 }
+/* ---------- Nada dering notifikasi ---------- */
+let AUDIO=null;
+function siapkanAudio(){
+  if(AUDIO) return AUDIO;
+  try{ AUDIO=new (window.AudioContext||window.webkitAudioContext)(); }catch(_){ }
+  return AUDIO;
+}
+function deringNotif(){
+  const ac=siapkanAudio(); if(!ac) return;
+  if(ac.state==='suspended') ac.resume();
+  const mulai=ac.currentTime;
+  [[880,0],[1174.7,0.13],[1567.98,0.26]].forEach(([hz,jeda])=>{
+    const osc=ac.createOscillator(), gain=ac.createGain();
+    osc.type='sine'; osc.frequency.value=hz;
+    gain.gain.setValueAtTime(0, mulai+jeda);
+    gain.gain.linearRampToValueAtTime(0.20, mulai+jeda+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, mulai+jeda+0.45);
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.start(mulai+jeda); osc.stop(mulai+jeda+0.5);
+  });
+}
+['click','touchstart'].forEach(ev=>addEventListener(ev, function sekali(){
+  siapkanAudio(); removeEventListener(ev, sekali);
+}, {once:true, passive:true}));
+
 function tampilkanPop(n){
   POP_ANTRE=n;
   const j=document.getElementById('popJudul'), p=document.getElementById('popPesan');
   if(!j) return;
   j.textContent=n.judul; p.textContent=n.pesan||'';
   const k=document.getElementById('popNotif'); k.classList.add('on');
-  clearTimeout(jedaNotif); jedaNotif=setTimeout(()=>k.classList.remove('on'),6000);
-  try{ navigator.vibrate&&navigator.vibrate([80,50,80]); }catch(_){}
+  clearTimeout(jedaNotif); jedaNotif=setTimeout(()=>k.classList.remove('on'),8000);
+  try{ navigator.vibrate&&navigator.vibrate([120,70,120]); }catch(_){}
+  deringNotif();
   notifSistem(n.judul, n.pesan, '/office');
 }
 function dariPop(){ document.getElementById('popNotif').classList.remove('on'); if(POP_ANTRE) bukaNotif(); }
@@ -806,6 +841,12 @@ async function periksaNotif(pertama){
   const baru=NOTIF.filter(n=>!sebelum.has(n.id)&&!NOTIF_DILIHAT.has(n.id));
   if(baru.length) tampilkanPop(baru[0]);
 }
+
+/* Versi aplikasi di halaman login, ikut berubah tiap pembaruan */
+(function(){
+  const v=document.getElementById('versiApp');
+  if(v) v.innerHTML='Portal Office · versi <b>'+VERSI_APP+'</b>';
+})();
 
 /* ---------------------------- LOGIN ---------------------------- */
 let ME=null, PAGE='dash', SEARCH='';
@@ -852,7 +893,10 @@ async function masuk(){
     if(mn) mn.textContent=ME.nama;
     if(mp) mp.textContent=nm('jabatan',ME.jabatan_id)+' · '+nm('cabang',ME.cabang_id);
     muatDilihat(); periksaNotif(true);
-    setInterval(()=>periksaNotif(false), 45000);
+    setInterval(()=>periksaNotif(false), 20000);
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) periksaNotif(false); });
+    addEventListener('focus', ()=>periksaNotif(false));
+    addEventListener('online', ()=>periksaNotif(false));
     cekPasang(); mintaIzinNotif();
   }catch(e){ err.textContent=e.message; err.classList.add('on'); }
   btnLogin.disabled=false; btnLogin.textContent='Masuk';
@@ -1187,7 +1231,7 @@ function tagHtml(v){
 }
 /* ---------------- Penyaring tanggal ---------------- */
 let FIL={mode:'semua',dari:today(),sampai:today()};
-const geser=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const geser=n=>{const d=new Date();d.setDate(d.getDate()+n);return tglLokal(d)};
 function setFilter(mode){
   FIL.mode=mode;
   if(mode==='hari')    { FIL.dari=today();   FIL.sampai=today(); }
@@ -2161,7 +2205,7 @@ async function putusIzin(id,st){
   await simpan('izin',i);
   if(st==='disetujui'){
     const d=new Date(i.tgl_mulai), akhir=new Date(i.tgl_selesai);
-    while(d<=akhir){ const t=d.toISOString().slice(0,10);
+    while(d<=akhir){ const t=tglLokal(d);
       if(!DB.absensi.some(a=>a.karyawan_id===i.karyawan_id&&String(a.tanggal).slice(0,10)===t))
         await simpan('absensi',{id:uid(),karyawan_id:i.karyawan_id,cabang_id:get('karyawan',i.karyawan_id)?.cabang_id,
           tanggal:t,status:i.jenis==='sakit'?'sakit':i.jenis==='cuti'?'cuti':'izin',menit_telat:0,catatan:i.alasan});
