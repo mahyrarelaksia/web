@@ -100,6 +100,22 @@ main{padding:16px 14px 116px;width:100%}
 .blok-oranye{background:linear-gradient(165deg,#FFF8EE,#FFF1DE);border:1px solid #F3DFC1}
 .blok-oranye .empty .disp{color:#8A5714}
 .blok-oranye .empty{color:#A97434}
+.kartu-tugas{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;background:#fff}
+.kartu-tugas.jalan{border-color:#E8C88E;background:linear-gradient(170deg,#FFFBF4,#fff)}
+.kartu-tugas .atas{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}
+.kartu-tugas h4{font-size:15px;font-weight:600;line-height:1.3}
+.kartu-tugas .rinci{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;
+ padding-top:9px;border-top:1px solid var(--line)}
+.kartu-tugas .rinci div{display:flex;justify-content:space-between;gap:8px;font-size:12px}
+.kartu-tugas .rinci span{color:var(--muted)}
+.kartu-tugas .rinci b{font-weight:600;text-align:right}
+.kartu-tugas .alamat{font-size:12.5px;color:var(--muted);margin-top:9px;line-height:1.5;
+ background:var(--mist);border-radius:10px;padding:8px 10px}
+.kartu-tugas .catatan{font-size:12.5px;margin-top:7px;line-height:1.5;
+ background:#FFF8EC;border:1px solid #F0E0C4;border-radius:10px;padding:8px 10px}
+.kartu-tugas .catatan b{font-weight:600}
+.kartu-tugas .tombol{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.kartu-tugas .tombol .btn{flex:1;min-width:104px;padding:11px 14px;font-size:13.5px;text-align:center}
 .kartu-kerja{border:1px solid var(--line);border-radius:15px;padding:13px;margin-bottom:9px;background:#fff}
 .kartu-kerja .atas{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .kartu-kerja h4{font-size:14.5px;font-weight:600;line-height:1.3}
@@ -329,6 +345,47 @@ function tutupAjakan(tunda){
   if (tunda) { try { localStorage.setItem('mahyra_tunda_pasang', Date.now() + 18e5); } catch (_) {} }
 }
 
+
+/* ---------- Web Push: notifikasi tetap masuk walau aplikasi ditutup ----------
+   Isi VAPID_PUBLIC dengan kunci publik dari Edge Function kirim-push.
+   Dibiarkan kosong berarti hanya notifikasi saat aplikasi terbuka. */
+const VAPID_PUBLIC = "";
+
+function urlBase64ToUint8Array(base64){
+  const pad='='.repeat((4-base64.length%4)%4);
+  const b64=(base64+pad).replace(/-/g,'+').replace(/_/g,'/');
+  const mentah=atob(b64), arr=new Uint8Array(mentah.length);
+  for(let i=0;i<mentah.length;i++) arr[i]=mentah.charCodeAt(i);
+  return arr;
+}
+async function daftarPush(){
+  if(!VAPID_PUBLIC || !LIVE || !ME) return;
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if(Notification.permission !== 'granted') return;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC)
+      });
+    }
+    const j=sub.toJSON();
+    await sb.from('push_langganan').upsert({
+      karyawan_id:ME.id, endpoint:j.endpoint,
+      p256dh:j.keys.p256dh, auth:j.keys.auth,
+      perangkat:navigator.userAgent.slice(0,120), dipakai:new Date().toISOString()
+    },{onConflict:'endpoint'});
+  }catch(e){ console.warn('Langganan notifikasi dilewati:',e); }
+}
+/* Peramban kadang memperbarui langganan sendiri */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', e=>{
+    if(e.data && e.data.tipe==='push-berubah') daftarPush();
+  });
+}
+
 /* Dipanggil setelah berhasil masuk */
 function cekPasang(){
   if (sudahTerpasang()) return;
@@ -344,8 +401,11 @@ function cekPasang(){
 
 /* Izin notifikasi, diminta setelah masuk agar tidak mengagetkan */
 async function mintaIzinNotif(){
-  if (!('Notification' in window) || Notification.permission !== 'default') return;
-  try { await Notification.requestPermission(); } catch (_) {}
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch (_) {}
+  }
+  if (Notification.permission === 'granted') daftarPush();
 }
 
 /* Kirim notifikasi lewat service worker supaya tetap muncul di latar belakang */
@@ -547,7 +607,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.12.3';
+const VERSI_APP='2026.09.13.1';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -1139,7 +1199,9 @@ function kartuKerja(i){
         <div class="hint">diterima</div></div>
     </div>
     <div class="rinci">
-      <div><span>Waktu</span><b>${jamDari(i.jam_mulai)}–${jamDari(i.jam_selesai)} · ${l.durasi_menit||0} mnt</b></div>
+      <div><span>Jadwal</span><b>${String(p.jam_kerja||p.jam||'-').slice(0,5)}</b></div>
+      <div><span>Dikerjakan</span><b>${jamDari(i.jam_mulai)}–${jamDari(i.jam_selesai)}</b></div>
+      <div><span>Durasi</span><b>${l.durasi_menit||0} menit</b></div>
       <div><span>Harga layanan</span><b>${rp(i.harga)}</b></div>
       <div><span>Komisi</span><b>${rp(i.komisi)}</b></div>
       <div><span>Bonus</span><b>${nBon?rp(nBon):'—'}</b></div>
@@ -1152,15 +1214,43 @@ function kartuKerja(i){
 function listKerja(items){
   if(!items.length) return '<div class="empty"><div class="disp">Tidak ada antrean</div><div>Order baru muncul di sini begitu kasir menugaskan Anda.</div></div>';
   return items.map(i=>{
-    const p=get('pesanan',i.pesanan_id), l=get('layanan',i.layanan_id), pel=get('pelanggan',p?.pelanggan_id);
-    return `<div class="list-item"><span class="dot" style="background:${i.status==='berjalan'?'var(--amber)':'var(--jade)'}"></span>
-      <div style="flex:1"><strong>${esc(l?.nama||'-')}</strong> ${tagHtml(i.status)}
-        <div class="hint">${esc(p?.nomor||'')} · ${esc(pel?.nama||'-')} · ${esc(i.ruangan||'-')} · ${l?.durasi_menit||0} menit</div>
-        ${pel?.catatan?`<div class="hint">Catatan: ${esc(pel.catatan)}</div>`:''}
-        <div class="hint">Komisi: <span class="rp">${rp(i.komisi)}</span></div></div>
-      <div class="row">${i.status==='menunggu'?`<button class="btn" style="padding:12px 20px;font-size:14.5px" onclick="bukaAbsen('${i.id}','masuk')">Check in</button>`:''}
-        ${i.status==='berjalan'?`<button class="btn amber" style="padding:12px 20px;font-size:14.5px" onclick="bukaAbsen('${i.id}','pulang')">Check out</button>`:''}</div></div>`;
+    const p=get('pesanan',i.pesanan_id)||{}, l=get('layanan',i.layanan_id)||{};
+    const pel=get('pelanggan',p.pelanggan_id)||{};
+    const tglKerja=p.tgl_kerja||p.tanggal;
+    const jamKerja=String(p.jam_kerja||p.jam||'').slice(0,5);
+    return `<div class="kartu-tugas ${i.status==='berjalan'?'jalan':''}">
+      <div class="atas">
+        <div style="min-width:0">
+          <h4>${esc(pel.nama||'Pelanggan')}</h4>
+          <div class="hint">${hariTgl(tglKerja)}${jamKerja?' · pukul '+jamKerja:''}</div>
+        </div>
+        ${tagHtml(i.status)}
+      </div>
+      <div class="rinci">
+        <div><span>Layanan</span><b>${esc(l.nama||'-')}</b></div>
+        <div><span>Durasi</span><b>${l.durasi_menit||0} menit</b></div>
+        <div><span>Komisi</span><b>${rp(i.komisi)}</b></div>
+        <div><span>No. order</span><b>${esc(p.nomor||'-')}</b></div>
+      </div>
+      ${pel.alamat?`<div class="alamat">${esc(pel.alamat)}</div>`:''}
+      ${p.catatan?`<div class="catatan"><b>Catatan order:</b> ${esc(p.catatan)}</div>`:''}
+      ${pel.catatan?`<div class="catatan"><b>Catatan pelanggan:</b> ${esc(pel.catatan)}</div>`:''}
+      <div class="tombol">
+        ${i.status==='menunggu'?`<button class="btn" onclick="bukaAbsen('${i.id}','masuk')">Check in</button>`:''}
+        ${i.status==='berjalan'?`<button class="btn amber" onclick="bukaAbsen('${i.id}','pulang')">Check out</button>`:''}
+        <button class="btn ghost" onclick="bukaPeta('${p.pelanggan_id||''}')">Buka peta</button>
+        ${pel.telepon?`<a class="btn ghost" href="https://wa.me/${noWa(pel.telepon)}" target="_blank" rel="noopener">WhatsApp</a>`:''}
+      </div></div>`;
   }).join('');
+}
+const noWa=n=>{ let s=String(n||'').replace(/[^0-9]/g,'');
+  if(s.startsWith('0')) s='62'+s.slice(1);
+  if(s.startsWith('8')) s='62'+s; return s; };
+function bukaPeta(pelangganId){
+  const pel=get('pelanggan',pelangganId)||{};
+  if(!pel.alamat) return toast('Alamat pelanggan belum diisi kantor');
+  window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(pel.alamat),
+    '_blank','noopener');
 }
 
 /* ================= KAMERA DEPAN + TITIK GPS ================= */
