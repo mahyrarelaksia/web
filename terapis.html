@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mahyra Relaksia — Portal Terapis</title>
+<link rel="manifest" href="/manifest-terapis.json">
+<meta name="theme-color" content="#2F6FBF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mahyra Terapis">
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="apple-touch-icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -153,6 +159,23 @@ tr:last-child td{border-bottom:0}.tw{overflow-x:auto}
 .hint{font-size:12px;color:var(--muted)}
 .err{background:#FAEAEC;color:var(--bad);padding:9px 12px;border-radius:10px;font-size:13px;margin-bottom:12px;display:none}
 .err.on{display:block}
+
+/* ---------- Ajakan pasang aplikasi ---------- */
+.pasang{position:fixed;left:50%;transform:translateX(-50%) translateY(150%);bottom:14px;z-index:96;
+ width:calc(100% - 24px);max-width:460px;background:#fff;border:1px solid var(--line);border-radius:20px;
+ padding:15px 16px;box-shadow:0 20px 48px rgba(16,44,80,.26);display:flex;gap:13px;align-items:flex-start;
+ transition:transform .38s cubic-bezier(.2,.8,.3,1)}
+.pasang.on{transform:translateX(-50%) translateY(0)}
+.pasang img{width:46px;height:46px;border-radius:14px;border:1px solid var(--line);padding:3px;
+ object-fit:contain;flex:none;background:#fff}
+.pasang h5{font-size:14.5px;font-weight:600;line-height:1.3}
+.pasang p{font-size:12.5px;color:var(--muted);margin:3px 0 10px;line-height:1.5}
+.pasang .aksi{display:flex;gap:8px;flex-wrap:wrap}
+.pasang .aksi .btn{padding:9px 16px;font-size:13px}
+.pasang .tutup{position:absolute;top:9px;right:11px;background:none;border:0;color:var(--muted);
+ font-size:17px;cursor:pointer;line-height:1;padding:4px}
+.langkah-ios{background:var(--mist);border-radius:12px;padding:11px 13px;margin-top:8px;font-size:12.5px;line-height:1.7}
+.langkah-ios b{font-weight:600}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:99}
 .toast.on{opacity:1}
 .list-item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:flex-start}
@@ -203,6 +226,7 @@ tr:last-child td{border-bottom:0}.tw{overflow-x:auto}
 </div>
 
 <div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="pasang" id="ajakPasang"></div>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -215,7 +239,106 @@ tr:last-child td{border-bottom:0}.tw{overflow-x:auto}
 const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
+const NAMA_APP = "Mahyra Terapis";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+/* =====================================================================
+   PWA — pasang ke layar utama & notifikasi
+   Ajakan muncul di tiap perangkat yang belum memasangnya, termasuk saat
+   masuk dari ponsel lain. Setelah dipasang, ajakan berhenti muncul.
+   ===================================================================== */
+let SIAP_PASANG = null;
+
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js')
+    .catch(e => console.warn('Service worker gagal dipasang:', e)));
+}
+
+const sudahTerpasang = () =>
+  matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+const iniIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
+  && !/crios|fxios/i.test(navigator.userAgent);
+
+addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); SIAP_PASANG = e;
+  if (!sudahTerpasang()) setTimeout(() => ajakPasang(), 2500);
+});
+
+addEventListener('appinstalled', () => {
+  tutupAjakan();
+  try { localStorage.setItem('mahyra_terpasang', '1'); } catch (_) {}
+  if (typeof toast === 'function') toast('Aplikasi terpasang di layar utama');
+});
+
+function ajakPasang(){
+  if (sudahTerpasang()) return;
+  const kotak = document.getElementById('ajakPasang');
+  if (!kotak) return;
+  const iosMode = iniIOS() && !SIAP_PASANG;
+  if (!SIAP_PASANG && !iosMode) return;      // peramban belum siap memasang
+
+  kotak.innerHTML = `
+    <button class="tutup" onclick="tutupAjakan(true)" aria-label="Tutup">&times;</button>
+    <img src="logo.png" alt="Mahyra Massage">
+    <div style="flex:1;min-width:0">
+      <h5>Pasang ${NAMA_APP} di ponsel ini</h5>
+      <p>Bisa dibuka langsung dari layar utama seperti aplikasi biasa,
+         terbuka lebih cepat, dan notifikasi tetap masuk.</p>
+      ${iosMode ? `<div class="langkah-ios">
+          1. Ketuk tombol <b>Bagikan</b> di bawah layar<br>
+          2. Pilih <b>Tambahkan ke Layar Utama</b><br>
+          3. Ketuk <b>Tambah</b></div>
+        <div class="aksi" style="margin-top:9px">
+          <button class="btn ghost" onclick="tutupAjakan(true)">Mengerti</button></div>`
+        : `<div class="aksi">
+          <button class="btn" onclick="pasangSekarang()">Pasang sekarang</button>
+          <button class="btn ghost" onclick="tutupAjakan(true)">Nanti saja</button></div>`}
+    </div>`;
+  kotak.classList.add('on');
+}
+
+async function pasangSekarang(){
+  if (!SIAP_PASANG) return tutupAjakan(true);
+  SIAP_PASANG.prompt();
+  const { outcome } = await SIAP_PASANG.userChoice;
+  SIAP_PASANG = null;
+  tutupAjakan(outcome !== 'accepted');
+}
+
+function tutupAjakan(tunda){
+  const k = document.getElementById('ajakPasang');
+  if (k) k.classList.remove('on');
+  // ditunda sehari, lalu ditawarkan lagi di perangkat yang sama
+  if (tunda) { try { localStorage.setItem('mahyra_tunda_pasang', Date.now() + 864e5); } catch (_) {} }
+}
+
+/* Dipanggil setelah berhasil masuk */
+function cekPasang(){
+  if (sudahTerpasang()) return;
+  let tunda = 0;
+  try { tunda = Number(localStorage.getItem('mahyra_tunda_pasang') || 0); } catch (_) {}
+  if (Date.now() < tunda) return;
+  setTimeout(() => ajakPasang(), 2500);
+}
+
+/* Izin notifikasi, diminta setelah masuk agar tidak mengagetkan */
+async function mintaIzinNotif(){
+  if (!('Notification' in window) || Notification.permission !== 'default') return;
+  try { await Notification.requestPermission(); } catch (_) {}
+}
+
+/* Kirim notifikasi lewat service worker supaya tetap muncul di latar belakang */
+async function notifSistem(judul, pesan, url){
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    reg.active && reg.active.postMessage({ tipe:'notif', judul, pesan, url, tag:'mahyra-order' });
+  } catch (_) {
+    try { new Notification(judul, { body: pesan, icon: 'logo.png' }); } catch (__) {}
+  }
+}
+
 const sb = LIVE ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layanan',pelanggan:'pelanggan',
  shift:'shift',jadwal:'jadwal_kerja',pesanan:'pesanan',item:'pesanan_item',absensi:'absensi',izin:'izin',
@@ -396,12 +519,14 @@ function bukaAplikasi(){
   muatDilihat();
   periksaNotif(true);
   setInterval(()=>periksaNotif(false), 45000);   // periksa tiap 45 detik
+  cekPasang();
+  mintaIzinNotif();
 }
 async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); location.reload(); }
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.11.1';
+const VERSI_APP='2026.09.12.1';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -568,7 +693,7 @@ dash(){
   const sh=jd?get('shift',jd.shift_id):null;
   const rat=sel.filter(i=>i.rating), avg=rat.length?(sum(rat,'rating')/rat.length).toFixed(1):'—';
   const tg=targetSaya();
-  const pct=tg&&tg.target_order?Math.min(100,Math.round(sel.length/tg.target_order*100)):0;
+  const pct=tg&&tg.target?Math.min(100,Math.round(sel.length/tg.target*100)):0;
   return `<div class="grid g4">
     ${stat('Order selesai',sel.length,'periode '+periode())}
     ${stat('Komisi bulan ini',rp(sum(kom,'nominal')),'ketuk untuk rincian','a',"go('komisi')")}
@@ -582,10 +707,16 @@ dash(){
         <div style="flex:1"><div class="hint">Check out</div><div class="clock">${jamDari(abs?.jam_pulang)}</div></div></div>
       <button class="btn" style="margin-top:12px" onclick="go('absen')">Buka absensi</button></div>
     <div class="card"><div class="head"><h3>Target order saya</h3>
-      <span class="tag ${tg?'info':'warn'}">${tg?tg.target_order+' order · '+tg.periode:'belum diatur'}</span></div>
+      <span class="tag ${tg?(tg.tercapai?'ok':'info'):'warn'}">${tg?tg.target+' order → '+rp(tg.nominal)
+        :'belum ada bonus target'}</span></div>
       <div style="font-family:Fraunces,serif;font-size:26px">${pct}%</div><div class="bar"><i style="width:${pct}%"></i></div>
-      <p class="hint" style="margin-top:8px">${tg?`${sel.length} dari ${tg.target_order} order pada periode ${tg.periode}.`
-        :'Target belum ditetapkan kantor untuk periode ini.'}</p>
+      <p class="hint" style="margin-top:8px">${tg
+        ? (tg.tercapai
+            ? `${sel.length} order — target ${tg.target} sudah tercapai, bonus ${rp(tg.nominal)} masuk slip gaji.`
+            : `${sel.length} dari ${tg.target} order. Kurang ${tg.target-sel.length} lagi untuk bonus ${rp(tg.nominal)}.`)
+        :'Skema gaji Anda belum memuat bonus target order.'}</p>
+      ${tg&&tg.semua.length>1?`<div class="hint" style="margin-top:6px">Ambang berikutnya:
+        ${tg.semua.map(a=>`${a.target} order → ${rp(a.nominal)}`).join(' · ')}</div>`:''}
       <div style="margin-top:14px">${skemaAktif(sel.length).slice(0,3).map(a=>
         `<div class="list-item"><span class="dot" style="background:var(--amber)"></span><div style="flex:1">
           <strong>${esc(a.nama)}</strong><div class="hint">${esc(syaratBonus(a))}</div></div>
@@ -816,15 +947,17 @@ sandi(){
 }};
 
 /* Skema gaji yang berlaku untuk saya */
-/* Target saya: utamakan periode berjalan, kalau belum ada pakai yang terbaru.
-   Bila tidak ada target pribadi, ikuti target cabang. */
+/* Target order saya diambil dari bonus pada skema gaji.
+   Yang ditampilkan adalah ambang terdekat yang belum tercapai. */
 function targetSaya(){
-  const daftar=(DB.target||[]);
-  const punyaSaya=daftar.filter(t=>t.karyawan_id===ME.id);
-  return punyaSaya.find(t=>t.periode===periode())
-      || punyaSaya.sort((a,b)=>String(b.periode).localeCompare(String(a.periode)))[0]
-      || daftar.find(t=>!t.karyawan_id&&t.cabang_id===ME.cabang_id&&t.periode===periode())
-      || null;
+  const sk=skemaGaji(), sel=myItem().filter(i=>i.status==='selesai').length;
+  const ambang=[];
+  if(sk.bonusT1Order>0) ambang.push({target:sk.bonusT1Order,nominal:sk.bonusT1Nominal});
+  if(sk.bonusT2Order>0) ambang.push({target:sk.bonusT2Order,nominal:sk.bonusT2Nominal});
+  if(!ambang.length) return null;
+  ambang.sort((a,b)=>a.target-b.target);
+  const berikut=ambang.find(a=>sel<a.target)||ambang[ambang.length-1];
+  return {...berikut, semua:ambang, tercapai:sel>=berikut.target, periode:periode()};
 }
 /* Skema yang berlaku: skema cabang+jabatan, lalu skema jabatan semua cabang */
 /* Hari kerja: hari dengan absen masuk, atau hari dengan orderan selesai */
@@ -1222,6 +1355,7 @@ function tampilkanPop(n){
   clearTimeout(jedaNotif);
   jedaNotif=setTimeout(()=>p.classList.remove('on'),6000);
   try{ navigator.vibrate&&navigator.vibrate([90,60,90]); }catch(_){}
+  notifSistem(n.judul, n.pesan, '/terapis');   // muncul walau aplikasi di latar belakang
 }
 function dariPop(){
   document.getElementById('popNotif').classList.remove('on');
