@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id-ID">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -468,7 +468,7 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
 
 /* ------------------ MODUL & MESIN HAK AKSES ------------------ */
 const MODUL=[
- ['dash','Dashboard'],['order','Order & Kasir'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
+ ['dash','Dashboard'],['order','Order'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
  ['jadwal','Jadwal Kerja'],['shift','Shift Kerja'],['karyawan','Karyawan'],['jabatan','Jabatan'],
  ['cabang','Cabang'],['absensi','Absensi'],['izin','Izin & Cuti'],['kasbon','Kasbon'],
  ['kas','Kas'],['pengeluaran','Pengeluaran'],['komisi','Komisi'],['bonus','Bonus'],['gaji','Penggajian'],['skema_gaji','Skema Gaji'],['libur','Tanggal Libur'],
@@ -1068,7 +1068,7 @@ const F={
 };
 
 const MENU=[
- ['Ringkasan',[['dash','◈','Dashboard'],['order','◎','Order & Kasir']]],
+ ['Ringkasan',[['dash','◈','Dashboard'],['order','◎','Order']]],
  ['Operasional',[['m_pelanggan','☺','Pelanggan'],['m_layanan','✦','Layanan & Tarif'],['m_jadwal','▤','Jadwal Kerja'],['m_libur','☾','Tanggal Libur'],['m_shift','◔','Shift Kerja']]],
  ['SDM',[['m_karyawan','⚇','Karyawan'],['m_jabatan','⚑','Jabatan'],['m_cabang','⌂','Cabang'],['m_absensi','✓','Absensi'],['izin','✎','Izin & Cuti'],['m_kasbon','◇','Kasbon']]],
  ['Keuangan',[['kas','₪','Kas'],['m_pengeluaran','↓','Pengeluaran'],['m_komisi','%','Komisi'],['m_bonus','★','Bonus'],['m_skema_gaji','◈','Skema Gaji'],['gaji','▦','Penggajian']]],
@@ -1098,8 +1098,8 @@ function halamanPertama(){
 /* ---- Tab bawah untuk layar kecil. Isinya menyesuaikan hak akses. ---- */
 /* Lima slot tetap: dua kiri, tombol Order di tengah, satu kanan, lalu Menu. */
 const TAB_PILIHAN=[
-  ['dash','◈','Beranda'], ['m_pelanggan','☺','Pelanggan'], ['m_absensi','✓','Absensi'],
-  ['kas','₪','Kas'], ['laporan','▣','Laporan'], ['m_jadwal','▤','Jadwal']];
+  ['dash','◈','Beranda'], ['m_pelanggan','☺','Pelanggan'], ['order','◎','Daftar order'],
+  ['m_absensi','✓','Absensi'], ['kas','₪','Kas'], ['laporan','▣','Laporan']];
 function daftarTab(){
   const bisa=TAB_PILIHAN.filter(([id])=>boleh(id.startsWith('m_')?id.slice(2):id,'lihat'));
   return { kiri:bisa.slice(0,2), kanan:bisa.slice(2,3),
@@ -1380,7 +1380,7 @@ async function cabutAkun(karyawanId){
 
 /* ============================ HALAMAN ============================ */
 const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang.'],
- order:['Order & Kasir','Buat transaksi baru dan pantau order berjalan.'],
+ order:['Order','Buat order baru dan pantau yang sedang berjalan.'],
  izin:['Izin & Cuti','Pengajuan yang menunggu keputusan HRD.'],
  kas:['Kas','Arus kas masuk dan keluar per cabang.'],
  gaji:['Penggajian','Gaji pokok + komisi + bonus − potongan, per periode.'],
@@ -2295,7 +2295,8 @@ function formOrder(){
      <div class="field"><label for="o_tglkerja">Tanggal pengerjaan</label>
        <input id="o_tglkerja" type="date" value="${today()}"></div>
      <div class="field"><label for="o_jam">Jam pengerjaan</label>
-       <input id="o_jam" type="time" value="${jam()}"></div>
+       <input id="o_jam" type="time" value="${jam()}" step="900" lang="id-ID"
+         placeholder="14:00" title="Format 24 jam"></div>
    </div>
    <div class="field"><label for="o_alamat">Alamat</label>
      <textarea id="o_alamat" rows="2" placeholder="Alamat lengkap tujuan terapis"></textarea></div>
@@ -2453,41 +2454,84 @@ const noWa=n=>{ let s=String(n||'').replace(/[^0-9]/g,'');
   if(s.startsWith('8')) s='62'+s;
   return s; };
 
-function rincianOrder(p,{denganHp}){
-  const item=DB.item.filter(i=>i.pesanan_id===p.id);
-  const pel=get('pelanggan',p.pelanggan_id)||{};
-  const lay=get('layanan',item[0]?.layanan_id)||{};
-  const b=[];
-  b.push('No. order  : '+p.nomor);
-  b.push('Pengerjaan : '+hariLengkap(p.tgl_kerja||p.tanggal)+' pukul '+String(p.jam_kerja||p.jam||'-').slice(0,5));
-  b.push('Layanan    : '+lay.nama+' ('+(lay.durasi_menit||0)+' menit)');
-  b.push('Terapis    : '+item.map(i=>nm('karyawan',i.terapis_id)).join(', '));
-  b.push('Pelanggan  : '+pel.nama);
-  if(denganHp&&pel.telepon) b.push('No. HP     : '+pel.telepon);
-  if(pel.alamat) b.push('Alamat     : '+pel.alamat);
-  b.push('Total      : '+rp(p.total));
-  b.push('Pembayaran : '+cap(p.metode_bayar));
-  if(p.catatan) b.push('Catatan    : '+p.catatan);
-  return b.join('\n');
+/* ===================== PESAN WHATSAPP =====================
+   WhatsApp memakai huruf proporsional, sehingga spasi penyejajaran tidak
+   pernah lurus. Karena itu dipakai baris berlabel tebal dan pemisah,
+   bukan kolom. Penanda *tebal* dan garis pemisah didukung WhatsApp. */
+
+const GARIS = '━━━━━━━━━━━━━━━';
+const REKENING = {
+  nama: 'Klinhome Indonesia',
+  akun: [['BCA', '3888881061'], ['Mandiri', '1420027509784']]
+};
+
+function baris(label, nilai){ return nilai ? `*${label}*\n${nilai}` : null; }
+
+function rincianOrder(p, {denganHp}){
+  const item = DB.item.filter(i => i.pesanan_id === p.id);
+  const pel  = get('pelanggan', p.pelanggan_id) || {};
+  const lay  = get('layanan', item[0]?.layanan_id) || {};
+  const jam  = String(p.jam_kerja || p.jam || '').slice(0,5);
+  const terapis = item.map(i => nm('karyawan', i.terapis_id)).filter(Boolean);
+
+  return [
+    baris('Jadwal', hariLengkap(p.tgl_kerja || p.tanggal) + (jam ? `\nPukul ${jam} WIB` : '')),
+    baris('Layanan', `${lay.nama || '-'}${lay.durasi_menit ? ` — ${lay.durasi_menit} menit` : ''}`),
+    baris(terapis.length > 1 ? 'Terapis' : 'Terapis', terapis.join('\n')),
+    baris('Atas nama', pel.nama + (denganHp && pel.telepon ? `\n${pel.telepon}` : '')),
+    baris('Alamat', pel.alamat),
+    baris('Catatan', p.catatan)
+  ].filter(Boolean).join('\n\n');
 }
-const REKENING = [
-  'Klinhome Indonesia',
-  'BCA     : 3888881061',
-  'Mandiri : 1420027509784'
-];
+
 function pesanPelanggan(p){
-  const pel=get('pelanggan',p.pelanggan_id)||{};
-  return `Halo ${pel.nama}, terima kasih sudah memesan di Mahyra Massage.\n\n`+
-    rincianOrder(p,{denganHp:true})+
-    `\n\n--- PEMBAYARAN ---\n`+REKENING.join('\n')+
-    `\n\nPembayaran dapat dilakukan tunai kepada terapis atau transfer ke rekening di atas.`+
-    `\n\nTerapis akan menghubungi sebelum berangkat. Mohon siapkan ruang sekitar 2x2 meter. Terima kasih.`;
+  const pel  = get('pelanggan', p.pelanggan_id) || {};
+  const item = DB.item.filter(i => i.pesanan_id === p.id);
+  const lay  = get('layanan', item[0]?.layanan_id) || {};
+
+  const bagian = [];
+  bagian.push(`Halo *${pel.nama}*, terima kasih sudah memesan di *Mahyra Massage*.`);
+  bagian.push(`Berikut rincian pesanan Anda.`);
+  bagian.push(GARIS);
+  bagian.push(`*RINCIAN PESANAN*\nNo. ${p.nomor}`);
+  bagian.push(rincianOrder(p, {denganHp: true}));
+  bagian.push(GARIS);
+
+  // biaya
+  const biaya = [`${lay.nama || 'Layanan'}${item.length > 1 ? ` × ${item.length}` : ''}   ${rp(p.subtotal)}`];
+  if (p.diskon > 0) biaya.push(`Diskon   −${rp(p.diskon)}`);
+  biaya.push(`*Total   ${rp(p.total)}*`);
+  bagian.push(`*BIAYA*\n` + biaya.join('\n'));
+  bagian.push(GARIS);
+
+  // pembayaran
+  bagian.push(`*PEMBAYARAN*\n${cap(p.metode_bayar)}\n\n` +
+    `Tunai kepada terapis, atau transfer ke:\n*${REKENING.nama}*\n` +
+    REKENING.akun.map(([b, n]) => `${b} — ${n}`).join('\n'));
+  bagian.push(GARIS);
+
+  bagian.push(`Terapis akan menghubungi sebelum berangkat.\n` +
+    `Mohon siapkan ruang kurang lebih 2×2 meter.\n\n` +
+    `Terima kasih atas kepercayaan Anda.`);
+
+  return bagian.join('\n\n');
 }
-function pesanTerapis(p,terapisId){
-  return `Halo ${nm('karyawan',terapisId)}, ada orderan untuk Anda.\n\n`+
-    rincianOrder(p,{denganHp:false})+
-    `\n\nMohon konfirmasi kesiapan Anda dan lakukan check in lewat Portal Terapis saat mulai bekerja.`;
+
+function pesanTerapis(p, terapisId){
+  const item = DB.item.find(i => i.pesanan_id === p.id && i.terapis_id === terapisId);
+  const bagian = [];
+  bagian.push(`Halo *${nm('karyawan', terapisId)}*, ada orderan baru untuk Anda.`);
+  bagian.push(GARIS);
+  bagian.push(`*DETAIL TUGAS*\nNo. ${p.nomor}`);
+  bagian.push(rincianOrder(p, {denganHp: false}));
+  if (item) bagian.push(`*Komisi Anda*\n${rp(item.komisi)}`);
+  bagian.push(GARIS);
+  bagian.push(`Mohon konfirmasi kesiapan Anda.\n` +
+    `Lakukan *check in* lewat Portal Terapis saat mulai bekerja, ` +
+    `dan *check out* setelah selesai.`);
+  return bagian.join('\n\n');
 }
+
 function tautanWa(nomor,pesan){
   return 'https://wa.me/'+noWa(nomor)+'?text='+encodeURIComponent(pesan);
 }
@@ -2606,7 +2650,8 @@ function ubahOrder(pesananId){
       <div class="field"><label for="u_tgl">Tanggal pengerjaan</label>
         <input type="date" id="u_tgl" value="${String(p.tgl_kerja||p.tanggal).slice(0,10)}"></div>
       <div class="field"><label for="u_jam">Jam pengerjaan</label>
-        <input type="time" id="u_jam" value="${esc(String(p.jam_kerja||p.jam||'').slice(0,5))}"></div>
+        <input type="time" id="u_jam" step="900" lang="id-ID"
+          value="${esc(String(p.jam_kerja||p.jam||'').slice(0,5))}"></div>
     </div>
     <div class="field"><label for="u_status">Status order</label><select id="u_status">
       ${['draft','berjalan','selesai','batal'].map(s=>`<option ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
@@ -2692,7 +2737,7 @@ function kirimOrder(pesananId){
   sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Order tersimpan</h3>
     <p class="hint" style="margin-bottom:14px">${esc(p.nomor)} · ${rp(p.total)}</p>
     <div class="card" style="background:var(--mist);box-shadow:none;padding:14px;white-space:pre-wrap;
-      font-size:13px;line-height:1.6;margin-bottom:14px">${esc(rincianOrder(p,{denganHp:true}))}</div>
+      font-size:12.5px;line-height:1.65;margin-bottom:14px">${esc(pesanPelanggan(p))}</div>
 
     <div class="row">
       ${pel.telepon?`<a class="btn" style="flex:1" target="_blank" rel="noopener"
