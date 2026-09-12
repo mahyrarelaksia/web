@@ -10,14 +10,40 @@
   "background_color": "#EEF2F0",
   "theme_color": "#1F4C86",
   "lang": "id",
-  "categories": ["business", "productivity"],
+  "categories": [
+    "business",
+    "productivity"
+  ],
   "icons": [
-    { "src": "/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Buat order", "short_name": "Order", "url": "/office#order" },
-    { "name": "Penggajian", "short_name": "Gaji", "url": "/office#gaji" }
+    {
+      "name": "Buat order",
+      "short_name": "Order",
+      "url": "/office#order"
+    },
+    {
+      "name": "Penggajian",
+      "short_name": "Gaji",
+      "url": "/office#gaji"
+    }
   ]
 }
