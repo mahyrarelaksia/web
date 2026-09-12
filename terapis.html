@@ -136,7 +136,12 @@ main{padding:16px 14px 116px;width:100%}
 .kal-hari.libur{background:linear-gradient(160deg,#EEF4FA,#D8E6F5);border-color:#BDD5EE;
  color:var(--laut,#1B4A82);font-weight:600}
 .kal-hari.minggu{color:#B5687A}
-.kal-hari.kini{outline:2px solid var(--jade);outline-offset:-2px;font-weight:700}
+.kal-hari.kini{background:var(--jade);border-color:var(--jade);color:#fff;font-weight:700;
+ box-shadow:0 3px 10px rgba(47,111,191,.35)}
+.kal-hari.kini.libur{background:linear-gradient(150deg,#4C8FD6,#1F4C86);color:#fff}
+.kal-hari.kini i{background:#fff}
+.kal-hari.kini:after{content:'';position:absolute;top:3px;right:3px;width:5px;height:5px;
+ border-radius:50%;background:#F2A93B}
 .kal-hari i{position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:#2F6FBF;font-style:normal}
 .kal-ket{display:flex;flex-direction:column;gap:5px;margin-top:10px}
 .kal-ket div{display:flex;gap:9px;align-items:flex-start;font-size:12.5px}
@@ -607,7 +612,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.13.1';
+const VERSI_APP='2026.09.13.2';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -781,7 +786,7 @@ dash(){
       <div class="row" style="align-items:center;gap:12px">
         <div style="font-size:26px">☾</div>
         <div style="flex:1"><strong style="font-size:15px">Hari ini libur</strong>
-          <div class="hint">${esc(lbr.keterangan||'')}</div></div></div></div>`:''}
+          <div class="hint">${hariTgl(today())}${lbr.keterangan?' · '+esc(lbr.keterangan):''}</div></div></div></div>`:''}
   <div class="grid g4">
     ${stat('Order selesai',sel.length,'periode '+periode())}
     ${stat('Komisi bulan ini',rp(sum(kom,'nominal')),'ketuk untuk rincian','a',"go('komisi')")}
@@ -1195,7 +1200,7 @@ function kartuKerja(i){
         <div class="hint">${esc(nm('pelanggan',p.pelanggan_id))}</div>
         <div class="hint">${hari}</div></div>
       <div style="text-align:right;flex:none">
-        <div class="rp" style="color:var(--jade);font-size:15px">${rp((i.komisi||0)+nBon)}</div>
+        <div class="rp" style="color:var(--jade);font-size:15px">${rp(komisiSaya(i)+nBon)}</div>
         <div class="hint">diterima</div></div>
     </div>
     <div class="rinci">
@@ -1203,7 +1208,7 @@ function kartuKerja(i){
       <div><span>Dikerjakan</span><b>${jamDari(i.jam_mulai)}–${jamDari(i.jam_selesai)}</b></div>
       <div><span>Durasi</span><b>${l.durasi_menit||0} menit</b></div>
       <div><span>Harga layanan</span><b>${rp(i.harga)}</b></div>
-      <div><span>Komisi</span><b>${rp(i.komisi)}</b></div>
+      <div><span>Komisi</span><b>${rp(komisiSaya(i))}</b></div>
       <div><span>Bonus</span><b>${nBon?rp(nBon):'—'}</b></div>
     </div>
     ${bon.length?`<div class="isi">${bon.map(b=>`<span class="bintang">${esc(cap(b.jenis))} ${rp(b.nominal)}</span>`).join('')}</div>`:''}
@@ -1229,8 +1234,8 @@ function listKerja(items){
       <div class="rinci">
         <div><span>Layanan</span><b>${esc(l.nama||'-')}</b></div>
         <div><span>Durasi</span><b>${l.durasi_menit||0} menit</b></div>
-        <div><span>Komisi</span><b>${rp(i.komisi)}</b></div>
-        <div><span>No. order</span><b>${esc(p.nomor||'-')}</b></div>
+        <div><span>Harga</span><b>${rp(i.harga)}</b></div>
+        <div><span>Komisi</span><b>${rp(komisiSaya(i))}</b></div>
       </div>
       ${pel.alamat?`<div class="alamat">${esc(pel.alamat)}</div>`:''}
       ${p.catatan?`<div class="catatan"><b>Catatan order:</b> ${esc(p.catatan)}</div>`:''}
@@ -1239,13 +1244,19 @@ function listKerja(items){
         ${i.status==='menunggu'?`<button class="btn" onclick="bukaAbsen('${i.id}','masuk')">Check in</button>`:''}
         ${i.status==='berjalan'?`<button class="btn amber" onclick="bukaAbsen('${i.id}','pulang')">Check out</button>`:''}
         <button class="btn ghost" onclick="bukaPeta('${p.pelanggan_id||''}')">Buka peta</button>
-        ${pel.telepon?`<a class="btn ghost" href="https://wa.me/${noWa(pel.telepon)}" target="_blank" rel="noopener">WhatsApp</a>`:''}
       </div></div>`;
   }).join('');
 }
-const noWa=n=>{ let s=String(n||'').replace(/[^0-9]/g,'');
-  if(s.startsWith('0')) s='62'+s.slice(1);
-  if(s.startsWith('8')) s='62'+s; return s; };
+/* Komisi pekerjaan. Bila kantor belum mengisinya, dihitung dari skema gaji. */
+function komisiSaya(i){
+  if(Number(i.komisi)>0) return Number(i.komisi);
+  const sk=skemaGaji();
+  if(sk.fee>0) return Math.round(sk.fee*(i.qty||1));
+  const l=get('layanan',i.layanan_id)||{};
+  const persen=sk.persen||Number(l.komisi_persen||0);
+  const dasar=Number(i.subtotal||i.harga||l.harga||0);
+  return Math.round(dasar*persen/100);
+}
 function bukaPeta(pelangganId){
   const pel=get('pelanggan',pelangganId)||{};
   if(!pel.alamat) return toast('Alamat pelanggan belum diisi kantor');
@@ -1453,15 +1464,22 @@ function kalenderLibur(){
     </div>
     ${daftar.length?`<div class="kal-ket">${daftar.join('')}</div>`
       :'<p class="hint" style="margin-top:10px">Tidak ada jadwal libur pada bulan ini.</p>'}
+    <p class="hint" style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;
+        background:var(--jade);vertical-align:-1px"></span> hari ini</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;
+        background:#D8E6F5;border:1px solid #BDD5EE;vertical-align:-1px"></span> hari libur</span></p>
   </div>`;
 }
 
 /* ===================== HARI LIBUR ===================== */
 function liburHariIni(tanggal){
-  const d=tanggal||today();
+  const d=String(tanggal||today()).slice(0,10);
   return (DB.libur||[]).find(l=>{
-    const mulai=String(l.tanggal).slice(0,10);
-    const akhir=String(l.tgl_selesai||l.tanggal).slice(0,10);
+    const mulai=String(l.tanggal||'').slice(0,10);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(mulai)) return false;
+    let akhir=String(l.tgl_selesai||'').slice(0,10);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(akhir)||akhir<mulai) akhir=mulai;
     if(d<mulai||d>akhir) return false;
     if(l.karyawan_id&&l.karyawan_id!==ME.id) return false;
     if(l.cabang_id&&l.cabang_id!==ME.cabang_id) return false;
