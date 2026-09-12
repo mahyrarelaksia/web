@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mahyra Office">
 <link rel="icon" type="image/png" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="apple-touch-icon" href="/icon-apple.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -244,7 +244,7 @@ function ajakPasang(){
 
   kotak.innerHTML = `
     <button class="tutup" onclick="tutupAjakan(true)" aria-label="Tutup">&times;</button>
-    <img src="logo.png" alt="Mahyra Massage">
+    <img src="/icon-192.png" alt="Ikon aplikasi">
     <div style="flex:1;min-width:0">
       <h5>Pasang ${NAMA_APP} di ponsel ini</h5>
       <p>Bisa dibuka langsung dari layar utama seperti aplikasi biasa,
@@ -310,14 +310,15 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
  shift:'shift',jadwal:'jadwal_kerja',pesanan:'pesanan',item:'pesanan_item',absensi:'absensi',izin:'izin',
  komisi:'komisi',bonus:'bonus',aturan_bonus:'aturan_bonus',gaji:'gaji',kasbon:'kasbon',
  kategori_pengeluaran:'kategori_pengeluaran',pengeluaran:'pengeluaran',kas:'kas',target:'target',
- hak_akses:'hak_akses',absen_log:'absen_log',pengaturan:'pengaturan',skema_gaji:'skema_gaji'};
+ hak_akses:'hak_akses',absen_log:'absen_log',pengaturan:'pengaturan',skema_gaji:'skema_gaji',
+ libur:'libur'};
 
 /* ------------------ MODUL & MESIN HAK AKSES ------------------ */
 const MODUL=[
  ['dash','Dashboard'],['order','Order & Kasir'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
  ['jadwal','Jadwal Kerja'],['shift','Shift Kerja'],['karyawan','Karyawan'],['jabatan','Jabatan'],
  ['cabang','Cabang'],['absensi','Absensi'],['izin','Izin & Cuti'],['kasbon','Kasbon'],
- ['kas','Kas'],['pengeluaran','Pengeluaran'],['komisi','Komisi'],['bonus','Bonus'],['gaji','Penggajian'],['skema_gaji','Skema Gaji'],
+ ['kas','Kas'],['pengeluaran','Pengeluaran'],['komisi','Komisi'],['bonus','Bonus'],['gaji','Penggajian'],['skema_gaji','Skema Gaji'],['libur','Tanggal Libur'],
  ['laporan','Laporan'],['biaya','Struktur Biaya & Laba'],['aturan_bonus','Aturan Bonus'],['target','Target'],
  ['kategori_pengeluaran','Kategori Biaya'],['pengaturan','Profil Usaha'],['akses','Hak Akses & Peran']];
 const AKSI=[['lihat','Lihat'],['tambah','Tambah'],['ubah','Ubah'],['hapus','Hapus']];
@@ -377,6 +378,9 @@ const tgl=d=>d?new Date(String(d).slice(0,10)+'T00:00').toLocaleDateString('id-I
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400)};
 const cap=s=>String(s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+/* Hari, tanggal, bulan, tahun — dipakai pada pesan ke pelanggan dan terapis */
+const hariLengkap=d=>d?new Date(String(d).slice(0,10)+'T00:00')
+  .toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'-';
 const jamDari=v=>{ if(!v) return '--.--';
   const s=String(v);
   if(/^\d{2}:\d{2}/.test(s)) return s.slice(0,5).replace(':','.');
@@ -428,7 +432,7 @@ const nm=(t,id,f='nama')=>{const r=get(t,id);return r?r[f]:'-'};
 /* ------------------------- data (demo seed) ------------------------- */
 const DB={cabang:[],jabatan:[],karyawan:[],layanan:[],pelanggan:[],shift:[],jadwal:[],pesanan:[],item:[],
  absensi:[],izin:[],komisi:[],bonus:[],aturan_bonus:[],gaji:[],kasbon:[],kategori_pengeluaran:[],
- pengeluaran:[],kas:[],target:[],hak_akses:[],absen_log:[],pengaturan:[],skema_gaji:[]};
+ pengeluaran:[],kas:[],target:[],hak_akses:[],absen_log:[],pengaturan:[],skema_gaji:[],libur:[]};
 
 const AKUN_DEMO={ 'owner@mahyra.id':{pw:'mahyra123',id:'k1'}, 'admin@mahyra.id':{pw:'mahyra123',id:'k2'},
                   'kasir@mahyra.id':{pw:'mahyra123',id:'k6'} };
@@ -769,6 +773,18 @@ const F={
    {k:'gaji_minimal',l:'Minimal',t:'rp'},
    {k:'bns',l:'Bonus',fn:r=>ringkasBonusSkema(r)},
    {k:'ak',l:'Status',fn:r=>r.aktif!==false?'<span class="tag ok">Aktif</span>':'<span class="tag">Nonaktif</span>'}]},
+ libur:{title:'Tanggal Libur',sub:'Hari libur untuk semua orang, satu cabang, atau seorang terapis. Saat tanggalnya tiba, terapis melihat pemberitahuan di aplikasinya.',
+  fields:[{k:'tanggal',l:'Tanggal mulai',t:'date'},
+   {k:'tgl_selesai',l:'Tanggal selesai (kosongkan bila sehari)',t:'date'},
+   {k:'keterangan',l:'Keterangan'},
+   {k:'jenis',l:'Jenis',t:'sel',o:['libur','cuti_bersama','tutup','pelatihan']},
+   {k:'cabang_id',l:'Cabang (kosongkan bila semua)',t:'ref',ref:'cabang'},
+   {k:'karyawan_id',l:'Terapis tertentu (kosongkan bila semua)',t:'ref',ref:'karyawan'}],
+  cols:[{k:'tanggal',t:'date'},
+   {k:'sampai',l:'Sampai',fn:r=>r.tgl_selesai?tgl(r.tgl_selesai):'<span class="hint">sehari</span>'},
+   {k:'keterangan'},{k:'jenis',t:'tag'},
+   {k:'cab',l:'Cabang',fn:r=>r.cabang_id?esc(nm('cabang',r.cabang_id)):'<span class="tag">Semua cabang</span>'},
+   {k:'untuk',l:'Untuk',fn:r=>r.karyawan_id?esc(nm('karyawan',r.karyawan_id)):'<span class="tag">Semua terapis</span>'}]},
  target:{title:'Target',sub:'Target omzet dan order per cabang maupun per terapis.',
   fields:[{k:'periode',l:'Periode (YYYY-MM)'},{k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},
    {k:'karyawan_id',l:'Terapis (opsional)',t:'ref',ref:'karyawan'},{k:'target_omzet',l:'Target omzet',t:'rp'},
@@ -780,7 +796,7 @@ const F={
 
 const MENU=[
  ['Ringkasan',[['dash','◈','Dashboard'],['order','◎','Order & Kasir']]],
- ['Operasional',[['m_pelanggan','☺','Pelanggan'],['m_layanan','✦','Layanan & Tarif'],['m_jadwal','▤','Jadwal Kerja'],['m_shift','◔','Shift Kerja']]],
+ ['Operasional',[['m_pelanggan','☺','Pelanggan'],['m_layanan','✦','Layanan & Tarif'],['m_jadwal','▤','Jadwal Kerja'],['m_libur','☾','Tanggal Libur'],['m_shift','◔','Shift Kerja']]],
  ['SDM',[['m_karyawan','⚇','Karyawan'],['m_jabatan','⚑','Jabatan'],['m_cabang','⌂','Cabang'],['m_absensi','✓','Absensi'],['izin','✎','Izin & Cuti'],['m_kasbon','◇','Kasbon']]],
  ['Keuangan',[['kas','₪','Kas'],['m_pengeluaran','↓','Pengeluaran'],['m_komisi','%','Komisi'],['m_bonus','★','Bonus'],['m_skema_gaji','◈','Skema Gaji'],['gaji','▦','Penggajian']]],
  ['Analitik',[['laporan','▣','Laporan'],['biaya','◑','Struktur Biaya & Laba']]],
@@ -817,6 +833,7 @@ function openForm(key,id){
   const m=F[key]; EDIT={mod:key,id};
   const BAWAAN={karyawan:{role:'kasir',status:'aktif',cabang_id:ME.cabang_id},
                 jabatan:{lingkup:'cabang',level:1},
+                libur:{jenis:'libur',tanggal:today(),cabang_id:null,karyawan_id:null},
                 skema_gaji:{tipe_gaji:'harian',hari_kerja:26,aktif:true,cabang_id:null,
                   bonus_target1_order:0,bonus_target2_order:0,bonus_service_motor:0,bonus_bpjs:0},
                 pengeluaran:{cabang_id:ME.cabang_id,status:'menunggu'},
@@ -1047,7 +1064,8 @@ const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang
  pengaturan:['Profil Usaha','Identitas usaha, kebijakan, dan hak akses.'],
  akses:['Hak Akses & Peran','Atur izin tiap jabatan dan seberapa luas data yang bisa dilihat.'],
  biaya:['Struktur Biaya & Laba','Dari omzet kotor sampai untung bersih, lengkap dengan anggaran tiap pos.'],
- skema_gaji:['Skema Gaji','Aturan penggajian per jabatan dan cabang.']};
+ skema_gaji:['Skema Gaji','Aturan penggajian per jabatan dan cabang.'],
+ libur:['Tanggal Libur','Hari libur yang tampil sebagai pemberitahuan di aplikasi terapis.']};
 
 function render(){
   const key=PAGE.startsWith('m_')?PAGE.slice(2):null;
@@ -1154,7 +1172,8 @@ order(){
     ${barisFilter()}
     <p class="hint" style="margin:-4px 0 12px">${rows.length} order ditampilkan${FIL.mode==='semua'?'':
       ' · '+tgl(FIL.dari)+(FIL.dari===FIL.sampai?'':' sampai '+tgl(FIL.sampai))}</p>
-    <div class="hanya-desktop">${tableHtml(rows,[{k:'nomor',l:'No. order'},{k:'tanggal',t:'date'},{k:'jam'},
+    <div class="hanya-desktop">${tableHtml(rows,[{k:'nomor',l:'No. order'},
+      {k:'kerja',l:'Pengerjaan',fn:r=>tgl(r.tgl_kerja||r.tanggal)+' · '+String(r.jam_kerja||r.jam||'-').slice(0,5)},
       {k:'pel',l:'Pelanggan'},{k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},{k:'total',t:'rp'},
       {k:'metode_bayar',l:'Bayar'},{k:'status',t:'tag'},
       {k:'aksi',l:'Tindakan',fn:r=>tombolOrder(r.id)}])}</div>
@@ -1936,9 +1955,12 @@ function formOrder(){
      <datalist id="dlPelanggan">${DB.pelanggan.map(p=>`<option value="${esc(p.nama)}">${esc(p.telepon||'')}</option>`).join('')}</datalist>
      <div id="o_infoPel" class="hint" style="margin-top:6px">Pelanggan baru akan langsung disimpan ke daftar.</div></div>
 
+   <div class="field"><label for="o_hp">Nomor HP</label><input id="o_hp" placeholder="08xxxxxxxxxx"></div>
    <div class="grid g2">
-     <div class="field"><label for="o_hp">Nomor HP</label><input id="o_hp" placeholder="08xxxxxxxxxx"></div>
-     <div class="field"><label for="o_jam">Jam kedatangan</label><input id="o_jam" type="time" value="${jam()}"></div>
+     <div class="field"><label for="o_tglkerja">Tanggal pengerjaan</label>
+       <input id="o_tglkerja" type="date" value="${today()}"></div>
+     <div class="field"><label for="o_jam">Jam pengerjaan</label>
+       <input id="o_jam" type="time" value="${jam()}"></div>
    </div>
    <div class="field"><label for="o_alamat">Alamat</label>
      <textarea id="o_alamat" rows="2" placeholder="Alamat lengkap tujuan terapis"></textarea></div>
@@ -2069,7 +2091,11 @@ async function simpanOrder(){
   const n=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()).length+1;
 
   const p={id:uid(),nomor:'MHR-'+cab.kode+'-'+today().slice(2).replace(/-/g,'')+'-'+String(n).padStart(4,'0'),
-    tanggal:today(),jam:document.getElementById('o_jam').value||jam(),cabang_id:cab.id,pelanggan_id:pel.id,
+    tanggal:today(),
+    tgl_kerja:document.getElementById('o_tglkerja').value||today(),
+    jam:document.getElementById('o_jam').value||jam(),
+    jam_kerja:document.getElementById('o_jam').value||jam(),
+    cabang_id:cab.id,pelanggan_id:pel.id,
     kasir_id:ME.id,status:'berjalan',subtotal:sub,diskon:disk,total:Math.max(0,sub-disk),
     metode_bayar:document.getElementById('o_bayar').value,status_bayar:'belum',
     catatan:document.getElementById('o_cat').value};
@@ -2101,7 +2127,7 @@ function rincianOrder(p,{denganHp}){
   const lay=get('layanan',item[0]?.layanan_id)||{};
   const b=[];
   b.push('No. order  : '+p.nomor);
-  b.push('Tanggal    : '+tgl(p.tanggal)+' pukul '+(p.jam||'-'));
+  b.push('Pengerjaan : '+hariLengkap(p.tgl_kerja||p.tanggal)+' pukul '+String(p.jam_kerja||p.jam||'-').slice(0,5));
   b.push('Layanan    : '+lay.nama+' ('+(lay.durasi_menit||0)+' menit)');
   b.push('Terapis    : '+item.map(i=>nm('karyawan',i.terapis_id)).join(', '));
   b.push('Pelanggan  : '+pel.nama);
@@ -2112,10 +2138,17 @@ function rincianOrder(p,{denganHp}){
   if(p.catatan) b.push('Catatan    : '+p.catatan);
   return b.join('\n');
 }
+const REKENING = [
+  'Klinhome Indonesia',
+  'BCA     : 3888881061',
+  'Mandiri : 1420027509784'
+];
 function pesanPelanggan(p){
   const pel=get('pelanggan',p.pelanggan_id)||{};
-  return `Halo ${pel.nama}, terima kasih sudah memesan di Mahyra Relaksia.\n\n`+
+  return `Halo ${pel.nama}, terima kasih sudah memesan di Mahyra Massage.\n\n`+
     rincianOrder(p,{denganHp:true})+
+    `\n\n--- PEMBAYARAN ---\n`+REKENING.join('\n')+
+    `\n\nPembayaran dapat dilakukan tunai kepada terapis atau transfer ke rekening di atas.`+
     `\n\nTerapis akan menghubungi sebelum berangkat. Mohon siapkan ruang sekitar 2x2 meter. Terima kasih.`;
 }
 function pesanTerapis(p,terapisId){
@@ -2133,7 +2166,7 @@ function kartuOrder(r){
     <div class="atas"><div><div class="nomor">${esc(r.nomor||'')}</div>
       <h4>${esc(r.pel||'-')}</h4></div>${tagHtml(r.status)}</div>
     <dl>
-      <dt>Waktu</dt><dd>${tgl(r.tanggal)} · ${esc(r.jam||'-')}</dd>
+      <dt>Pengerjaan</dt><dd>${tgl(r.tgl_kerja||r.tanggal)} · ${esc(String(r.jam_kerja||r.jam||'-').slice(0,5))}</dd>
       <dt>Layanan</dt><dd>${esc(r.lay||'-')}</dd>
       <dt>Terapis</dt><dd>${esc(r.ter||'-')}</dd>
       <dt>Bayar</dt><dd>${cap(r.metode_bayar||'-')}</dd>
@@ -2238,8 +2271,10 @@ function ubahOrder(pesananId){
   sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Ubah order</h3>
     <p class="hint" style="margin-bottom:16px">${esc(p.nomor)} · ${esc(nm('pelanggan',p.pelanggan_id))}</p>
     <div class="grid g2">
-      <div class="field"><label for="u_tgl">Tanggal</label><input type="date" id="u_tgl" value="${String(p.tanggal).slice(0,10)}"></div>
-      <div class="field"><label for="u_jam">Jam</label><input type="time" id="u_jam" value="${esc(p.jam||'')}"></div>
+      <div class="field"><label for="u_tgl">Tanggal pengerjaan</label>
+        <input type="date" id="u_tgl" value="${String(p.tgl_kerja||p.tanggal).slice(0,10)}"></div>
+      <div class="field"><label for="u_jam">Jam pengerjaan</label>
+        <input type="time" id="u_jam" value="${esc(String(p.jam_kerja||p.jam||'').slice(0,5))}"></div>
     </div>
     <div class="field"><label for="u_status">Status order</label><select id="u_status">
       ${['draft','berjalan','selesai','batal'].map(s=>`<option ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
@@ -2275,7 +2310,8 @@ async function simpanUbahOrder(pesananId){
   const sub=sum(item,'subtotal')||sum(item,'harga');
   const disk=Number(document.getElementById('u_disk').value)||0;
   const hasil=await simpan('pesanan',{...p,
-    tanggal:document.getElementById('u_tgl').value,
+    tgl_kerja:document.getElementById('u_tgl').value,
+    jam_kerja:document.getElementById('u_jam').value,
     jam:document.getElementById('u_jam').value,
     status:document.getElementById('u_status').value,
     metode_bayar:document.getElementById('u_bayar').value,
