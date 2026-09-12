@@ -357,7 +357,7 @@ function tutupAjakan(tunda){
 /* ---------- Web Push: notifikasi tetap masuk walau aplikasi ditutup ----------
    Isi VAPID_PUBLIC dengan kunci publik dari Edge Function kirim-push.
    Dibiarkan kosong berarti hanya notifikasi saat aplikasi terbuka. */
-const VAPID_PUBLIC = "";
+const VAPID_PUBLIC = "BCOauUBOVvtOXdEjb_pMs5Mvnq0kdVPlqnDoDwvvWrxQq99XXFZ2yoy1O45bCzE2jHiECy-Cyuxn5R8um8ZuhG4";
 
 function urlBase64ToUint8Array(base64){
   const pad='='.repeat((4-base64.length%4)%4);
@@ -413,7 +413,34 @@ async function mintaIzinNotif(){
   if (Notification.permission === 'default') {
     try { await Notification.requestPermission(); } catch (_) {}
   }
-  if (Notification.permission === 'granted') daftarPush();
+  if (Notification.permission === 'granted') await daftarPush();
+  else if (Notification.permission === 'denied')
+    console.warn('Izin notifikasi ditolak. Aktifkan lewat pengaturan situs di peramban.');
+}
+
+/* Keadaan notifikasi di perangkat ini, untuk ditampilkan pada halaman profil */
+async function statusNotif(){
+  const hasil = { izin:'tidak didukung', langganan:false, vapid:!!VAPID_PUBLIC, catatan:'' };
+  if (!('Notification' in window)) { hasil.catatan='Peramban ini tidak mendukung notifikasi.'; return hasil; }
+  hasil.izin = Notification.permission;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    hasil.catatan='Peramban tidak mendukung notifikasi latar belakang.'; return hasil; }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    hasil.langganan = !!(await reg.pushManager.getSubscription());
+  } catch (_) {}
+  if (!hasil.vapid) hasil.catatan='Kunci VAPID belum dipasang di berkas aplikasi.';
+  else if (hasil.izin === 'denied') hasil.catatan='Izin ditolak. Aktifkan lewat pengaturan situs di peramban.';
+  else if (hasil.izin === 'default') hasil.catatan='Izin belum diberikan. Ketuk tombol di bawah.';
+  else if (!hasil.langganan) hasil.catatan='Perangkat belum terdaftar. Ketuk tombol di bawah.';
+  else hasil.catatan='Notifikasi aktif, termasuk saat aplikasi ditutup.';
+  return hasil;
+}
+async function aktifkanNotif(){
+  await mintaIzinNotif();
+  const s = await statusNotif();
+  toast(s.langganan ? 'Notifikasi aktif di perangkat ini' : s.catatan);
+  if (typeof render === 'function') render();
 }
 
 /* Kirim notifikasi lewat service worker supaya tetap muncul di latar belakang */
@@ -624,7 +651,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.13.3';
+const VERSI_APP='2026.09.13.4';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -779,6 +806,16 @@ const JUDUL={dash:['Beranda','Ringkasan kerja dan penghasilan Anda.'],
 function render(){
   pgTitle.textContent=JUDUL[PAGE]?.[0]||''; pgSub.textContent=JUDUL[PAGE]?.[1]||'';
   view.innerHTML=PAGES[PAGE]?PAGES[PAGE]():'<div class="card empty">Halaman belum tersedia</div>';
+  if(PAGE==='profil') isiStatusNotif();
+}
+async function isiStatusNotif(){
+  const s=await statusNotif();
+  const tag=document.getElementById('tagNotif'), ket=document.getElementById('ketNotif');
+  if(!tag) return;
+  const aktif=s.izin==='granted'&&s.langganan&&s.vapid;
+  tag.className='tag '+(aktif?'ok':s.izin==='denied'?'bad':'warn');
+  tag.textContent=aktif?'Aktif':s.izin==='denied'?'Ditolak':'Belum aktif';
+  ket.textContent=s.catatan;
 }
 
 const PAGES={
@@ -1043,7 +1080,13 @@ profil(){
       ${stat('Total order selesai',sel.length,'sepanjang bekerja')}<div style="height:10px"></div>
       ${stat('Total komisi',rp(sum(DB.komisi.filter(c=>c.karyawan_id===ME.id),'nominal')),'','g')}<div style="height:10px"></div>
       ${stat('Total bonus',rp(sum(DB.bonus.filter(b=>b.karyawan_id===ME.id),'nominal')),'','a')}
-      <p class="hint" style="margin-top:12px">Perubahan data pribadi diajukan ke admin.</p></div></div>`;
+      <p class="hint" style="margin-top:12px">Perubahan data pribadi diajukan ke admin.</p></div></div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Notifikasi</h3>
+    <span class="tag" id="tagNotif">memeriksa…</span></div>
+    <p class="hint" id="ketNotif">Memeriksa keadaan notifikasi di perangkat ini…</p>
+    <button class="btn besar blok" style="margin-top:12px" onclick="aktifkanNotif()">Aktifkan notifikasi</button>
+    <p class="hint" style="margin-top:10px">Agar notifikasi tetap masuk saat aplikasi ditutup,
+      pasang aplikasi ke layar utama lalu izinkan notifikasi.</p></div>`;
 },
 sandi(){
   return `<div class="card" style="max-width:460px">
