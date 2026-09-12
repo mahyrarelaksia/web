@@ -386,7 +386,7 @@ function tutupAjakan(tunda){
 /* ---------- Web Push: notifikasi tetap masuk walau aplikasi ditutup ----------
    Isi VAPID_PUBLIC dengan kunci publik dari Edge Function kirim-push.
    Dibiarkan kosong berarti hanya notifikasi saat aplikasi terbuka. */
-const VAPID_PUBLIC = "";
+const VAPID_PUBLIC = "BCOauUBOVvtOXdEjb_pMs5Mvnq0kdVPlqnDoDwvvWrxQq99XXFZ2yoy1O45bCzE2jHiECy-Cyuxn5R8um8ZuhG4";
 
 function urlBase64ToUint8Array(base64){
   const pad='='.repeat((4-base64.length%4)%4);
@@ -442,7 +442,34 @@ async function mintaIzinNotif(){
   if (Notification.permission === 'default') {
     try { await Notification.requestPermission(); } catch (_) {}
   }
-  if (Notification.permission === 'granted') daftarPush();
+  if (Notification.permission === 'granted') await daftarPush();
+  else if (Notification.permission === 'denied')
+    console.warn('Izin notifikasi ditolak. Aktifkan lewat pengaturan situs di peramban.');
+}
+
+/* Keadaan notifikasi di perangkat ini, untuk ditampilkan pada halaman profil */
+async function statusNotif(){
+  const hasil = { izin:'tidak didukung', langganan:false, vapid:!!VAPID_PUBLIC, catatan:'' };
+  if (!('Notification' in window)) { hasil.catatan='Peramban ini tidak mendukung notifikasi.'; return hasil; }
+  hasil.izin = Notification.permission;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    hasil.catatan='Peramban tidak mendukung notifikasi latar belakang.'; return hasil; }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    hasil.langganan = !!(await reg.pushManager.getSubscription());
+  } catch (_) {}
+  if (!hasil.vapid) hasil.catatan='Kunci VAPID belum dipasang di berkas aplikasi.';
+  else if (hasil.izin === 'denied') hasil.catatan='Izin ditolak. Aktifkan lewat pengaturan situs di peramban.';
+  else if (hasil.izin === 'default') hasil.catatan='Izin belum diberikan. Ketuk tombol di bawah.';
+  else if (!hasil.langganan) hasil.catatan='Perangkat belum terdaftar. Ketuk tombol di bawah.';
+  else hasil.catatan='Notifikasi aktif, termasuk saat aplikasi ditutup.';
+  return hasil;
+}
+async function aktifkanNotif(){
+  await mintaIzinNotif();
+  const s = await statusNotif();
+  toast(s.langganan ? 'Notifikasi aktif di perangkat ini' : s.catatan);
+  if (typeof render === 'function') render();
 }
 
 /* Kirim notifikasi lewat service worker supaya tetap muncul di latar belakang */
