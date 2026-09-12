@@ -6,7 +6,7 @@
    Taruh berkas ini di akar situs, sejajar dengan office.html
    dan terapis.html, agar cakupannya meliputi seluruh halaman.
    ===================================================================== */
-const VERSI = 'mahyra-v4';
+const VERSI = 'mahyra-v5';
 const INTI  = ['/logo.png', '/icon-192.png', '/icon-512.png', '/icon-badge.png',
                '/manifest-office.json', '/manifest-terapis.json'];
 
@@ -59,8 +59,10 @@ self.addEventListener('push', e => {
     badge: '/icon-badge.png',
     tag: 'mahyra-' + (d.tipe || 'info'),
     renotify: true,
-    vibrate: [90, 60, 90],
+    silent: false,                       // pakai nada notifikasi perangkat
+    vibrate: [120, 70, 120, 70, 180],
     requireInteraction: d.tipe === 'order',
+    actions: [{ action: 'buka', title: 'Buka' }],
     data: { url: d.url || '/terapis' }
   }));
 });
@@ -83,7 +85,8 @@ self.addEventListener('message', e => {
     badge: '/icon-badge.png',
     tag: d.tag || 'mahyra',
     renotify: true,
-    vibrate: [90, 60, 90],
+    silent: false,
+    vibrate: [120, 70, 120],
     data: { url: d.url || '/terapis' }
   });
 });
