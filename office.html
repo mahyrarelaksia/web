@@ -135,6 +135,33 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .notif-item h5{font-size:13.5px;font-weight:600;line-height:1.35}
 @media(max-width:760px){
   aside{display:none}
+  /* Semua kotak selebar layar, tidak ada yang meluber ke samping */
+  html,body{max-width:100%;overflow-x:hidden}
+  #app,.shell,main,.card{max-width:100%}
+  .card{padding:14px;border-radius:16px}
+  .grid{gap:10px}
+  .g4,.g3,.g2{grid-template-columns:1fr 1fr}
+  .stat .val{font-size:18px}
+  .stat .lbl{font-size:10px}
+  .stat .sub{font-size:11px}
+  .head h3{font-size:15px}
+  .tw{overflow-x:visible}
+  /* Tabel diubah jadi kartu supaya tidak perlu digeser */
+  table,thead,tbody,tr,th,td{display:block;width:100%}
+  thead{display:none}
+  tbody tr{border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-bottom:9px;background:#fff}
+  tbody tr:hover{background:#fff}
+  tbody td{border:0;padding:4px 0;display:flex;justify-content:space-between;gap:12px;
+    align-items:center;font-size:12.5px;text-align:right}
+  tbody td:before{content:attr(data-label);color:var(--muted);font-size:11.5px;font-weight:500;
+    text-align:left;flex:none;max-width:46%}
+  tbody td:first-child{font-weight:600;font-size:13.5px;padding-bottom:7px;margin-bottom:5px;
+    border-bottom:1px solid var(--line)}
+  tbody td:empty{display:none}
+  tbody td .row{justify-content:flex-end}
+  .btn{padding:9px 14px;font-size:12.5px}
+  .modal .sheet{max-height:92vh;border-radius:20px 20px 0 0;align-self:flex-end;padding:18px 16px}
+  .modal{place-items:end center;padding:0}
   .shell{grid-template-columns:1fr}
   main{padding:14px 14px 96px}
   #app{padding-bottom:0}
@@ -1143,8 +1170,8 @@ function renderModule(key){
 function tableHtml(rows,cols,key,extra){
   if(!rows.length) return `<div class="empty"><div class="disp">Belum ada data</div><div>Tambahkan entri pertama lewat tombol di atas.</div></div>`;
   return `<div class="tw"><table><thead><tr>${cols.map(c=>`<th>${c.l||cap(c.k)}</th>`).join('')}${key?'<th></th>':''}</tr></thead><tbody>
-    ${rows.map(r=>`<tr>${cols.map(c=>`<td>${cellVal(r,c)}</td>`).join('')}
-      ${key?`<td style="text-align:right"><div class="row" style="justify-content:flex-end">
+    ${rows.map(r=>`<tr>${cols.map(c=>`<td data-label="${esc(c.l||cap(c.k))}">${cellVal(r,c)}</td>`).join('')}
+      ${key?`<td data-label="Tindakan" style="text-align:right"><div class="row" style="justify-content:flex-end">
         ${extra?extra(r):''}<button class="btn ghost sm" onclick="openForm('${key}','${r.id}')">Ubah</button></div></td>`:''}
     </tr>`).join('')}</tbody></table></div>`;
 }
@@ -2061,6 +2088,17 @@ function skemaJabatan(jabatanId){
   return s.map(x=>`<span class="tag ${x.cabang_id?'info':'ok'}">${x.cabang_id?esc(nm('cabang',x.cabang_id)):'Semua cabang'}</span>`).join(' ');
 }
 
+/* Komisi seorang terapis untuk sebuah layanan, mengikuti skema gajinya.
+   Imbalan tetap per orderan menang atas persentase. */
+function komisiUntuk(karyawanId, layanan, diskon){
+  const k=get('karyawan',karyawanId); if(!k||!layanan) return 0;
+  const s=skemaKaryawan(k);
+  if(s.fee>0) return Math.round(s.fee);
+  const persen=s.persen||Number(layanan.komisi_persen||0);
+  const dasar=Math.max(0,Number(layanan.harga||0)-Number(diskon||0));
+  return Math.round(dasar*persen/100);
+}
+
 /* Ringkasan komponen sebuah skema gaji */
 function ringkasSkemaGaji(s){
   const b=[];
@@ -2357,12 +2395,9 @@ async function simpanOrder(){
 
   const ruangan=document.getElementById('o_room').value;
   for(const idTer of ORD.terapis){
-    const k=get('karyawan',idTer), j=get('jabatan',k?.jabatan_id)||{};
-    const fee=k?.fee_per_order??j.fee_per_order??0;
-    const persen=k?.persen_komisi||j.persen_komisi||l.komisi_persen||0;
     await simpan('item',{id:uid(),pesanan_id:p.id,layanan_id:l.id,terapis_id:idTer,ruangan,qty:1,
       harga:l.harga,durasi:l.durasi_menit,subtotal:l.harga,
-      komisi:fee>0?fee:Math.round(l.harga*persen/100),status:'menunggu'});
+      komisi:komisiUntuk(idTer,l,disk),status:'menunggu'});
   }
   render(); kirimOrder(p.id);
   toast('Order '+p.nomor+' dibuat');
