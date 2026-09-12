@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mahyra Relaksia — Portal Office</title>
+<link rel="manifest" href="/manifest-office.json">
+<meta name="theme-color" content="#1F4C86">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mahyra Office">
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="apple-touch-icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -84,6 +90,23 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .hint{font-size:12px;color:var(--muted)}
 .err{background:#FAEAEC;color:var(--bad);padding:9px 12px;border-radius:10px;font-size:13px;margin-bottom:12px;display:none}
 .err.on{display:block}
+
+/* ---------- Ajakan pasang aplikasi ---------- */
+.pasang{position:fixed;left:50%;transform:translateX(-50%) translateY(150%);bottom:14px;z-index:96;
+ width:calc(100% - 24px);max-width:460px;background:#fff;border:1px solid var(--line);border-radius:20px;
+ padding:15px 16px;box-shadow:0 20px 48px rgba(16,44,80,.26);display:flex;gap:13px;align-items:flex-start;
+ transition:transform .38s cubic-bezier(.2,.8,.3,1)}
+.pasang.on{transform:translateX(-50%) translateY(0)}
+.pasang img{width:46px;height:46px;border-radius:14px;border:1px solid var(--line);padding:3px;
+ object-fit:contain;flex:none;background:#fff}
+.pasang h5{font-size:14.5px;font-weight:600;line-height:1.3}
+.pasang p{font-size:12.5px;color:var(--muted);margin:3px 0 10px;line-height:1.5}
+.pasang .aksi{display:flex;gap:8px;flex-wrap:wrap}
+.pasang .aksi .btn{padding:9px 16px;font-size:13px}
+.pasang .tutup{position:absolute;top:9px;right:11px;background:none;border:0;color:var(--muted);
+ font-size:17px;cursor:pointer;line-height:1;padding:4px}
+.langkah-ios{background:var(--mist);border-radius:12px;padding:11px 13px;margin-top:8px;font-size:12.5px;line-height:1.7}
+.langkah-ios b{font-weight:600}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:99}
 .toast.on{opacity:1}
 .hanya-mobil{display:none}
@@ -167,6 +190,7 @@ main{padding:14px}
 </div>
 
 <div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="pasang" id="ajakPasang"></div>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -179,7 +203,106 @@ main{padding:14px}
 const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
+const NAMA_APP = "Mahyra Office";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+/* =====================================================================
+   PWA — pasang ke layar utama & notifikasi
+   Ajakan muncul di tiap perangkat yang belum memasangnya, termasuk saat
+   masuk dari ponsel lain. Setelah dipasang, ajakan berhenti muncul.
+   ===================================================================== */
+let SIAP_PASANG = null;
+
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js')
+    .catch(e => console.warn('Service worker gagal dipasang:', e)));
+}
+
+const sudahTerpasang = () =>
+  matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+const iniIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
+  && !/crios|fxios/i.test(navigator.userAgent);
+
+addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); SIAP_PASANG = e;
+  if (!sudahTerpasang()) setTimeout(() => ajakPasang(), 2500);
+});
+
+addEventListener('appinstalled', () => {
+  tutupAjakan();
+  try { localStorage.setItem('mahyra_terpasang', '1'); } catch (_) {}
+  if (typeof toast === 'function') toast('Aplikasi terpasang di layar utama');
+});
+
+function ajakPasang(){
+  if (sudahTerpasang()) return;
+  const kotak = document.getElementById('ajakPasang');
+  if (!kotak) return;
+  const iosMode = iniIOS() && !SIAP_PASANG;
+  if (!SIAP_PASANG && !iosMode) return;      // peramban belum siap memasang
+
+  kotak.innerHTML = `
+    <button class="tutup" onclick="tutupAjakan(true)" aria-label="Tutup">&times;</button>
+    <img src="logo.png" alt="Mahyra Massage">
+    <div style="flex:1;min-width:0">
+      <h5>Pasang ${NAMA_APP} di ponsel ini</h5>
+      <p>Bisa dibuka langsung dari layar utama seperti aplikasi biasa,
+         terbuka lebih cepat, dan notifikasi tetap masuk.</p>
+      ${iosMode ? `<div class="langkah-ios">
+          1. Ketuk tombol <b>Bagikan</b> di bawah layar<br>
+          2. Pilih <b>Tambahkan ke Layar Utama</b><br>
+          3. Ketuk <b>Tambah</b></div>
+        <div class="aksi" style="margin-top:9px">
+          <button class="btn ghost" onclick="tutupAjakan(true)">Mengerti</button></div>`
+        : `<div class="aksi">
+          <button class="btn" onclick="pasangSekarang()">Pasang sekarang</button>
+          <button class="btn ghost" onclick="tutupAjakan(true)">Nanti saja</button></div>`}
+    </div>`;
+  kotak.classList.add('on');
+}
+
+async function pasangSekarang(){
+  if (!SIAP_PASANG) return tutupAjakan(true);
+  SIAP_PASANG.prompt();
+  const { outcome } = await SIAP_PASANG.userChoice;
+  SIAP_PASANG = null;
+  tutupAjakan(outcome !== 'accepted');
+}
+
+function tutupAjakan(tunda){
+  const k = document.getElementById('ajakPasang');
+  if (k) k.classList.remove('on');
+  // ditunda sehari, lalu ditawarkan lagi di perangkat yang sama
+  if (tunda) { try { localStorage.setItem('mahyra_tunda_pasang', Date.now() + 864e5); } catch (_) {} }
+}
+
+/* Dipanggil setelah berhasil masuk */
+function cekPasang(){
+  if (sudahTerpasang()) return;
+  let tunda = 0;
+  try { tunda = Number(localStorage.getItem('mahyra_tunda_pasang') || 0); } catch (_) {}
+  if (Date.now() < tunda) return;
+  setTimeout(() => ajakPasang(), 2500);
+}
+
+/* Izin notifikasi, diminta setelah masuk agar tidak mengagetkan */
+async function mintaIzinNotif(){
+  if (!('Notification' in window) || Notification.permission !== 'default') return;
+  try { await Notification.requestPermission(); } catch (_) {}
+}
+
+/* Kirim notifikasi lewat service worker supaya tetap muncul di latar belakang */
+async function notifSistem(judul, pesan, url){
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    reg.active && reg.active.postMessage({ tipe:'notif', judul, pesan, url, tag:'mahyra-order' });
+  } catch (_) {
+    try { new Notification(judul, { body: pesan, icon: 'logo.png' }); } catch (__) {}
+  }
+}
+
 const sb = LIVE ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 /* nama tabel di Supabase untuk tiap kunci lokal */
@@ -497,6 +620,7 @@ async function masuk(){
     meName.textContent=ME.nama; meRole.textContent=nm('jabatan',ME.jabatan_id); meAv.textContent=ME.nama[0];
     try{ muatModel(); }catch(e){ console.warn('Model biaya dilewati:',e); }
     buildSide(); go(halamanPertama());
+    cekPasang();
   }catch(e){ err.textContent=e.message; err.classList.add('on'); }
   btnLogin.disabled=false; btnLogin.textContent='Masuk';
 }
