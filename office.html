@@ -613,8 +613,9 @@ const F={
  skema_gaji:{title:'Skema Gaji',sub:'Aturan penggajian per jabatan dan cabang. Satu jabatan boleh punya aturan berbeda di tiap cabang.',
   info:'<strong>Bulanan</strong> — gaji pokok tetap sebulan, dipotong bila hari kerjanya kurang. Untuk admin, kasir, kepala cabang.<br>'+
        '<strong>Harian</strong> — dibayar per hari kerja efektif, tanpa gaji pokok. Untuk terapis tetap.<br>'+
-       '<strong>Training</strong> — gaji pokok dikurangi potongan untuk tiap hari yang tidak bekerja. Untuk terapis masa percobaan.<br>'+
-       'Isi hanya kolom yang dipakai; sisanya biarkan nol.',
+       '<strong>Training</strong> — gaji pokok dikurangi potongan untuk tiap hari yang tidak bekerja. Untuk terapis masa percobaan.<br><br>'+
+       'Bonus target, service motor, dan BPJS hanya muncul di portal terapis bila diisi. Biarkan nol bila tidak diberikan.<br>'+
+       'Hari kerja dihitung dari hari yang punya absen masuk sekaligus absen pulang.',
   fields:[{k:'nama',l:'Nama skema'},
    {k:'jabatan_id',l:'Jabatan',t:'ref',ref:'jabatan'},
    {k:'cabang_id',l:'Cabang (kosongkan bila berlaku semua)',t:'ref',ref:'cabang'},
@@ -628,6 +629,12 @@ const F={
    {k:'fee_per_order',l:'Imbalan tetap per orderan',t:'rp'},
    {k:'gaji_minimal',l:'Gaji minimal sebulan (jaminan)',t:'rp'},
    {k:'hari_kerja',l:'Hari kerja sebulan',t:'num'},
+   {k:'bonus_target1_order',l:'Bonus target 1 — jumlah order',t:'num'},
+   {k:'bonus_target1_nominal',l:'Bonus target 1 — nominal',t:'rp'},
+   {k:'bonus_target2_order',l:'Bonus target 2 — jumlah order',t:'num'},
+   {k:'bonus_target2_nominal',l:'Bonus target 2 — nominal',t:'rp'},
+   {k:'bonus_service_motor',l:'Bonus service motor per bulan',t:'rp'},
+   {k:'bonus_bpjs',l:'BPJS ditanggung per bulan',t:'rp'},
    {k:'catatan',l:'Catatan',t:'area'},
    {k:'aktif',l:'Aktif',t:'bool'}],
   cols:[{k:'nama'},
@@ -636,6 +643,7 @@ const F={
    {k:'tipe_gaji',l:'Tipe',t:'tag'},
    {k:'isi',l:'Komponen',fn:r=>ringkasSkemaGaji(r)},
    {k:'gaji_minimal',l:'Minimal',t:'rp'},
+   {k:'bns',l:'Bonus',fn:r=>ringkasBonusSkema(r)},
    {k:'ak',l:'Status',fn:r=>r.aktif!==false?'<span class="tag ok">Aktif</span>':'<span class="tag">Nonaktif</span>'}]},
  target:{title:'Target',sub:'Target omzet dan order per cabang maupun per terapis.',
   fields:[{k:'periode',l:'Periode (YYYY-MM)'},{k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},
@@ -685,7 +693,8 @@ function openForm(key,id){
   const m=F[key]; EDIT={mod:key,id};
   const BAWAAN={karyawan:{role:'kasir',status:'aktif',cabang_id:ME.cabang_id},
                 jabatan:{lingkup:'cabang',level:1},
-                skema_gaji:{tipe_gaji:'harian',hari_kerja:26,aktif:true,cabang_id:null},
+                skema_gaji:{tipe_gaji:'harian',hari_kerja:26,aktif:true,cabang_id:null,
+                  bonus_target1_order:0,bonus_target2_order:0,bonus_service_motor:0,bonus_bpjs:0},
                 pengeluaran:{cabang_id:ME.cabang_id,status:'menunggu'},
                 jadwal:{cabang_id:ME.cabang_id},absensi:{cabang_id:ME.cabang_id},
                 target:{cabang_id:ME.cabang_id,periode:periode()},
@@ -1639,6 +1648,16 @@ async function diagnosa(){
     {k:'hasil',l:'Hasil',fn:r=>`<span class="tag ${r.ok?'ok':'bad'}">${esc(r.hasil)}</span>`}]);
 }
 
+/* Ringkasan bonus yang melekat pada sebuah skema */
+function ringkasBonusSkema(s){
+  const b=[];
+  if(s.bonus_target1_order>0) b.push(s.bonus_target1_order+' order → '+rp(s.bonus_target1_nominal));
+  if(s.bonus_target2_order>0) b.push(s.bonus_target2_order+' order → '+rp(s.bonus_target2_nominal));
+  if(s.bonus_service_motor>0) b.push('motor '+rp(s.bonus_service_motor));
+  if(s.bonus_bpjs>0)          b.push('BPJS '+rp(s.bonus_bpjs));
+  return b.length?b.join('<br>'):'<span class="hint">—</span>';
+}
+
 /* Skema apa saja yang terpasang untuk sebuah jabatan */
 function skemaJabatan(jabatanId){
   const s=DB.skema_gaji.filter(x=>x.jabatan_id===jabatanId&&x.aktif!==false);
@@ -1686,18 +1705,20 @@ function skemaKaryawan(k){
     tunjangan:N(s.tunjangan), potongan:N(s.potongan_harian),
     fee:N(s.fee_per_order), persen:N(s.persen_komisi),
     uangMakan:N(s.uang_makan), minimal:N(s.gaji_minimal),
-    hariKerja:N(s.hari_kerja)||26 };
+    hariKerja:N(s.hari_kerja)||26,
+    bonusT1Order:N(s.bonus_target1_order), bonusT1Nominal:N(s.bonus_target1_nominal),
+    bonusT2Order:N(s.bonus_target2_order), bonusT2Nominal:N(s.bonus_target2_nominal),
+    bonusMotor:N(s.bonus_service_motor), bonusBpjs:N(s.bonus_bpjs) };
 }
 /* Hari kerja efektif: hari dengan minimal satu orderan selesai atau check in */
+/* Hari kerja efektif: hari yang punya absen masuk sekaligus absen pulang */
 function hariEfektif(karyawanId,per){
-  const hari=new Set();
-  DB.item.filter(i=>i.terapis_id===karyawanId&&i.status==='selesai')
-    .forEach(i=>{const d=String(i.jam_selesai||'').slice(0,10)||today(); if(d.startsWith(per)) hari.add(d)});
-  DB.absensi.filter(a=>a.karyawan_id===karyawanId&&String(a.tanggal).startsWith(per)&&a.jam_masuk)
-    .forEach(a=>hari.add(String(a.tanggal).slice(0,10)));
+  const peta={};
   DB.absen_log.filter(a=>a.karyawan_id===karyawanId&&String(a.tanggal).startsWith(per))
-    .forEach(a=>hari.add(String(a.tanggal).slice(0,10)));
-  return hari.size;
+    .forEach(a=>{const d=String(a.tanggal).slice(0,10);
+      peta[d]=peta[d]||{masuk:false,pulang:false};
+      if(a.tipe==='masuk') peta[d].masuk=true; else peta[d].pulang=true;});
+  return Object.values(peta).filter(h=>h.masuk&&h.pulang).length;
 }
 
 /* --------------------------- aksi --------------------------- */
@@ -1735,7 +1756,11 @@ async function hitungGaji(){
       pot=Math.max(0,s.potongan*(HK-efektif)); }
     else { pokok=s.pokok; pot=efektif<HK?Math.round(s.pokok/HK)*(HK-efektif):0; }
 
-    const hitung=pokok+upah+s.tunjangan+um+kom+bon-pot;
+    let bonusSkema=0;
+    if(s.bonusT2Order>0&&nOrder>=s.bonusT2Order)      bonusSkema+=s.bonusT2Nominal;
+    else if(s.bonusT1Order>0&&nOrder>=s.bonusT1Order) bonusSkema+=s.bonusT1Nominal;
+    if(efektif>0) bonusSkema+=s.bonusMotor+s.bonusBpjs;
+    const hitung=pokok+upah+s.tunjangan+um+kom+bon+bonusSkema-pot;
     // gaji minimal diprorata menurut hari kerja efektif
     const minimal=s.minimal>0?Math.round(s.minimal*Math.min(efektif,HK)/HK):0;
     const sesuai=Math.max(0,minimal-hitung);
@@ -1746,7 +1771,7 @@ async function hitungGaji(){
     await simpan('gaji',{id:lama?.id||uid(),periode:per,karyawan_id:k.id,tipe_gaji:s.tipe,
       skema_nama:s.nama,hari_kerja:HK,hari_hadir:efektif,hari_efektif:efektif,jml_order:nOrder,
       gaji_pokok:pokok,upah_harian:upah,tunjangan:s.tunjangan,uang_makan:um,
-      total_komisi:kom,total_bonus:bon,potongan_absen:pot,potongan_kasbon:ksb,
+      total_komisi:kom,total_bonus:bon+bonusSkema,potongan_absen:pot,potongan_kasbon:ksb,
       gaji_minimal:minimal,penyesuaian:sesuai,total_terima:total,status:'draft'});
   }
   render(); toast('Gaji periode '+periode()+' dihitung');
