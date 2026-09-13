@@ -714,7 +714,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.13.8';
+const VERSI_APP='2026.09.14.3';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -820,11 +820,14 @@ function cellVal(r,c){ if(c.fn)return c.fn(r); const v=r[c.k];
   if(c.t==='rp')return `<span class="rp">${rp(v)}</span>`; if(c.t==='date')return tgl(v);
   if(c.t==='tag')return tagHtml(v); return esc(v??'-'); }
 function tagHtml(v){
-  const ok=['aktif','selesai','disetujui','hadir','dibayar','final'],
-        warn=['menunggu','berjalan','telat','draft','izin','cuti','belum'],
+  const label={menunggu:'Menunggu',berjalan:'Dikerjakan',selesai:'Selesai',
+    dijadwalkan:'Dijadwalkan',dikerjakan:'Dikerjakan',complete:'Complete',batal:'Batal'};
+  if(label[v]) v=v;
+  const ok=['aktif','selesai','complete','disetujui','hadir','dibayar','final'],
+        warn=['menunggu','berjalan','dikerjakan','dijadwalkan','telat','draft','izin','cuti','belum'],
         bad=['ditolak','alpa','batal','nonaktif','sakit'];
   const c=ok.includes(v)?'ok':warn.includes(v)?'warn':bad.includes(v)?'bad':'info';
-  return `<span class="tag ${c}">${cap(v||'-')}</span>`;
+  return `<span class="tag ${c}">${label[v]||cap(v||'-')}</span>`;
 }
 const stat=(l,v,s,cls='',aksi='')=>`<div class="card stat ${cls}"${aksi?` onclick="${aksi}" style="cursor:pointer"`:''}>
   <div class="lbl">${l}</div><div class="val">${v}</div>${s?`<div class="sub">${s}</div>`:''}</div>`;
@@ -1491,7 +1494,8 @@ async function kirimAbsen(){
       catatan:KAM.item?null:'Absen harian'});
     const i=KAM.item?get('item',KAM.item):null;
     if(i){ if(KAM.tipe==='masuk') await simpan('item',{...i,status:'berjalan',jam_mulai:new Date().toISOString()});
-           else await selesaikanItem(i); }
+           else await selesaikanItem(i);
+           await segarkanStatusOrder(i.pesanan_id); }
     let a=DB.absensi.find(x=>x.karyawan_id===ME.id&&String(x.tanggal).slice(0,10)===today());
     const log=DB.absen_log.filter(x=>x.karyawan_id===ME.id&&x.tanggal===today());
     const masuk=log.find(x=>x.tipe==='masuk'), pulang=[...log].reverse().find(x=>x.tipe==='pulang');
@@ -1533,9 +1537,19 @@ async function selesaikanItem(i){
   if(!DB.komisi.some(c=>c.item_id===i.id))
     await simpan('komisi',{id:uid(),karyawan_id:ME.id,item_id:i.id,tanggal:today(),periode:periode(),
       dasar:i.subtotal||i.harga,persen:fee>0?0:persen,nominal:komisi,dibayar:false});
-  const p=get('pesanan',i.pesanan_id);
-  if(p&&DB.item.filter(x=>x.pesanan_id===p.id).every(x=>x.status==='selesai'))
-    await simpan('pesanan',{...p,status:'selesai'});
+  await segarkanStatusOrder(i.pesanan_id);
+}
+
+/* Status order mengikuti kemajuan tiap pekerjaan */
+async function segarkanStatusOrder(pesananId){
+  const p=get('pesanan',pesananId); if(!p||p.status==='batal') return;
+  const item=DB.item.filter(i=>i.pesanan_id===pesananId&&i.status!=='batal');
+  let baru='dijadwalkan';
+  if(item.length){
+    if(item.every(i=>i.status==='selesai')) baru = p.status_bayar==='lunas'?'complete':'selesai';
+    else if(item.some(i=>i.status==='berjalan'||i.status==='selesai')) baru='dikerjakan';
+  }
+  if(baru!==p.status) await simpan('pesanan',{...p,status:baru});
 }
 
 /* ===================== KALENDER LIBUR ===================== */
