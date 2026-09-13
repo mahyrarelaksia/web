@@ -94,6 +94,7 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;background:var(--mist);color:var(--muted)}
 .tag.ok{background:#E4F4EE;color:var(--ok)}.tag.warn{background:#FBF1E1;color:var(--warn)}
 .tag.bad{background:#FAEAEC;color:var(--bad)}.tag.info{background:#E8F1FC;color:#2F6FBF}
+.tag.lunas{background:linear-gradient(135deg,#1E7A5A,#2F6FBF);color:#fff}
 .rp{font-variant-numeric:tabular-nums;font-weight:600}
 .empty{text-align:center;padding:36px 16px;color:var(--muted)}
 .empty .disp{font-size:18px;color:var(--ink);margin-bottom:6px}
@@ -271,6 +272,13 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .filter{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 .filter .rentang{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .filter input{width:auto;padding:7px 10px;font-size:13px;border-radius:10px}
+.unggah{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;
+ border:2px dashed var(--line);border-radius:16px;padding:24px 16px;cursor:pointer;transition:.18s;
+ background:var(--mist)}
+.unggah:hover{border-color:var(--jade-2);background:#F4F9FF}
+.unggah .ikon{color:var(--jade)}
+.unggah strong{font-size:14px}
+.btn.blok{width:100%}
 .baris-layanan{border:1px solid var(--line);border-radius:13px;padding:11px 12px;margin-bottom:8px;background:#fff}
 .baris-layanan .atas{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .baris-layanan .atas strong{font-size:13.5px;font-weight:600}
@@ -379,7 +387,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.14.2";
+const VERSI_APP = "2026.09.14.3";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1484,6 +1492,26 @@ function tableHtml(rows,cols,key,extra){
 function cellVal(r,c){ if(c.fn)return c.fn(r); const v=r[c.k];
   if(c.t==='rp')return `<span class="rp">${rp(v)}</span>`; if(c.t==='date')return tgl(v);
   if(c.t==='tag')return tagHtml(v); return esc(v??'-'); }
+/* Lencana status pengerjaan dan pembayaran, dengan warna yang konsisten */
+const STATUS_ORDER={
+  dijadwalkan:{teks:'Dijadwalkan', kelas:'info'},
+  dikerjakan :{teks:'Dikerjakan',  kelas:'warn'},
+  selesai    :{teks:'Selesai',     kelas:'ok'},
+  complete   :{teks:'Complete',    kelas:'lunas'},
+  batal      :{teks:'Batal',       kelas:'bad'}
+};
+const STATUS_BAYAR={
+  belum:{teks:'Belum dibayar', kelas:'warn'},
+  lunas:{teks:'Sudah dibayar', kelas:'ok'},
+  batal:{teks:'Dibatalkan',    kelas:'bad'}
+};
+function lencanaOrder(p){
+  const s=STATUS_ORDER[p.status]||{teks:cap(p.status),kelas:'info'};
+  const b=STATUS_BAYAR[p.status_bayar]||{teks:cap(p.status_bayar||'belum'),kelas:'warn'};
+  if(p.status==='complete') return `<span class="tag lunas">Complete</span>`;
+  if(p.status==='batal')    return `<span class="tag bad">Batal</span>`;
+  return `<span class="tag ${s.kelas}">${s.teks}</span> <span class="tag ${b.kelas}">${b.teks}</span>`;
+}
 function tagHtml(v){
   const ok=['aktif','selesai','disetujui','hadir','lunas','dibayar','final','owner','admin'],
         warn=['menunggu','berjalan','telat','draft','izin','cuti','manajer','kasir'],
@@ -1767,7 +1795,8 @@ order(){
     <div class="hanya-desktop">${tableHtml(rows,[{k:'nomor',l:'No. order'},
       {k:'kerja',l:'Pengerjaan',fn:r=>tgl(r.tgl_kerja||r.tanggal)+' · '+String(r.jam_kerja||r.jam||'-').slice(0,5)},
       {k:'pel',l:'Pelanggan'},{k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},{k:'total',t:'rp'},
-      {k:'metode_bayar',l:'Bayar'},{k:'status',t:'tag'},
+      {k:'metode_bayar',l:'Metode'},
+      {k:'status',l:'Status',fn:r=>lencanaOrder(r)},
       {k:'aksi',l:'Tindakan',fn:r=>tombolOrder(r.id)}])}</div>
     <div class="hanya-mobil">${rows.length?rows.map((r,i)=>kartuOrder(r,i)).join('')
       :'<div class="empty"><div class="disp">Belum ada order</div><div>Buat order pertama lewat tombol di atas.</div></div>'}</div>
@@ -2786,7 +2815,7 @@ async function simpanOrder(){
     tgl_kerja:document.getElementById('o_tglkerja').value||today(),
     jam:document.getElementById('o_jam').value||jam(),
     jam_kerja:document.getElementById('o_jam').value||jam(),
-    cabang_id:cab.id,pelanggan_id:pel.id,kasir_id:ME.id,status:'berjalan',
+    cabang_id:cab.id,pelanggan_id:pel.id,kasir_id:ME.id,status:'dijadwalkan',
     subtotal:sub,diskon:disk,total:Math.max(0,sub-disk),
     metode_bayar:document.getElementById('o_bayar').value,status_bayar:'belum',
     catatan:document.getElementById('o_cat').value};
@@ -2906,7 +2935,9 @@ function kartuOrder(r, urut){
   const nada=['nada-a','nada-b','nada-c','nada-d'][(urut||0)%4];
   return `<div class="kartu-order ${nada}">
     <div class="atas"><div><div class="nomor">${esc(r.nomor||'')}</div>
-      <h4>${esc(r.pel||'-')}</h4></div>${tagHtml(r.status)}</div>
+      <h4>${esc(r.pel||'-')}</h4></div>
+      <div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+        ${lencanaOrder(r)}</div></div>
     <dl>
       <dt>Pengerjaan</dt><dd>${tgl(r.tgl_kerja||r.tanggal)} · ${esc(String(r.jam_kerja||r.jam||'-').slice(0,5))}</dd>
       <dt>Layanan</dt><dd>${esc(r.lay||'-')}</dd>
@@ -2918,15 +2949,146 @@ function kartuOrder(r, urut){
       <button class="btn ghost" onclick="waPelanggan('${r.id}')">WA Customer</button>
       <button class="btn ghost" onclick="waTerapis('${r.id}')">WA Terapis</button>
       <button class="btn" onclick="ubahOrder('${r.id}')">Ubah</button>
+      ${r.status_bayar==='belum'&&r.status!=='batal'
+        ? `<button class="btn amber" onclick="formBayar('${r.id}')">Pembayaran</button>`
+        : `<button class="btn ghost" onclick="formBayar('${r.id}')">Rincian bayar</button>`}
       <button class="btn amber" onclick="bonusOrder('${r.id}')">Bonus</button>
     </div></div>`;
 }
 function tombolOrder(id){
+  const p=get('pesanan',id)||{};
   return `<div class="row" style="flex-wrap:nowrap">
-    <button class="btn ghost sm" onclick="waPelanggan('${id}')">WA Customer</button>
-    <button class="btn ghost sm" onclick="waTerapis('${id}')">WA Terapis</button>
+    <button class="btn ghost sm" onclick="waPelanggan('${id}')">WA</button>
     <button class="btn sm" onclick="ubahOrder('${id}')">Ubah</button>
+    <button class="btn ${p.status_bayar==='belum'?'amber':'ghost'} sm" onclick="formBayar('${id}')">Bayar</button>
     <button class="btn amber sm" onclick="bonusOrder('${id}')">Bonus</button></div>`;
+}
+
+
+/* ===================== PEMBAYARAN ORDER =====================
+   Bukti transaksi diunggah, dikecilkan, lalu disimpan. Begitu ada bukti,
+   status pembayaran otomatis menjadi lunas. Pembatalan wajib beralasan. */
+let BUKTI_BARU=null;
+
+function formBayar(pesananId){
+  const p=get('pesanan',pesananId); if(!p) return;
+  BUKTI_BARU=null;
+  const sudah=p.status_bayar==='lunas', batal=p.status_bayar==='batal';
+  const item=DB.item.filter(i=>i.pesanan_id===p.id);
+
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">Pembayaran</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(p.nomor)} · ${esc(nm('pelanggan',p.pelanggan_id))}</p>
+
+    <div class="card" style="background:var(--mist);box-shadow:none;padding:13px;margin-bottom:14px">
+      ${item.map(i=>`<div class="row" style="justify-content:space-between;font-size:13px;padding:2px 0">
+        <span class="hint">${esc(nm('layanan',i.layanan_id))}</span><span class="rp">${rp(i.harga)}</span></div>`).join('')}
+      ${p.diskon>0?`<div class="row" style="justify-content:space-between;font-size:13px">
+        <span class="hint">Diskon</span><span class="rp" style="color:var(--bad)">− ${rp(p.diskon)}</span></div>`:''}
+      <div class="row" style="justify-content:space-between;border-top:1px dashed var(--line);margin-top:8px;padding-top:8px">
+        <strong>Total tagihan</strong><strong class="rp" style="font-size:17px">${rp(p.total)}</strong></div>
+      <div class="row" style="justify-content:space-between;margin-top:8px">
+        <span class="hint">Status</span><span>${lencanaOrder(p)}</span></div>
+    </div>
+
+    ${batal?`<div class="card" style="background:#FAEAEC;border:1px solid #F0D4D8;box-shadow:none;padding:13px">
+        <strong style="color:var(--bad);font-size:14px">Pembayaran dibatalkan</strong>
+        <p class="hint" style="margin-top:5px">${esc(p.alasan_batal||'Tanpa keterangan')}</p></div>
+      <button class="btn ghost blok" style="width:100%;margin-top:12px" onclick="batalkanPembatalan('${p.id}')">
+        Kembalikan ke belum dibayar</button>`
+    : sudah?`<div class="card" style="background:#E4F4EE;border:1px solid #C3E6D8;box-shadow:none;padding:13px">
+        <strong style="color:var(--ok);font-size:14px">Sudah dibayar</strong>
+        <p class="hint" style="margin-top:5px">Dicatat ${p.tgl_bayar?tgl(String(p.tgl_bayar).slice(0,10)):'-'} · ${cap(p.metode_bayar)}</p></div>
+      ${p.bukti_bayar?`<img src="${p.bukti_bayar}" alt="Bukti transaksi"
+          style="width:100%;border-radius:14px;border:1px solid var(--line);margin-top:12px">`
+        :'<p class="hint" style="margin-top:10px">Tidak ada gambar bukti yang tersimpan.</p>'}
+      <div class="row" style="margin-top:12px">
+        <label class="btn ghost" style="flex:1;text-align:center;cursor:pointer">Ganti bukti
+          <input type="file" accept="image/*" style="display:none" onchange="pilihBukti(this,'${p.id}')"></label>
+        <button class="btn ghost" style="flex:1" onclick="batalBayar('${p.id}')">Batalkan pembayaran</button></div>`
+
+    :`<div class="field"><label for="b_metode">Metode pembayaran</label>
+        <select id="b_metode">${['tunai','transfer','qris','debit'].map(m=>
+          `<option ${p.metode_bayar===m?'selected':''}>${m}</option>`).join('')}</select></div>
+
+      <label class="label" style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">
+        Bukti transaksi</label>
+      <label class="unggah" id="kotakUnggah">
+        <input type="file" accept="image/*" style="display:none" onchange="pilihBukti(this,'${p.id}')">
+        <span class="ikon">${ikon('kas',26)}</span>
+        <strong>Ketuk untuk memilih gambar</strong>
+        <span class="hint">Foto struk, tangkapan layar transfer, atau bukti QRIS</span>
+      </label>
+      <p class="hint" style="margin-top:9px">Begitu bukti tersimpan, status otomatis menjadi sudah dibayar.</p>
+
+      <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px">
+        <label class="label" style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">
+          Atau batalkan pembayaran</label>
+        <input id="b_alasan" placeholder="Alasan pembatalan, misalnya pelanggan membatalkan">
+        <button class="btn rose blok" style="width:100%;margin-top:9px" onclick="batalBayar('${p.id}')">
+          Batalkan pembayaran</button>
+      </div>`}`,
+    {kaki:`<button class="btn ghost" onclick="closeModal()">Tutup</button>`});
+}
+
+/* Gambar dikecilkan sebelum disimpan supaya ringan */
+function pilihBukti(input,pesananId){
+  const berkas=input.files&&input.files[0]; if(!berkas) return;
+  const kotak=document.getElementById('kotakUnggah');
+  if(kotak) kotak.innerHTML='<strong>Memproses gambar…</strong>';
+
+  const baca=new FileReader();
+  baca.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const lebar=Math.min(900,img.width);
+      const tinggi=Math.round(img.height/img.width*lebar);
+      const c=document.createElement('canvas'); c.width=lebar; c.height=tinggi;
+      c.getContext('2d').drawImage(img,0,0,lebar,tinggi);
+      simpanBukti(pesananId, c.toDataURL('image/jpeg',0.6));
+    };
+    img.onerror=()=>toast('Berkas itu bukan gambar yang bisa dibaca');
+    img.src=e.target.result;
+  };
+  baca.readAsDataURL(berkas);
+}
+
+async function simpanBukti(pesananId,gambar){
+  const p=get('pesanan',pesananId);
+  const metode=document.getElementById('b_metode')?.value||p.metode_bayar;
+  const hasil=await simpan('pesanan',{...p, bukti_bayar:gambar, metode_bayar:metode,
+    status_bayar:'lunas', tgl_bayar:new Date().toISOString(), alasan_batal:null,
+    status: p.status==='selesai' ? 'complete' : p.status});
+  if(!hasil) return;
+  if(!LIVE) await catatKasDemo(hasil);
+  closeModal(); render();
+  toast('Bukti tersimpan. Pembayaran ditandai lunas.');
+}
+
+async function batalBayar(pesananId){
+  const p=get('pesanan',pesananId);
+  const alasan=(document.getElementById('b_alasan')?.value||'').trim();
+  if(p.status_bayar!=='lunas' && !alasan) return toast('Tulis alasan pembatalannya dulu');
+  const hasil=await simpan('pesanan',{...p, status_bayar:'batal',
+    alasan_batal:alasan||'Dibatalkan dari rincian pembayaran',
+    dibatalkan_oleh:ME.id,
+    status: p.status==='complete' ? 'selesai' : p.status});
+  if(!hasil) return;
+  closeModal(); render(); toast('Pembayaran dibatalkan');
+}
+
+async function batalkanPembatalan(pesananId){
+  const p=get('pesanan',pesananId);
+  const hasil=await simpan('pesanan',{...p, status_bayar:'belum', alasan_batal:null});
+  if(!hasil) return;
+  closeModal(); render(); toast('Dikembalikan ke belum dibayar');
+}
+
+/* Mode demo: catat kas sendiri karena tidak ada trigger database */
+async function catatKasDemo(p){
+  if(DB.kas.some(k=>k.ref_id===p.id)) return;
+  await simpan('kas',{id:uid(),tanggal:p.tgl_kerja||p.tanggal,cabang_id:p.cabang_id,jenis:'masuk',
+    kategori:'Penjualan layanan',sumber:'pesanan',ref_id:p.id,nominal:p.total,
+    metode:p.metode_bayar,keterangan:'Pesanan '+p.nomor,dibuat_oleh:ME.id});
 }
 
 /* Beri bonus langsung dari sebuah order.
@@ -3016,30 +3178,87 @@ function ubahOrder(pesananId){
         <input type="time" id="u_jam" step="900" lang="id-ID"
           value="${esc(String(p.jam_kerja||p.jam||'').slice(0,5))}"></div>
     </div>
-    <div class="field"><label for="u_status">Status order</label><select id="u_status">
-      ${['draft','berjalan','selesai','batal'].map(s=>`<option ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="field"><label for="u_status">Status pengerjaan</label><select id="u_status">
+      ${['dijadwalkan','dikerjakan','selesai','complete','batal'].map(s=>
+        `<option value="${s}" ${p.status===s?'selected':''}>${STATUS_ORDER[s]?.teks||s}</option>`).join('')}</select>
+      <p class="hint" style="margin-top:6px">Biasanya berubah sendiri: dikerjakan saat terapis check in,
+        selesai saat check out, complete bila pembayarannya sudah lunas.</p></div>
     <div class="grid g2">
       <div class="field"><label for="u_bayar">Metode bayar</label><select id="u_bayar">
         ${['tunai','qris','transfer','debit'].map(s=>`<option ${p.metode_bayar===s?'selected':''}>${s}</option>`).join('')}</select></div>
-      <div class="field"><label for="u_lunas">Status bayar</label><select id="u_lunas">
-        ${['belum','sebagian','lunas'].map(s=>`<option ${p.status_bayar===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label>Status pembayaran</label>
+        <div style="padding:9px 0">${lencanaOrder(p)}</div>
+        <button type="button" class="btn ghost sm" onclick="closeModal();formBayar('${p.id}')">Buka rincian pembayaran</button></div>
     </div>
     <div class="field"><label for="u_disk">Diskon</label><input type="number" id="u_disk" value="${p.diskon||0}"></div>
     <div class="field"><label for="u_cat">Catatan</label><textarea id="u_cat" rows="2">${esc(p.catatan||'')}</textarea></div>
 
     <label class="label" style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px">Pekerjaan dalam order ini</label>
-    ${item.map(i=>`<div class="list-item"><span class="dot"></span><div style="flex:1">
-        <strong>${esc(nm('layanan',i.layanan_id))}</strong> ${tagHtml(i.status)}
-        <div class="hint">${esc(nm('karyawan',i.terapis_id))} · ${rp(i.harga)} · komisi ${rp(i.komisi)}</div></div>
-      <select style="width:auto" onchange="ubahItem('${i.id}',this.value)">
-        ${['menunggu','berjalan','selesai','batal'].map(s=>`<option ${i.status===s?'selected':''}>${s}</option>`).join('')}
-      </select></div>`).join('')}`, {kaki: `<button class="btn" onclick="simpanUbahOrder('${p.id}')">Simpan perubahan</button>
+    ${item.map(i=>{
+      const l=get('layanan',i.layanan_id)||{};
+      const perlu=l.butuh_terapis!==false;
+      const terapis=opsiRef('karyawan').filter(k=>k.role==='terapis'&&k.status==='aktif');
+      return `<div class="baris-layanan">
+        <div class="atas"><div style="min-width:0">
+          <strong>${esc(l.nama||'-')}</strong> ${tagHtml(i.status)}
+          <div class="hint">${rp(i.harga)}${i.komisi?' · komisi '+rp(i.komisi):''}</div></div></div>
+        <div class="isian">
+          ${perlu?`<div><label>Terapis</label>
+            <select onchange="gantiTerapis('${i.id}',this.value)">
+              <option value="">— belum ditentukan —</option>
+              ${terapis.map(k=>`<option value="${k.id}" ${i.terapis_id===k.id?'selected':''}>${esc(k.nama)}</option>`).join('')}
+            </select></div>`:'<div><label>Terapis</label><input value="tidak perlu" disabled></div>'}
+          <div><label>Status</label>
+            <select onchange="ubahItem('${i.id}',this.value)">
+              ${['menunggu','berjalan','selesai','batal'].map(s=>`<option ${i.status===s?'selected':''}>${s}</option>`).join('')}
+            </select></div>
+        </div></div>`}).join('')}`, {kaki: `<button class="btn" onclick="simpanUbahOrder('${p.id}')">Simpan perubahan</button>
       <button class="btn ghost" onclick="closeModal()">Batal</button>`})
 }
+/* Mengganti terapis: yang lama diberi tahu bahwa tugasnya dialihkan */
+async function gantiTerapis(itemId,terapisBaru){
+  const i=get('item',itemId);
+  const lama=i.terapis_id;
+  if(lama===(terapisBaru||null)) return;
+  const l=get('layanan',i.layanan_id)||{};
+  const hasil=await simpan('item',{...i,terapis_id:terapisBaru||null,
+    komisi:terapisBaru?komisiUntuk(terapisBaru,{...l,harga:i.harga},0):0});
+  if(!hasil) return;
+  if(!LIVE){
+    const p=get('pesanan',i.pesanan_id)||{};
+    const ket=`${l.nama||'Layanan'} untuk ${nm('pelanggan',p.pelanggan_id)}`;
+    if(lama) await simpan('notifikasi',{id:uid(),karyawan_id:lama,
+      judul:'Orderan dialihkan ke terapis lain',
+      pesan:ket+' — tugas ini tidak lagi menjadi bagian Anda.',tipe:'order',
+      created_at:new Date().toISOString(),dibaca:false});
+    if(terapisBaru) await simpan('notifikasi',{id:uid(),karyawan_id:terapisBaru,
+      judul:'Ada orderan baru untuk Anda',pesan:ket,tipe:'order',
+      created_at:new Date().toISOString(),dibaca:false});
+  }
+  render();
+  toast(terapisBaru
+    ? (lama?'Dialihkan ke '+nm('karyawan',terapisBaru)+'. Terapis sebelumnya diberi tahu.'
+           :'Ditugaskan ke '+nm('karyawan',terapisBaru))
+    : 'Penugasan dilepas');
+}
+
 async function ubahItem(itemId,status){
   const i=get('item',itemId);
   await simpan('item',{...i,status});
-  toast('Status pekerjaan diperbarui');
+  if(!LIVE) await segarkanStatusOrder(i.pesanan_id);
+  render(); toast('Status pekerjaan diperbarui');
+}
+
+/* Mode demo: status order dihitung sendiri dari status tiap pekerjaan */
+async function segarkanStatusOrder(pesananId){
+  const p=get('pesanan',pesananId); if(!p||p.status==='batal') return;
+  const item=DB.item.filter(i=>i.pesanan_id===pesananId&&i.status!=='batal');
+  let baru='dijadwalkan';
+  if(item.length){
+    if(item.every(i=>i.status==='selesai')) baru = p.status_bayar==='lunas'?'complete':'selesai';
+    else if(item.some(i=>i.status==='berjalan'||i.status==='selesai')) baru='dikerjakan';
+  }
+  if(baru!==p.status) await simpan('pesanan',{...p,status:baru});
 }
 async function simpanUbahOrder(pesananId){
   const p=get('pesanan',pesananId);
@@ -3052,7 +3271,6 @@ async function simpanUbahOrder(pesananId){
     jam:document.getElementById('u_jam').value,
     status:document.getElementById('u_status').value,
     metode_bayar:document.getElementById('u_bayar').value,
-    status_bayar:document.getElementById('u_lunas').value,
     diskon:disk,subtotal:sub,total:Math.max(0,sub-disk),
     catatan:document.getElementById('u_cat').value});
   if(!hasil) return;
