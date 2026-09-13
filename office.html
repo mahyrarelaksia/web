@@ -39,8 +39,17 @@ aside .mark{background:rgba(255,255,255,.94);border-color:rgba(255,255,255,.55)}
 
 #app{display:none;min-height:100vh}
 .shell{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
-aside{background:linear-gradient(178deg,#4C8FD6 0%,#2F6FBF 45%,#1F4C86 100%);color:#DCEAF8;padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;align-self:start}
-aside .brand{color:#fff;padding:0 8px 14px}
+aside{background:linear-gradient(178deg,#4C8FD6 0%,#2F6FBF 45%,#1F4C86 100%);color:#DCEAF8;
+ padding:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+ overflow:hidden;align-self:start}
+/* kepala sidebar tetap terlihat saat daftar menu digulir */
+.aside-kepala{flex:none;padding:18px 12px 10px;background:linear-gradient(178deg,#4C8FD6,#3C7FCB);
+ box-shadow:0 6px 16px rgba(16,44,80,.18);position:relative;z-index:2}
+.aside-menu{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:6px 12px 18px;
+ display:flex;flex-direction:column;gap:4px;scrollbar-width:thin}
+.aside-menu::-webkit-scrollbar{width:5px}
+.aside-menu::-webkit-scrollbar-thumb{background:rgba(255,255,255,.24);border-radius:5px}
+aside .brand{color:#fff;padding:0 8px 12px}
 .navgrp{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#A9C9EA;margin:16px 10px 6px}
 .nav{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:12px;cursor:pointer;font-size:13.5px}
 .nav:hover{background:rgba(255,255,255,.13);color:#fff}
@@ -262,6 +271,22 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .filter{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 .filter .rentang{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .filter input{width:auto;padding:7px 10px;font-size:13px;border-radius:10px}
+.baris-layanan{border:1px solid var(--line);border-radius:13px;padding:11px 12px;margin-bottom:8px;background:#fff}
+.baris-layanan .atas{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.baris-layanan .atas strong{font-size:13.5px;font-weight:600}
+.baris-layanan .petunjuk{font-size:11.5px;color:var(--warn);background:#FFF8EC;border:1px solid #F0E0C4;
+ border-radius:9px;padding:6px 9px;margin-top:7px;line-height:1.5}
+.baris-layanan .isian{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.baris-layanan label,.baris-layanan .mini{display:block;font-size:10.5px;letter-spacing:.06em;
+ text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
+.baris-layanan input,.baris-layanan select{padding:8px 10px;font-size:13px;border-radius:9px}
+.baris-layanan input[readonly],.baris-layanan input:disabled{background:var(--mist);color:var(--muted)}
+.hapus-baris{width:26px;height:26px;border-radius:8px;flex:none;cursor:pointer;padding:0;
+ border:1px solid #F0D4D8;background:#FBEBEC;color:#C0392B;display:grid;place-items:center;
+ transform:rotate(45deg);transition:.15s}
+.hapus-baris:hover{background:#C0392B;border-color:#C0392B;color:#fff}
+.hapus-baris svg{display:block}
+@media(max-width:520px){.baris-layanan .isian{grid-template-columns:1fr}}
 .kartu-order{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;background:#fff;
  border-left-width:4px}
 /* nada berselang supaya antar order mudah dibedakan */
@@ -354,7 +379,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.14.1";
+const VERSI_APP = "2026.09.14.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1134,10 +1159,14 @@ const F={
    {k:'cabang_id',l:'Cabang (kosongkan bila berlaku semua)',t:'ref',ref:'cabang'},
    {k:'kategori',l:'Kategori',t:'sel',o:['Pijat','Refleksi','Perawatan','Paket','Terapi','Khusus']},
    {k:'durasi_menit',l:'Durasi (menit)',t:'num'},{k:'harga',l:'Harga',t:'rp'},{k:'komisi_persen',l:'Komisi (%)',t:'num'},
+   {k:'harga_manual',l:'Nominal diisi saat order (transport, biaya tambahan)',t:'bool'},
+   {k:'butuh_terapis',l:'Perlu ditugaskan ke terapis',t:'bool'},
+   {k:'catatan_kasir',l:'Petunjuk untuk kasir',t:'area'},
    {k:'deskripsi',l:'Deskripsi',t:'area'},{k:'aktif',l:'Ditampilkan di kasir',t:'bool'}],
   cols:[{k:'kode'},{k:'nama'},
    {k:'cab',l:'Cabang',fn:r=>r.cabang_id?esc(nm('cabang',r.cabang_id)):'<span class="tag">Semua cabang</span>'},
-   {k:'kategori'},{k:'dur',l:'Durasi',fn:r=>r.durasi_menit+' mnt'},{k:'harga',t:'rp'},
+   {k:'kategori'},{k:'dur',l:'Durasi',fn:r=>r.durasi_menit?r.durasi_menit+' mnt':'—'},
+   {k:'harga',l:'Harga',fn:r=>r.harga_manual?'<span class="tag warn">Diisi manual</span>':rp(r.harga)},
    {k:'kom',l:'Komisi',fn:r=>r.komisi_persen+'%'}]},
  pelanggan:{title:'Pelanggan',sub:'Riwayat kunjungan, poin member, dan catatan preferensi.',
   fields:[{k:'kode',l:'Kode member'},{k:'nama',l:'Nama'},{k:'telepon',l:'Telepon'},{k:'jenis_kelamin',l:'Jenis kelamin',t:'sel',o:['L','P']},
@@ -1275,17 +1304,21 @@ const MENU=[
    ['pengaturan','pengaturan','Profil Usaha']]]
 ];
 function buildSide(){
-  side.innerHTML=`<div class="brand"><div class="mark"><img src="logo.png" alt="Mahyra Relaksia"></div><div><strong style="font-family:Fraunces,serif">Mahyra</strong>
-    <div style="font-size:11px;color:#A9C9EA">Portal Office</div></div></div>
-    <div style="margin:0 8px 6px;padding:9px 11px;border-radius:12px;background:rgba(255,255,255,.1);font-size:11.5px;line-height:1.5">
-      <div style="color:#fff;font-weight:600">${esc(nm('jabatan',ME.jabatan_id))}</div>
-      <div style="color:#A9C9EA">${lingkupSaya()==='semua'?'Semua cabang':esc(nm('cabang',ME.cabang_id))}</div></div>`
-   +MENU.map(([g,it])=>{
+  const kepala=`<div class="aside-kepala">
+    <div class="brand"><div class="mark"><img src="logo.png" alt="Mahyra Relaksia"></div>
+      <div><strong style="font-family:Fraunces,serif">Mahyra</strong>
+      <div style="font-size:11px;color:#A9C9EA">Portal Office</div></div></div>
+    <div style="padding:9px 11px;border-radius:12px;background:rgba(255,255,255,.14);font-size:11.5px;line-height:1.5">
+      <div style="color:#fff;font-weight:600">${esc(ME.nama)}</div>
+      <div style="color:#CFE0F5">${esc(nm('jabatan',ME.jabatan_id))} · ${lingkupSaya()==='semua'?'Semua cabang':esc(nm('cabang',ME.cabang_id))}</div></div>
+  </div>`;
+  const menu=MENU.map(([g,it])=>{
       const isi=it.filter(([id])=>boleh(id.startsWith('m_')?id.slice(2):id,'lihat'));
       if(!isi.length) return '';
       return `<div class="navgrp">${g}</div>`+isi.map(([id,ic,l])=>
         `<div class="nav" id="nv_${id}" onclick="go('${id}')"><span class="ic">${ikon(ic,19)}</span>${l}</div>`).join('');
      }).join('');
+  side.innerHTML = kepala + `<div class="aside-menu">${menu}</div>`;
 }
 /* Halaman pembuka = menu pertama yang diizinkan untuk jabatan ini */
 function halamanPertama(){
@@ -1355,6 +1388,7 @@ function openForm(key,id){
   const BAWAAN={karyawan:{role:'kasir',status:'aktif',cabang_id:ME.cabang_id},
                 jabatan:{lingkup:'cabang',level:1},
                 libur:{jenis:'libur',tanggal:today(),cabang_id:null,karyawan_id:null},
+                layanan:{aktif:true,butuh_terapis:true,harga_manual:false,durasi_menit:60},
                 skema_gaji:{tipe_gaji:'harian',hari_kerja:26,aktif:true,cabang_id:null,
                   bonus_target1_order:0,bonus_target2_order:0,bonus_service_motor:0,bonus_bpjs:0},
                 pengeluaran:{cabang_id:ME.cabang_id,status:'menunggu'},
@@ -2543,13 +2577,15 @@ async function bayarGaji(){
    · terapis bisa lebih dari satu
    · setelah tersimpan, tersedia tombol kirim WhatsApp ke pelanggan & terapis
    ================================================================== */
-let ORD={pelanggan_id:null,terapis:[]};
+let ORD={pelanggan_id:null, baris:[]};
+/* baris = [{layanan_id, harga, terapis_id, catatan}] — satu baris per layanan,
+   sehingga satu order boleh memuat beberapa layanan dengan terapis berbeda,
+   ditambah pos seperti transport yang nominalnya diisi tangan. */
 
 function formOrder(){
-  ORD={pelanggan_id:null,terapis:[]};
+  ORD={pelanggan_id:null, baris:[]};
   const cabangKu=opsiRef('cabang');
   const cabangAwal=(cabangKu[0]||{}).id||ME.cabang_id;
-  const layanan=layananCabang(cabangAwal);
   bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">Buat order</h3>
    <p class="hint" style="margin-bottom:16px">Ketik nama pelanggan — kalau sudah pernah datang, detailnya terisi sendiri.</p>
 
@@ -2567,18 +2603,17 @@ function formOrder(){
      <div class="field"><label for="o_tglkerja">Tanggal pengerjaan</label>
        <input id="o_tglkerja" type="date" value="${today()}"></div>
      <div class="field"><label for="o_jam">Jam pengerjaan</label>
-       <input id="o_jam" type="time" value="${jam()}" step="900" lang="id-ID"
-         placeholder="14:00" title="Format 24 jam"></div>
+       <input id="o_jam" type="time" value="${jam()}" step="900" lang="id-ID"></div>
    </div>
    <div class="field"><label for="o_alamat">Alamat</label>
      <textarea id="o_alamat" rows="2" placeholder="Alamat lengkap tujuan terapis"></textarea></div>
 
-   <div class="field"><label for="o_lay">Layanan</label>
-     <select id="o_lay" onchange="hitungOrder()">${layanan.map(l=>
-       `<option value="${l.id}">${esc(l.nama)} — ${rp(l.harga)} · ${l.durasi_menit} mnt</option>`).join('')}</select></div>
-
-   <div class="field"><label>Terapis <span class="hint" style="font-weight:400">(boleh lebih dari satu)</span></label>
-     <div id="o_terapis"></div></div>
+   <div class="field"><label>Layanan <span class="hint" style="font-weight:400">(boleh lebih dari satu)</span></label>
+     <div class="row" style="gap:7px">
+       <select id="o_pilihLay" style="flex:1;min-width:180px"></select>
+       <button type="button" class="btn" onclick="tambahBaris()">Tambah</button>
+     </div>
+     <div id="o_baris" style="margin-top:10px"></div></div>
 
    <div class="grid g2">
      <div class="field"><label for="o_room">Ruangan / catatan lokasi</label><input id="o_room" value="Rumah pelanggan"></div>
@@ -2586,38 +2621,98 @@ function formOrder(){
    </div>
    <div class="field"><label for="o_bayar">Metode bayar</label>
      <select id="o_bayar"><option>tunai</option><option>qris</option><option>transfer</option><option>debit</option></select></div>
-   <div class="field"><label for="o_cat">Catatan</label>
+   <div class="field"><label for="o_cat">Catatan order</label>
      <textarea id="o_cat" rows="2" placeholder="Permintaan khusus, keluhan, preferensi tekanan"></textarea></div>
 
-   <div id="o_total" class="card" style="background:var(--mist);box-shadow:none;padding:14px;margin-bottom:12px"></div>`, {kaki: `<button class="btn" id="o_simpan" onclick="simpanOrder()">Simpan order</button>
-     <button class="btn ghost" onclick="closeModal()">Batal</button>`})
-  gambarTerapis(); hitungOrder();
+   <div id="o_total" class="card" style="background:var(--mist);box-shadow:none;padding:14px"></div>`,
+   {kaki:`<button class="btn" id="o_simpan" onclick="simpanOrder()">Simpan order</button>
+     <button class="btn ghost" onclick="closeModal()">Batal</button>`});
+  segarkanLayanan(); hitungOrder();
 }
 
-/* daftar layanan mengikuti cabang yang dipilih */
+/* Daftar layanan mengikuti cabang; pos berharga manual ditandai */
 function segarkanLayanan(){
   const cab=document.getElementById('o_cab').value||ME.cabang_id;
-  const lay=document.getElementById('o_lay'), pilihan=lay.value;
+  const sel=document.getElementById('o_pilihLay');
   const daftar=layananCabang(cab);
-  lay.innerHTML=daftar.map(l=>`<option value="${l.id}">${esc(l.nama)} — ${rp(l.harga)} · ${l.durasi_menit} mnt</option>`).join('')
+  sel.innerHTML=daftar.map(l=>`<option value="${l.id}">${esc(l.nama)}${
+    l.harga_manual?' — nominal diisi manual':' — '+rp(l.harga)+(l.durasi_menit?' · '+l.durasi_menit+' mnt':'')}</option>`).join('')
     ||'<option value="">Belum ada layanan untuk cabang ini</option>';
-  if(daftar.some(l=>l.id===pilihan)) lay.value=pilihan;
-  gambarTerapis(); hitungOrder();
+  // buang baris yang layanannya tidak tersedia di cabang ini
+  ORD.baris=ORD.baris.filter(b=>daftar.some(l=>l.id===b.layanan_id));
+  gambarBaris(); hitungOrder();
 }
 
-/* daftar terapis sebagai tombol pilih-banyak */
-function gambarTerapis(){
-  const daftar=opsiRef('karyawan').filter(k=>k.role==='terapis'&&k.status==='aktif');
-  const kotak=document.getElementById('o_terapis');
-  if(!daftar.length){ kotak.innerHTML='<p class="hint">Belum ada terapis aktif di cabang ini.</p>'; return; }
-  kotak.innerHTML=`<div class="row">${daftar.map(k=>{
-    const on=ORD.terapis.includes(k.id);
-    return `<button type="button" class="btn ${on?'':'ghost'} sm" style="border-radius:999px"
-      onclick="pilihTerapis('${k.id}')">${on?'✓ ':''}${esc(k.nama)}</button>`;}).join('')}</div>`;
+function tambahBaris(){
+  const id=document.getElementById('o_pilihLay').value;
+  const l=get('layanan',id); if(!l) return toast('Pilih layanan dulu');
+  ORD.baris.push({layanan_id:id, harga:l.harga_manual?0:Number(l.harga||0),
+                  terapis_id:null, catatan:''});
+  gambarBaris(); hitungOrder();
 }
-function pilihTerapis(id){
-  ORD.terapis = ORD.terapis.includes(id) ? ORD.terapis.filter(x=>x!==id) : [...ORD.terapis,id];
-  gambarTerapis(); hitungOrder();
+function hapusBaris(i){ ORD.baris.splice(i,1); gambarBaris(); hitungOrder(); }
+function ubahBaris(i,kunci,nilai){
+  ORD.baris[i][kunci] = kunci==='harga' ? (Number(nilai)||0) : (nilai||null);
+  if(kunci==='harga') hitungOrder();
+}
+
+function gambarBaris(){
+  const kotak=document.getElementById('o_baris'); if(!kotak) return;
+  if(!ORD.baris.length){
+    kotak.innerHTML='<p class="hint">Belum ada layanan dipilih. Pilih di atas lalu ketuk Tambah.</p>';
+    return;
+  }
+  const terapis=opsiRef('karyawan').filter(k=>k.role==='terapis'&&k.status==='aktif');
+  kotak.innerHTML=ORD.baris.map((b,i)=>{
+    const l=get('layanan',b.layanan_id)||{};
+    const perluTerapis=l.butuh_terapis!==false;
+    return `<div class="baris-layanan">
+      <div class="atas">
+        <div style="min-width:0"><strong>${esc(l.nama||'-')}</strong>
+          ${l.durasi_menit?`<span class="hint"> · ${l.durasi_menit} menit</span>`:''}</div>
+        <button type="button" class="hapus-baris" onclick="hapusBaris(${i})" aria-label="Hapus">
+          ${ikon('tambah',15)}</button>
+      </div>
+      ${l.catatan_kasir?`<p class="petunjuk">${esc(l.catatan_kasir)}</p>`:''}
+      <div class="isian">
+        <div><label>Nominal</label>
+          <input type="number" value="${b.harga}" ${l.harga_manual?'':'readonly'}
+            oninput="ubahBaris(${i},'harga',this.value)"
+            placeholder="${l.harga_manual?'isi nominal':''}"></div>
+        ${perluTerapis?`<div><label>Terapis</label>
+          <select onchange="ubahBaris(${i},'terapis_id',this.value)">
+            <option value="">— pilih —</option>
+            ${terapis.map(k=>`<option value="${k.id}" ${b.terapis_id===k.id?'selected':''}>${esc(k.nama)}</option>`).join('')}
+          </select></div>`:'<div><label>Terapis</label><input value="tidak perlu" disabled></div>'}
+      </div>
+      ${l.harga_manual?`<div style="margin-top:7px"><label class="mini">Keterangan</label>
+        <input value="${esc(b.catatan||'')}" oninput="ubahBaris(${i},'catatan',this.value)"
+          placeholder="Contoh: Klojen ke Singosari, 12 km"></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function hitungOrder(){
+  const kotak=document.getElementById('o_total'); if(!kotak) return;
+  const disk=Number(document.getElementById('o_disk')?.value)||0;
+  const sub=ORD.baris.reduce((a,b)=>a+Number(b.harga||0),0);
+  const total=Math.max(0,sub-disk);
+  const kosong=ORD.baris.filter(b=>{
+    const l=get('layanan',b.layanan_id)||{};
+    return (l.butuh_terapis!==false && !b.terapis_id) || (l.harga_manual && !b.harga);
+  }).length;
+
+  kotak.innerHTML=`
+    ${ORD.baris.map(b=>{const l=get('layanan',b.layanan_id)||{};
+      return `<div class="row" style="justify-content:space-between;gap:10px;font-size:13px;padding:3px 0">
+        <span class="hint" style="min-width:0">${esc(l.nama||'-')}${b.terapis_id?' · '+esc(nm('karyawan',b.terapis_id)):''}</span>
+        <span class="rp">${rp(b.harga)}</span></div>`}).join('')
+      ||'<p class="hint">Belum ada layanan.</p>'}
+    ${disk?`<div class="row" style="justify-content:space-between"><span class="hint">Diskon</span>
+      <span class="rp" style="color:var(--bad)">− ${rp(disk)}</span></div>`:''}
+    <div class="row" style="justify-content:space-between;border-top:1px dashed var(--line);margin-top:8px;padding-top:8px">
+      <strong>Total</strong><strong class="rp" style="font-size:17px">${rp(total)}</strong></div>
+    ${kosong?`<p class="hint" style="margin-top:7px;color:var(--warn)">${kosong} baris belum lengkap — periksa terapis atau nominalnya.</p>`:''}`;
 }
 
 /* nama cocok -> isi kontak, alamat, dan tiru order terakhirnya */
@@ -2634,53 +2729,44 @@ function cekPelanggan(){
   document.getElementById('o_hp').value=p.telepon||'';
   document.getElementById('o_alamat').value=p.alamat||'';
 
-  // order terakhir pelanggan ini
   const lama=DB.pesanan.filter(o=>o.pelanggan_id===p.id)
-    .sort((a,b)=>String(b.tanggal+b.jam).localeCompare(String(a.tanggal+a.jam)))[0];
+    .sort((a,b)=>String(b.tanggal+(b.jam||'')).localeCompare(String(a.tanggal+(a.jam||''))))[0];
   let jejak='';
   if(lama){
     const item=DB.item.filter(i=>i.pesanan_id===lama.id);
+    const tersedia=layananCabang(document.getElementById('o_cab').value||ME.cabang_id);
     if(item.length){
-      const lay=document.getElementById('o_lay');
-      if([...lay.options].some(o=>o.value===item[0].layanan_id)) lay.value=item[0].layanan_id;
-      ORD.terapis=item.map(i=>i.terapis_id).filter(id=>opsiRef('karyawan').some(k=>k.id===id));
+      ORD.baris=item.filter(i=>tersedia.some(l=>l.id===i.layanan_id)).map(i=>({
+        layanan_id:i.layanan_id, harga:Number(i.harga||0),
+        terapis_id:opsiRef('karyawan').some(k=>k.id===i.terapis_id)?i.terapis_id:null,
+        catatan:i.catatan||''}));
       if(item[0].ruangan) document.getElementById('o_room').value=item[0].ruangan;
-      gambarTerapis();
+      gambarBaris();
     }
     if(lama.metode_bayar) document.getElementById('o_bayar').value=lama.metode_bayar;
     if(lama.catatan) document.getElementById('o_cat').value=lama.catatan;
-    jejak=` · order terakhir ${tgl(lama.tanggal)}: ${esc(DB.item.filter(i=>i.pesanan_id===lama.id).map(i=>nm('layanan',i.layanan_id)).join(', '))}`;
+    jejak=` · order terakhir ${tgl(lama.tgl_kerja||lama.tanggal)}: ${esc(DB.item.filter(i=>i.pesanan_id===lama.id).map(i=>nm('layanan',i.layanan_id)).join(', '))}`;
   }
   info.innerHTML=`<span class="tag ok">Pelanggan lama</span> ${p.total_kunjungan||0} kunjungan${jejak}
     ${p.catatan?`<br>Catatan terapi: ${esc(p.catatan)}`:''}`;
   hitungOrder();
 }
 
-function hitungOrder(){
-  const l=get('layanan',document.getElementById('o_lay').value);
-  const n=Math.max(1,ORD.terapis.length);
-  const disk=Number(document.getElementById('o_disk').value)||0;
-  const sub=(l?.harga||0)*n, total=Math.max(0,sub-disk);
-  document.getElementById('o_total').innerHTML=`
-    <div class="row" style="justify-content:space-between"><span class="hint">${esc(l?.nama||'-')} × ${n} terapis</span>
-      <span class="rp">${rp(sub)}</span></div>
-    ${disk?`<div class="row" style="justify-content:space-between"><span class="hint">Diskon</span>
-      <span class="rp" style="color:var(--bad)">− ${rp(disk)}</span></div>`:''}
-    <div class="row" style="justify-content:space-between;border-top:1px dashed var(--line);margin-top:8px;padding-top:8px">
-      <strong>Total</strong><strong class="rp" style="font-size:17px">${rp(total)}</strong></div>
-    ${ORD.terapis.length>1?`<p class="hint" style="margin-top:6px">Dibuat ${ORD.terapis.length} pekerjaan terpisah, satu untuk tiap terapis.</p>`:''}`;
-}
-
 async function simpanOrder(){
   const nama=document.getElementById('o_nama').value.trim();
   if(!nama) return toast('Isi nama pelanggan dulu');
-  if(!ORD.terapis.length) return toast('Pilih minimal satu terapis');
-  const btn=document.getElementById('o_simpan'); btn.disabled=true; btn.textContent='Menyimpan…';
+  if(!ORD.baris.length) return toast('Tambahkan minimal satu layanan');
 
+  for(const b of ORD.baris){
+    const l=get('layanan',b.layanan_id)||{};
+    if(l.butuh_terapis!==false && !b.terapis_id) return toast('Pilih terapis untuk '+(l.nama||'layanan'));
+    if(l.harga_manual && !Number(b.harga)) return toast('Isi nominal untuk '+(l.nama||'layanan'));
+  }
+
+  const btn=document.getElementById('o_simpan'); btn.disabled=true; btn.textContent='Menyimpan…';
   const hp=document.getElementById('o_hp').value.trim();
   const alamat=document.getElementById('o_alamat').value.trim();
 
-  // pelanggan: pakai yang ada, atau buat baru
   let pel=ORD.pelanggan_id?get('pelanggan',ORD.pelanggan_id):null;
   if(!pel){
     pel=await simpan('pelanggan',{id:uid(),kode:'P-'+String(DB.pelanggan.length+1).padStart(4,'0'),
@@ -2690,10 +2776,9 @@ async function simpanOrder(){
     pel=await simpan('pelanggan',{...pel,telepon:hp,alamat})||pel;
   }
 
-  const l=get('layanan',document.getElementById('o_lay').value);
   const disk=Number(document.getElementById('o_disk').value)||0;
   const cab=get('cabang',document.getElementById('o_cab').value||ME.cabang_id);
-  const sub=l.harga*ORD.terapis.length;
+  const sub=ORD.baris.reduce((a,b)=>a+Number(b.harga||0),0);
   const n=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()).length+1;
 
   const p={id:uid(),nomor:'MHR-'+cab.kode+'-'+today().slice(2).replace(/-/g,'')+'-'+String(n).padStart(4,'0'),
@@ -2701,28 +2786,26 @@ async function simpanOrder(){
     tgl_kerja:document.getElementById('o_tglkerja').value||today(),
     jam:document.getElementById('o_jam').value||jam(),
     jam_kerja:document.getElementById('o_jam').value||jam(),
-    cabang_id:cab.id,pelanggan_id:pel.id,
-    kasir_id:ME.id,status:'berjalan',subtotal:sub,diskon:disk,total:Math.max(0,sub-disk),
+    cabang_id:cab.id,pelanggan_id:pel.id,kasir_id:ME.id,status:'berjalan',
+    subtotal:sub,diskon:disk,total:Math.max(0,sub-disk),
     metode_bayar:document.getElementById('o_bayar').value,status_bayar:'belum',
     catatan:document.getElementById('o_cat').value};
   const tersimpan=await simpan('pesanan',p);
   if(!tersimpan){ btn.disabled=false; btn.textContent='Simpan order'; return; }
 
   const ruangan=document.getElementById('o_room').value;
-  for(const idTer of ORD.terapis){
-    await simpan('item',{id:uid(),pesanan_id:p.id,layanan_id:l.id,terapis_id:idTer,ruangan,qty:1,
-      harga:l.harga,durasi:l.durasi_menit,subtotal:l.harga,
-      komisi:komisiUntuk(idTer,l,disk),status:'menunggu'});
+  for(const b of ORD.baris){
+    const l=get('layanan',b.layanan_id)||{};
+    const berkomisi=l.butuh_terapis!==false;
+    await simpan('item',{id:uid(),pesanan_id:p.id,layanan_id:b.layanan_id,
+      terapis_id:b.terapis_id||null,ruangan,qty:1,
+      harga:Number(b.harga||0),durasi:l.durasi_menit||0,subtotal:Number(b.harga||0),
+      komisi:berkomisi&&b.terapis_id?komisiUntuk(b.terapis_id,{...l,harga:Number(b.harga||0)},0):0,
+      catatan:b.catatan||null,status:'menunggu'});
   }
   render(); kirimOrder(p.id);
   toast('Order '+p.nomor+' dibuat');
 }
-
-/* ================= KIRIM DETAIL LEWAT WHATSAPP ================= */
-const noWa=n=>{ let s=String(n||'').replace(/[^0-9]/g,'');
-  if(s.startsWith('0')) s='62'+s.slice(1);
-  if(s.startsWith('8')) s='62'+s;
-  return s; };
 
 /* ===================== PESAN WHATSAPP =====================
    WhatsApp memakai huruf proporsional, sehingga spasi penyejajaran tidak
@@ -2740,14 +2823,22 @@ function baris(label, nilai){ return nilai ? `*${label}*\n${nilai}` : null; }
 function rincianOrder(p, {denganHp}){
   const item = DB.item.filter(i => i.pesanan_id === p.id);
   const pel  = get('pelanggan', p.pelanggan_id) || {};
-  const lay  = get('layanan', item[0]?.layanan_id) || {};
   const jam  = String(p.jam_kerja || p.jam || '').slice(0,5);
-  const terapis = item.map(i => nm('karyawan', i.terapis_id)).filter(Boolean);
+
+  // tiap layanan satu baris, lengkap dengan terapis dan keterangannya
+  const daftar = item.map(i => {
+    const l = get('layanan', i.layanan_id) || {};
+    let s = `• ${l.nama || '-'}`;
+    if (l.durasi_menit) s += ` (${l.durasi_menit} menit)`;
+    if (i.terapis_id)   s += `\n   Terapis: ${nm('karyawan', i.terapis_id)}`;
+    if (i.catatan)      s += `\n   ${i.catatan}`;
+    s += `\n   ${rp(i.harga)}`;
+    return s;
+  }).join('\n');
 
   return [
     baris('Jadwal', hariLengkap(p.tgl_kerja || p.tanggal) + (jam ? `\nPukul ${jam} WIB` : '')),
-    baris('Layanan', `${lay.nama || '-'}${lay.durasi_menit ? ` — ${lay.durasi_menit} menit` : ''}`),
-    baris(terapis.length > 1 ? 'Terapis' : 'Terapis', terapis.join('\n')),
+    baris(item.length > 1 ? 'Layanan' : 'Layanan', daftar),
     baris('Atas nama', pel.nama + (denganHp && pel.telepon ? `\n${pel.telepon}` : '')),
     baris('Alamat', pel.alamat),
     baris('Catatan', p.catatan)
@@ -2757,7 +2848,6 @@ function rincianOrder(p, {denganHp}){
 function pesanPelanggan(p){
   const pel  = get('pelanggan', p.pelanggan_id) || {};
   const item = DB.item.filter(i => i.pesanan_id === p.id);
-  const lay  = get('layanan', item[0]?.layanan_id) || {};
 
   const bagian = [];
   bagian.push(`Halo *${pel.nama}*, terima kasih sudah memesan di *Mahyra Massage*.`);
@@ -2767,8 +2857,11 @@ function pesanPelanggan(p){
   bagian.push(rincianOrder(p, {denganHp: true}));
   bagian.push(GARIS);
 
-  // biaya
-  const biaya = [`${lay.nama || 'Layanan'}${item.length > 1 ? ` × ${item.length}` : ''}   ${rp(p.subtotal)}`];
+  // biaya, dirinci per layanan
+  const biaya = item.map(i => {
+    const l = get('layanan', i.layanan_id) || {};
+    return `${l.nama || 'Layanan'}   ${rp(i.harga)}`;
+  });
   if (p.diskon > 0) biaya.push(`Diskon   −${rp(p.diskon)}`);
   biaya.push(`*Total   ${rp(p.total)}*`);
   bagian.push(`*BIAYA*\n` + biaya.join('\n'));
@@ -2789,12 +2882,14 @@ function pesanPelanggan(p){
 
 function pesanTerapis(p, terapisId){
   const item = DB.item.find(i => i.pesanan_id === p.id && i.terapis_id === terapisId);
+  const l = item ? get('layanan', item.layanan_id) : null;
   const bagian = [];
   bagian.push(`Halo *${nm('karyawan', terapisId)}*, ada orderan baru untuk Anda.`);
   bagian.push(GARIS);
   bagian.push(`*DETAIL TUGAS*\nNo. ${p.nomor}`);
   bagian.push(rincianOrder(p, {denganHp: false}));
-  if (item) bagian.push(`*Komisi Anda*\n${rp(item.komisi)}`);
+  if (l) bagian.push(`*Bagian Anda*\n${l.nama}${l.durasi_menit ? ` (${l.durasi_menit} menit)` : ''}`);
+  if (item && item.komisi) bagian.push(`*Komisi Anda*\n${rp(item.komisi)}`);
   bagian.push(GARIS);
   bagian.push(`Mohon konfirmasi kesiapan Anda.\n` +
     `Lakukan *check in* lewat Portal Terapis saat mulai bekerja, ` +
