@@ -248,6 +248,27 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
   .menulist .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;
     background:#E8F1FC;color:var(--jade)}
 }
+.libur-tiga{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:4px}
+.libur-hari{border:1px solid var(--line);border-radius:13px;padding:11px 12px;background:#fff}
+.libur-hari.ada{border-color:#C6DAF0;background:linear-gradient(165deg,#F4F9FF,#EAF2FC)}
+.libur-hari .kepala{display:flex;flex-direction:column;gap:1px;margin-bottom:8px}
+.libur-hari .kepala strong{font-size:13.5px}
+.libur-hari .orang{display:flex;flex-direction:column;gap:5px}
+.nama-libur{font-size:12.5px;font-weight:600;color:var(--laut,#1B4A82);
+ background:#fff;border:1px solid #CFE0F5;border-radius:9px;padding:5px 9px;line-height:1.35}
+.nama-libur i{display:block;font-style:normal;font-size:11px;font-weight:400;color:var(--muted);margin-top:1px}
+.rekap-libur{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.rekap-libur:last-child{border-bottom:0}
+.rekap-libur .nama{font-size:13px;font-weight:600;min-width:112px;flex:none}
+.rekap-libur .tanggal{display:flex;flex-wrap:wrap;gap:5px}
+.rekap-libur .tanggal span{font-size:11.5px;border:1px solid var(--line);border-radius:8px;
+ padding:3px 8px;background:var(--mist);white-space:nowrap;font-variant-numeric:tabular-nums}
+.rekap-libur .tanggal .kini{background:var(--jade);border-color:var(--jade);color:#fff;font-weight:600}
+@media(max-width:640px){
+  .libur-tiga{grid-template-columns:1fr}
+  .rekap-libur{flex-direction:column;gap:6px}
+  .rekap-libur .nama{min-width:0}
+}
 .omzet-utama{background:linear-gradient(150deg,#F2F8FF,#E8F1FC 60%,#DDEBFA);border:1px solid #CFE0F5}
 .omzet-nilai{font-family:Fraunces,serif;font-size:34px;color:var(--laut,#1B4A82);line-height:1.1;margin:4px 0 12px}
 .omzet-rinci{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding-top:12px;
@@ -395,7 +416,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.14.5";
+const VERSI_APP = "2026.09.14.6";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1831,13 +1852,7 @@ order(){
     .map(p=>{const it=DB.item.filter(i=>i.pesanan_id===p.id);
     return {...p,pel:nm('pelanggan',p.pelanggan_id),cab:nm('cabang',p.cabang_id),
       lay:it.map(i=>nm('layanan',i.layanan_id)).join(', '),ter:it.map(i=>nm('karyawan',i.terapis_id)).join(', ')}})
-    // tanggal terbaru dulu, lalu jam paling malam di atas
-    .sort((a,b)=>{
-      const ta=String(a.tgl_kerja||a.tanggal).slice(0,10), tb=String(b.tgl_kerja||b.tanggal).slice(0,10);
-      if(ta!==tb) return tb.localeCompare(ta);
-      const ja=String(a.jam_kerja||a.jam||'00:00').slice(0,5), jb=String(b.jam_kerja||b.jam||'00:00').slice(0,5);
-      return jb.localeCompare(ja);
-    });
+    .sort(urutanOrder);
   const hi=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()&&dalamLingkup(p,'pesanan'));
   return `<div class="grid g4">
     ${stat('Order hari ini',hi.length,'semua status')}
@@ -2486,42 +2501,82 @@ function skemaJabatan(jabatanId){
 
 /* Jadwal libur terapis di cabang ini, dipakai kasir saat menyusun order */
 function kartuLiburTerapis(){
-  const hariIni=today();
-  const batas=new Date(); batas.setDate(batas.getDate()+30);
-  const sampai=tglLokal(batas);
-
   const terapis=DB.karyawan.filter(k=>k.role==='terapis'&&k.status==='aktif'&&dalamLingkup(k,'karyawan'));
   const idTerapis=new Set(terapis.map(k=>k.id));
 
-  const daftar=(DB.libur||[]).filter(l=>{
-    const akhir=String(l.tgl_selesai||l.tanggal).slice(0,10);
-    if(akhir<hariIni||String(l.tanggal).slice(0,10)>sampai) return false;
-    if(l.karyawan_id&&!idTerapis.has(l.karyawan_id)) return false;
-    if(l.cabang_id&&l.cabang_id!==ME.cabang_id) return false;
-    return true;
-  }).sort((a,b)=>String(a.tanggal).localeCompare(String(b.tanggal)));
+  /* Siapa saja yang libur pada satu tanggal */
+  const liburPada=(tanggal)=>{
+    const hasil=[];
+    (DB.libur||[]).forEach(l=>{
+      const mulai=String(l.tanggal||'').slice(0,10);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(mulai)) return;
+      let akhir=String(l.tgl_selesai||'').slice(0,10);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(akhir)||akhir<mulai) akhir=mulai;
+      if(tanggal<mulai||tanggal>akhir) return;
+      if(l.cabang_id&&l.cabang_id!==ME.cabang_id&&lingkupSaya()!=='semua') return;
+      if(l.karyawan_id){
+        if(idTerapis.has(l.karyawan_id)) hasil.push({nama:nm('karyawan',l.karyawan_id),l});
+      }else{
+        terapis.filter(k=>!l.cabang_id||k.cabang_id===l.cabang_id)
+          .forEach(k=>hasil.push({nama:k.nama,l}));
+      }
+    });
+    return hasil;
+  };
 
-  const baris=daftar.map(l=>{
-    const mulai=String(l.tanggal).slice(0,10), akhir=String(l.tgl_selesai||l.tanggal).slice(0,10);
-    const sedang=hariIni>=mulai&&hariIni<=akhir;
-    const rentang=mulai===akhir?hariTgl(mulai)
-      :`${tgl(mulai)} – ${tgl(akhir)}`;
-    const siapa=l.karyawan_id?nm('karyawan',l.karyawan_id)
-      :(l.cabang_id?'Semua terapis '+nm('cabang',l.cabang_id):'Semua terapis');
-    return `<div class="list-item">
-      <span class="dot" style="background:${sedang?'var(--amber)':'var(--jade)'}"></span>
-      <div style="flex:1;min-width:0">
-        <strong>${esc(siapa)}</strong> ${sedang?'<span class="tag warn">Sedang libur</span>':''}
-        <div class="hint">${rentang}${l.keterangan?' · '+esc(l.keterangan):''}</div></div>
-      <span class="tag ${sedang?'warn':'info'}">${cap(l.jenis||'libur')}</span></div>`;
+  const tigaHari=[
+    ['Hari ini', today()],
+    ['Besok',    geser(1)],
+    ['Lusa',     geser(2)]
+  ].map(([label,tgl_])=>{
+    const orang=liburPada(tgl_);
+    const hari=new Date(tgl_+'T00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'short'});
+    return `<div class="libur-hari ${orang.length?'ada':''}">
+      <div class="kepala"><strong>${label}</strong><span class="hint">${hari}</span></div>
+      ${orang.length
+        ? `<div class="orang">${orang.map(o=>
+            `<span class="nama-libur">${esc(o.nama)}${o.l.keterangan?`<i>${esc(o.l.keterangan)}</i>`:''}</span>`).join('')}</div>`
+        : '<p class="hint" style="margin:0">Semua terapis masuk</p>'}
+    </div>`;
   }).join('');
+
+  /* Rekap sebulan penuh, dikelompokkan per terapis */
+  const per=periode();
+  const [thn,bln]=per.split('-').map(Number);
+  const jmlHari=new Date(thn,bln,0).getDate();
+  const rekap=terapis.map(k=>{
+    const tanggal=[];
+    for(let d=1; d<=jmlHari; d++){
+      const tglIni=`${thn}-${String(bln).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      if(liburPada(tglIni).some(o=>o.nama===k.nama)) tanggal.push({d,tglIni});
+    }
+    return {nama:k.nama,tanggal};
+  }).filter(r=>r.tanggal.length);
+
+  const namaBulan=new Date(thn,bln-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  const singkat=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 
   return `<div class="card" style="margin-top:14px">
     <div class="head"><h3>Jadwal libur terapis</h3>
-      <span class="tag info">${daftar.length} jadwal</span></div>
-    ${baris||'<div class="empty"><div class="disp">Tidak ada libur terjadwal</div><div>Semua terapis tersedia 30 hari ke depan.</div></div>'}
-    <p class="hint" style="margin-top:10px">Tiga puluh hari ke depan di ${esc(nm('cabang',ME.cabang_id))}.
-      Periksa di sini sebelum menugaskan terapis pada sebuah order.</p></div>`;
+      <span class="tag info">${esc(lingkupSaya()==='semua'?'Semua cabang':nm('cabang',ME.cabang_id))}</span></div>
+
+    <div class="libur-tiga">${tigaHari}</div>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
+      <div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:10px">
+        <strong style="font-size:14px">Rekap ${namaBulan}</strong>
+        <span class="hint">${rekap.length} terapis punya jadwal libur</span></div>
+      ${rekap.length?rekap.map(r=>`<div class="rekap-libur">
+          <div class="nama">${esc(r.nama)}<span class="hint"> · ${r.tanggal.length} hari</span></div>
+          <div class="tanggal">${r.tanggal.map(x=>{
+            const d=new Date(x.tglIni+'T00:00');
+            const kini=x.tglIni===today();
+            return `<span class="${kini?'kini':''}" title="${singkat[d.getDay()]}, ${x.d} ${namaBulan}">
+              ${singkat[d.getDay()]} ${x.d}</span>`;}).join('')}</div>
+        </div>`).join('')
+        :'<p class="hint">Belum ada jadwal libur pada bulan ini.</p>'}
+    </div>
+    <p class="hint" style="margin-top:12px">Periksa di sini sebelum menugaskan terapis pada sebuah order.</p></div>`;
 }
 
 /* Komisi seorang terapis untuk sebuah layanan, mengikuti skema gajinya.
@@ -3002,6 +3057,46 @@ function tautanWa(nomor,pesan){
 }
 
 /* Tampilan kartu untuk layar kecil */
+
+/* ---------- Urutan daftar order ----------
+   Yang masih perlu ditangani muncul lebih dulu:
+     1. hari ini, lalu tanggal terdekat
+     2. dalam satu hari, jam paling malam di atas
+     3. yang butuh tindakan sebelum yang sudah tuntas
+   Order complete dan batal turun ke bawah. */
+function bobotOrder(p){
+  if(p.status==='batal')      return 5;
+  if(p.status==='complete')   return 4;
+  if(p.status_bayar!=='lunas' && p.status==='selesai') return 3;  // tinggal menagih
+  if(p.status==='dikerjakan') return 2;
+  if(p.status==='dijadwalkan')return 1;
+  return 3;
+}
+function urutanOrder(a,b){
+  const ta=String(a.tgl_kerja||a.tanggal).slice(0,10);
+  const tb=String(b.tgl_kerja||b.tanggal).slice(0,10);
+  const hariIni=today();
+
+  // hari ini paling atas, lalu tanggal lain diurutkan dari yang terbaru
+  const kelA = ta===hariIni?0:1, kelB = tb===hariIni?0:1;
+  if(kelA!==kelB) return kelA-kelB;
+
+  // dalam kelompok hari ini: yang masih perlu ditangani lebih dulu
+  if(kelA===0){
+    const wa=bobotOrder(a), wb=bobotOrder(b);
+    if(wa!==wb) return wa-wb;
+  }else if(ta!==tb){
+    return tb.localeCompare(ta);
+  }
+
+  // jam paling malam di atas
+  const ja=String(a.jam_kerja||a.jam||'00:00').slice(0,5);
+  const jb=String(b.jam_kerja||b.jam||'00:00').slice(0,5);
+  if(ja!==jb) return jb.localeCompare(ja);
+
+  return bobotOrder(a)-bobotOrder(b);
+}
+
 function kartuOrder(r, urut){
   const nada=['nada-a','nada-b','nada-c','nada-d'][(urut||0)%4];
   return `<div class="kartu-order ${nada}">
