@@ -221,9 +221,20 @@ tr:last-child td{border-bottom:0}.tw{overflow-x:auto}
 .list-item:last-child{border-bottom:0}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--jade);margin-top:6px;flex:none}
 .clock{font-family:Fraunces,serif;font-size:27px;letter-spacing:-.02em}
-.modal{position:fixed;inset:0;background:rgba(23,52,96,.45);backdrop-filter:blur(3px);display:none;place-items:center;padding:16px;z-index:50}
+.modal{position:fixed;inset:0;background:rgba(23,52,96,.45);backdrop-filter:blur(3px);display:none;
+ place-items:end center;padding:0;z-index:50;overscroll-behavior:contain}
 .modal.on{display:grid}
-.sheet{background:var(--paper);border-radius:22px;width:100%;max-width:460px;padding:22px}
+.sheet{background:var(--paper);border-radius:22px 22px 0 0;width:100%;max-width:520px;
+ max-height:84vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+ padding:26px 18px calc(20px + env(safe-area-inset-bottom));position:relative;
+ box-shadow:0 -10px 40px rgba(16,44,80,.3)}
+.sheet:before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);
+ width:40px;height:4px;border-radius:4px;background:var(--line)}
+@media(min-width:620px){
+  .modal{place-items:center;padding:16px}
+  .sheet{border-radius:22px;max-height:86vh;padding:24px 22px}
+  .sheet:before{display:none}
+}
 @media(max-width:620px){#app{box-shadow:none}}
 .g4,.g3{grid-template-columns:1fr 1fr}
 @media(max-width:420px){.g4,.g3,.g2{grid-template-columns:1fr}}
@@ -651,7 +662,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.13.4';
+const VERSI_APP='2026.09.13.5';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -698,6 +709,12 @@ const sidikAkses=k=>[k.role,k.jabatan_id,k.cabang_id,k.status].join('|');
     bukaAplikasi();
   }catch(e){ console.warn('Sesi tidak bisa dipulihkan:',e); pesanLogin(''); }
 })();
+
+/* Segarkan sesi berkala supaya tidak kedaluwarsa saat aplikasi jarang dibuka */
+if(LIVE){
+  setInterval(()=>{ sb.auth.refreshSession().catch(()=>{}); }, 36e5);   // tiap jam
+  addEventListener('online', ()=>sb.auth.refreshSession().catch(()=>{}));
+}
 
 function loginMemuat(){
   const c=document.querySelector('#login .card-login');
@@ -788,7 +805,15 @@ function barisFilter(){
   </div>`;
 }
 const myItem=()=>DB.item.filter(i=>i.terapis_id===ME.id);
-function closeModal(){ modal.classList.remove('on'); }
+function closeModal(){
+  modal.classList.remove('on');
+  document.body.style.overflow='';
+}
+/* Kunci gulir latar saat panel terbuka, supaya isi panel yang bergerak */
+const _modal=document.getElementById('modal');
+new MutationObserver(()=>{
+  document.body.style.overflow = _modal.classList.contains('on') ? 'hidden' : '';
+}).observe(_modal,{attributes:true,attributeFilter:['class']});
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
 
 const JUDUL={dash:['Beranda','Ringkasan kerja dan penghasilan Anda.'],
