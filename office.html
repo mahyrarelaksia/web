@@ -85,9 +85,21 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .empty .disp{font-size:18px;color:var(--ink);margin-bottom:6px}
 .bar{height:7px;border-radius:7px;background:var(--mist);overflow:hidden;margin-top:8px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#7FBCE8,#2F6FBF);border-radius:7px}
-.modal{position:fixed;inset:0;background:rgba(23,52,96,.45);backdrop-filter:blur(3px);display:none;place-items:center;padding:16px;z-index:50}
+.modal{position:fixed;inset:0;background:rgba(23,52,96,.45);backdrop-filter:blur(3px);display:none;
+ place-items:center;padding:16px;z-index:50;overscroll-behavior:contain}
 .modal.on{display:grid}
-.sheet{background:var(--paper);border-radius:22px;width:100%;max-width:620px;max-height:88vh;overflow:auto;padding:22px}
+.sheet{background:var(--paper);border-radius:22px;width:100%;max-width:620px;
+ max-height:min(86vh,760px);display:flex;flex-direction:column;padding:0;overflow:hidden;position:relative}
+.sheet>*{padding-left:22px;padding-right:22px}
+.sheet-isi{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+ padding-top:20px;padding-bottom:16px;flex:1;min-height:0}
+.sheet-kaki{border-top:1px solid var(--line);background:var(--paper);padding-top:12px;padding-bottom:14px;
+ display:flex;gap:8px;flex-wrap:wrap;flex:none}
+.sheet-kaki .btn{flex:1;min-width:120px}
+.sheet-tutup{position:absolute;top:10px;right:12px;z-index:3;width:32px;height:32px;border-radius:50%;
+ border:1px solid var(--line);background:var(--paper);color:var(--muted);font-size:17px;line-height:1;
+ cursor:pointer;display:grid;place-items:center}
+.sheet-tutup:hover{background:var(--mist);color:var(--ink)}
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .hint{font-size:12px;color:var(--muted)}
 .err{background:#FAEAEC;color:var(--bad);padding:9px 12px;border-radius:10px;font-size:13px;margin-bottom:12px;display:none}
@@ -162,8 +174,16 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
   tbody td:empty{display:none}
   tbody td .row{justify-content:flex-end}
   .btn{padding:9px 14px;font-size:12.5px}
-  .modal .sheet{max-height:92vh;border-radius:20px 20px 0 0;align-self:flex-end;padding:18px 16px}
+  /* Panel jadi lembar bawah: ada ruang kosong di atas untuk menutup */
   .modal{place-items:end center;padding:0}
+  .modal .sheet{max-height:82vh;border-radius:22px 22px 0 0;align-self:flex-end;
+    box-shadow:0 -10px 40px rgba(16,44,80,.3)}
+  .modal .sheet>*{padding-left:16px;padding-right:16px}
+  .modal .sheet-isi{padding-top:26px}
+  .modal .sheet-kaki{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+  /* garis pegangan di atas panel */
+  .modal .sheet:before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);
+    width:40px;height:4px;border-radius:4px;background:var(--line);z-index:2}
   .shell{grid-template-columns:1fr}
   main{padding:14px 14px 96px}
   #app{padding-bottom:0}
@@ -308,7 +328,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.13.3";
+const VERSI_APP = "2026.09.13.5";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -595,7 +615,7 @@ async function lihatBukti(karyawanId,tanggal){
       perlu.forEach(id=>{ if(FOTO[id]===undefined) FOTO[id]=null; });
     }
   }else log.forEach(a=>FOTO[a.id]=a.foto||null);
-  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:3px">Bukti kehadiran</h3>
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:3px">Bukti kehadiran</h3>
     <p class="hint" style="margin-bottom:14px">${esc(nm('karyawan',karyawanId))} · ${tgl(tanggal)}</p>
     ${log.map(a=>{
       const i=a.pesanan_item_id?get('item',a.pesanan_item_id):null;
@@ -607,8 +627,7 @@ async function lihatBukti(karyawanId,tanggal){
           <div class="hint">${esc(i?nm('layanan',i.layanan_id):'—')}</div>
           <div class="hint" style="word-break:break-word">${esc(a.alamat||'Lokasi tidak tercatat')}${a.akurasi_meter?' · ±'+a.akurasi_meter+' m':''}</div>
           ${a.lat?`<a class="hint" style="color:var(--jade);font-weight:600" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${a.lat},${a.lng}">Buka peta</a>`:''}
-        </div></div>`}).join('')||'<div class="empty">Tidak ada catatan check in untuk hari ini.</div>'}
-    <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`;
+        </div></div>`}).join('')||'<div class="empty">Tidak ada catatan check in untuk hari ini.</div>'}`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`});
 }
 const sum=(a,f)=>a.reduce((x,y)=>x+(Number(typeof f==='function'?f(y):y[f])||0),0);
 const get=(t,id)=>DB[t].find(x=>x.id===id);
@@ -767,12 +786,10 @@ async function jelaskanPenolakan(key,row){
         <span class="tag ${ok?'ok':'bad'}">${esc(v)}</span></div>`).join('');
     }else if(error) isi=`<p class="hint">${esc(error.message)} — jalankan 15_layanan_cabang.sql di SQL Editor.</p>`;
   }catch(e){}
-  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:4px">Penyimpanan ditolak aturan akses</h3>
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Penyimpanan ditolak aturan akses</h3>
     <p class="hint" style="margin-bottom:14px">Tabel <strong>${esc(TBL[key]||key)}</strong>.
       Syarat yang bertanda merah di bawah inilah penyebabnya.</p>
-    ${isi}
-    <button class="btn ghost" style="width:100%;margin-top:14px" onclick="closeModal()">Tutup</button>`;
-  modal.classList.add('on');
+    ${isi}`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:14px" onclick="closeModal()">Tutup</button>`})
 }
 
 /* ===================== NOTIFIKASI ===================== */
@@ -801,7 +818,7 @@ function gambarLonceng(){
 function bukaNotif(){
   const baru=new Set(belumDibaca().map(n=>n.id));
   const ikon={order:'◎',checkin:'✓',izin:'✎',bonus:'★',libur:'☾'};
-  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:3px">Notifikasi</h3>
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:3px">Notifikasi</h3>
     <p class="hint" style="margin-bottom:14px">${NOTIF.length?NOTIF.length+' catatan terbaru':'Belum ada notifikasi'}</p>
     ${NOTIF.map(n=>`<div class="notif-item ${baru.has(n.id)?'baru':''}">
       <span class="dot" style="background:${baru.has(n.id)?'var(--jade)':'var(--line)'};margin-top:6px"></span>
@@ -809,9 +826,7 @@ function bukaNotif(){
         <div class="hint">${esc(n.pesan||'')}</div>
         <div class="hint" style="font-size:11px;margin-top:3px">${n.waktu?tgl(String(n.waktu).slice(0,10)):''}</div>
       </div></div>`).join('')
-     ||'<div class="empty"><div class="disp">Belum ada notifikasi</div><div>Check in terapis dan keputusan izin akan muncul di sini.</div></div>'}
-    <button class="btn ghost" style="width:100%;margin-top:14px" onclick="closeModal()">Tutup</button>`;
-  modal.classList.add('on');
+     ||'<div class="empty"><div class="disp">Belum ada notifikasi</div><div>Check in terapis dan keputusan izin akan muncul di sini.</div></div>'}`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:14px" onclick="closeModal()">Tutup</button>`})
   tandaiDibaca();
 }
 async function tandaiDibaca(){
@@ -911,24 +926,98 @@ async function masuk(){
       if(!akun||akun.pw!==pass) throw new Error('Email atau kata sandi salah.');
       ME=get('karyawan',akun.id);
     }
-    document.getElementById('login').style.display='none';
-    document.getElementById('app').style.display='block';
-    meName.textContent=ME.nama; meRole.textContent=nm('jabatan',ME.jabatan_id); meAv.textContent=ME.nama[0];
-    try{ muatModel(); }catch(e){ console.warn('Model biaya dilewati:',e); }
-    buildSide(); buildTab(); go(halamanPertama());
-    const mn=document.getElementById('mobNama'), mp=document.getElementById('mobPeran');
-    if(mn) mn.textContent=ME.nama;
-    if(mp) mp.textContent=nm('jabatan',ME.jabatan_id)+' · '+nm('cabang',ME.cabang_id);
-    muatDilihat(); periksaNotif(true);
-    setInterval(()=>periksaNotif(false), 20000);
-    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) periksaNotif(false); });
-    addEventListener('focus', ()=>periksaNotif(false));
-    addEventListener('online', ()=>periksaNotif(false));
-    cekPasang(); mintaIzinNotif();
+    simpanan('tulis','mahyra_versi_office',VERSI_APP);
+    simpanan('tulis','mahyra_sidik_office',sidikAkses(ME));
+    bukaAplikasi();
   }catch(e){ err.textContent=e.message; err.classList.add('on'); }
   btnLogin.disabled=false; btnLogin.textContent='Masuk';
 }
-async function keluar(){ if(LIVE) await sb.auth.signOut(); location.reload(); }
+function bukaAplikasi(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  meName.textContent=ME.nama; meRole.textContent=nm('jabatan',ME.jabatan_id); meAv.textContent=ME.nama[0];
+  const mn=document.getElementById('mobNama'), mp=document.getElementById('mobPeran');
+  if(mn) mn.textContent=ME.nama;
+  if(mp) mp.textContent=nm('jabatan',ME.jabatan_id)+' · '+nm('cabang',ME.cabang_id);
+  try{ muatModel(); }catch(e){ console.warn('Model biaya dilewati:',e); }
+  buildSide(); buildTab(); go(halamanPertama());
+  muatDilihat(); periksaNotif(true);
+  setInterval(()=>periksaNotif(false), 20000);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) periksaNotif(false); });
+  addEventListener('focus', ()=>periksaNotif(false));
+  addEventListener('online', ()=>periksaNotif(false));
+  cekPasang(); mintaIzinNotif();
+}
+async function keluar(){
+  if(LIVE) await sb.auth.signOut();
+  simpanan('hapus'); location.reload();
+}
+
+/* Sesi disimpan di perangkat supaya tidak perlu login berulang —
+   penting agar notifikasi tetap masuk tanpa membuka aplikasi dulu. */
+function simpanan(aksi,kunci,nilai){
+  try{
+    if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi_office');
+      localStorage.removeItem('mahyra_sidik_office'); return; }
+    if(aksi==='baca') return localStorage.getItem(kunci);
+    localStorage.setItem(kunci,nilai);
+  }catch(e){ return null; }
+}
+const sidikAkses=k=>[k.role,k.jabatan_id,k.cabang_id,k.status].join('|');
+
+(async function pulihkanSesi(){
+  if(!LIVE) return;
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session) return;
+
+    const versiLama=simpanan('baca','mahyra_versi_office');
+    if(versiLama&&versiLama!==VERSI_APP){
+      await sb.auth.signOut(); simpanan('hapus');
+      simpanan('tulis','mahyra_versi_office',VERSI_APP);
+      return pesanLogin('Aplikasi baru saja diperbarui. Silakan masuk sekali lagi.');
+    }
+    simpanan('tulis','mahyra_versi_office',VERSI_APP);
+
+    const kotak=document.querySelector('#login .card-login');
+    if(kotak) kotak.innerHTML='<p class="hint" style="text-align:center;padding:26px">Membuka sesi Anda…</p>';
+
+    const k=await ambilProfil(session.user.id,String(session.user.email||'').toLowerCase());
+    if(!k||k.role==='terapis'||k.status!=='aktif'){
+      await sb.auth.signOut(); simpanan('hapus');
+      return pesanLogin('Akun Anda tidak berlaku untuk portal ini.');
+    }
+    const sidik=sidikAkses(k), sidikLama=simpanan('baca','mahyra_sidik_office');
+    if(sidikLama&&sidikLama!==sidik){
+      await sb.auth.signOut(); simpanan('hapus');
+      simpanan('tulis','mahyra_sidik_office',sidik);
+      return pesanLogin('Hak akses Anda diperbarui. Silakan masuk sekali lagi.');
+    }
+    simpanan('tulis','mahyra_sidik_office',sidik);
+
+    ME=k;
+    if(!DB.karyawan.some(x=>x.id===k.id)) DB.karyawan.push(k);
+    bukaAplikasi();
+  }catch(e){ console.warn('Sesi tidak bisa dipulihkan:',e); pesanLogin(''); }
+})();
+
+function pesanLogin(teks){
+  if(teks){ try{ sessionStorage.setItem('mahyra_pesan_office',teks); }catch(_){} }
+  location.reload();
+}
+
+/* Segarkan sesi berkala supaya tidak kedaluwarsa */
+if(LIVE){
+  setInterval(()=>{ sb.auth.refreshSession().catch(()=>{}); }, 36e5);
+  addEventListener('online', ()=>sb.auth.refreshSession().catch(()=>{}));
+}
+(function(){
+  try{
+    const p=sessionStorage.getItem('mahyra_pesan_office');
+    if(p){ sessionStorage.removeItem('mahyra_pesan_office');
+      const e=document.getElementById('loginErr'); if(e){ e.textContent=p; e.classList.add('on'); } }
+  }catch(_){}
+})();
 
 /* ============================ MODUL ============================ */
 const F={
@@ -1160,14 +1249,12 @@ function bukaMenuOffice(){
       <div class="menulist">${bisa.map(([id,ic,l])=>
       `<button onclick="closeModal();go('${id}')"><span class="ic">${ic}</span>${l}</button>`).join('')}</div>`;
   }).join('');
-  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:3px">Menu</h3>
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:3px">Menu</h3>
     <p class="hint" style="margin-bottom:6px">${esc(ME.nama)} · ${esc(nm('jabatan',ME.jabatan_id))}</p>
     ${isi}
     <div class="menulist" style="margin-top:16px">
       <button onclick="keluar()" style="color:var(--bad);border-color:#F3DDE1">
-        <span class="ic" style="background:#FAEAEC;color:var(--bad)">⏻</span>Keluar dari akun</button></div>
-    <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`;
-  modal.classList.add('on');
+        <span class="ic" style="background:#FAEAEC;color:var(--bad)">⏻</span>Keluar dari akun</button></div>`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`})
 }
 
 function go(p){ PAGE=p; SEARCH='';
@@ -1192,15 +1279,13 @@ function openForm(key,id){
                 target:{cabang_id:ME.cabang_id,periode:periode()},
                 bonus:{periode:periode(),status:'menunggu'}};
   const r=id?get(key,id):{cabang_id:ME.cabang_id,...(BAWAAN[key]||{})};
-  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">${id?'Ubah':'Tambah'} ${m.title}</h3>
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">${id?'Ubah':'Tambah'} ${m.title}</h3>
    <p class="hint" style="margin-bottom:16px">${m.sub}</p>
    ${m.info?`<div class="card" style="background:var(--mist);box-shadow:none;padding:12px;margin-bottom:16px">
      <p class="hint" style="margin:0">${m.info}</p></div>`:''}
-   ${m.fields.map(f=>fieldHtml(f,r[f.k])).join('')}
-   <div class="row" style="margin-top:8px"><button class="btn" onclick="saveForm()">Simpan</button>
+   ${m.fields.map(f=>fieldHtml(f,r[f.k])).join('')}`, {kaki: `<button class="btn" onclick="saveForm()">Simpan</button>
      <button class="btn ghost" onclick="closeModal()">Batal</button>
-     ${id&&boleh(key,'hapus')?`<button class="btn rose" style="margin-left:auto" onclick="delRow('${key}','${id}')">Hapus</button>`:''}</div>`;
-  modal.classList.add('on');
+     ${id&&boleh(key,'hapus')?`<button class="btn rose" style="margin-left:auto" onclick="delRow('${key}','${id}')">Hapus</button>`:''}`})
 }
 function fieldHtml(f,v){
   const id='f_'+f.k,t=f.t||'text';let inp;
@@ -1227,7 +1312,28 @@ async function saveForm(){
   closeModal(); render(); toast('Data tersimpan');
 }
 async function delRow(key,id){ if(!await hapus(key,id)) return; closeModal(); render(); toast('Data dihapus'); }
-function closeModal(){ modal.classList.remove('on'); }
+
+/* ---------- Panel: isi bisa digulir, tombol tetap di bawah ----------
+   Semua pemanggilan sheet.innerHTML dibungkus otomatis, sehingga tombol
+   Simpan dan Batal selalu terjangkau tanpa perlu menggulir. */
+const _sheet = document.getElementById('sheet');
+function bukaPanel(html, opsi){
+  const { kaki, lebar } = opsi || {};
+  _sheet.innerHTML =
+    '<button class="sheet-tutup" onclick="closeModal()" aria-label="Tutup">&times;</button>'
+    + '<div class="sheet-isi">' + html + '</div>'
+    + (kaki ? '<div class="sheet-kaki">' + kaki + '</div>' : '');
+  if (lebar) _sheet.style.maxWidth = lebar;
+  modal.classList.add('on');
+  document.body.style.overflow = 'hidden';
+  const isi = _sheet.querySelector('.sheet-isi');
+  if (isi) isi.scrollTop = 0;
+}
+function closeModal(){
+  modal.classList.remove('on');
+  document.body.style.overflow = '';
+  _sheet.style.maxWidth = '';
+}
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
 
 function renderModule(key){
@@ -1287,7 +1393,7 @@ const stat=(l,v,s,cls='')=>`<div class="card stat ${cls}"><div class="lbl">${l}<
 /* ==================== AKUN LOGIN TERAPIS ==================== */
 function formAkun(karyawanId){
   const k=get('karyawan',karyawanId);
-  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">${k.user_id?'Ubah':'Buat'} akun login</h3>
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">${k.user_id?'Ubah':'Buat'} akun login</h3>
    <p class="hint" style="margin-bottom:16px">Akun ini dipakai ${esc(k.nama)} untuk masuk ke Portal Terapis.</p>
    <div class="err" id="akErr"></div>
    <div class="field"><label>Karyawan</label><input value="${esc(k.nama)} · ${esc(nm('jabatan',k.jabatan_id))}" disabled></div>
@@ -1296,11 +1402,9 @@ function formAkun(karyawanId){
      <input id="ak_pw" type="text" value="${k.user_id?'':'mahyra'+Math.floor(1000+Math.random()*9000)}" placeholder="minimal 6 karakter"></div>
    <p class="hint">Catat dan sampaikan kata sandi ini ke terapis. Minta mereka menggantinya setelah masuk pertama kali.
      Bila Edge Function <strong>kelola-akun</strong> belum dipasang, akun tetap dibuat lewat jalur cadangan —
-     pastikan opsi <em>Confirm email</em> di Authentication → Providers → Email sudah dimatikan.</p>
-   <div class="row" style="margin-top:14px"><button class="btn" id="akBtn" onclick="simpanAkun('${karyawanId}')">${k.user_id?'Perbarui akun':'Buat akun'}</button>
+     pastikan opsi <em>Confirm email</em> di Authentication → Providers → Email sudah dimatikan.</p>`, {kaki: `<button class="btn" id="akBtn" onclick="simpanAkun('${karyawanId}')">${k.user_id?'Perbarui akun':'Buat akun'}</button>
      <button class="btn ghost" onclick="closeModal()">Batal</button>
-     ${k.user_id?`<button class="btn rose" style="margin-left:auto" onclick="cabutAkun('${karyawanId}')">Cabut akses</button>`:''}</div>`;
-  modal.classList.add('on');
+     ${k.user_id?`<button class="btn rose" style="margin-left:auto" onclick="cabutAkun('${karyawanId}')">Cabut akses</button>`:''}`})
 }
 async function simpanAkun(karyawanId){
   const k=get('karyawan',karyawanId), email=ak_em.value.trim().toLowerCase(), pass=ak_pw.value.trim(), err=akErr;
@@ -2080,10 +2184,8 @@ async function setLingkup(jabatanId,nilai){
 
 /* Buka panel diagnosa dari mana saja, termasuk saat menu kosong */
 async function bukaDiagnosa(){
-  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:10px">Pemeriksaan akses</h3>
-    <div id="hasilDiag"><p class="hint">Memeriksa…</p></div>
-    <button class="btn ghost" style="width:100%;margin-top:14px" onclick="closeModal()">Tutup</button>`;
-  modal.classList.add('on');
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:10px">Pemeriksaan akses</h3>
+    <div id="hasilDiag"><p class="hint">Memeriksa…</p></div>`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:14px" onclick="closeModal()">Tutup</button>`})
   await diagnosa();
 }
 
@@ -2305,7 +2407,7 @@ function formOrder(){
   const cabangKu=opsiRef('cabang');
   const cabangAwal=(cabangKu[0]||{}).id||ME.cabang_id;
   const layanan=layananCabang(cabangAwal);
-  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Buat order</h3>
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">Buat order</h3>
    <p class="hint" style="margin-bottom:16px">Ketik nama pelanggan — kalau sudah pernah datang, detailnya terisi sendiri.</p>
 
    <div class="field"><label>Cabang</label>
@@ -2344,10 +2446,8 @@ function formOrder(){
    <div class="field"><label for="o_cat">Catatan</label>
      <textarea id="o_cat" rows="2" placeholder="Permintaan khusus, keluhan, preferensi tekanan"></textarea></div>
 
-   <div id="o_total" class="card" style="background:var(--mist);box-shadow:none;padding:14px;margin-bottom:12px"></div>
-   <div class="row"><button class="btn" id="o_simpan" onclick="simpanOrder()">Simpan order</button>
-     <button class="btn ghost" onclick="closeModal()">Batal</button></div>`;
-  modal.classList.add('on');
+   <div id="o_total" class="card" style="background:var(--mist);box-shadow:none;padding:14px;margin-bottom:12px"></div>`, {kaki: `<button class="btn" id="o_simpan" onclick="simpanOrder()">Simpan order</button>
+     <button class="btn ghost" onclick="closeModal()">Batal</button>`})
   gambarTerapis(); hitungOrder();
 }
 
@@ -2598,7 +2698,7 @@ function bonusOrder(pesananId){
   const item=DB.item.filter(i=>i.pesanan_id===p.id);
   BON={terapis:item.map(i=>i.terapis_id)};          // bawaan: semua terapis
   const sudah=DB.bonus.filter(b=>b.pesanan_id===p.id);
-  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Bonus dari order</h3>
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">Bonus dari order</h3>
     <p class="hint" style="margin-bottom:16px">${esc(p.nomor)} · ${esc(nm('pelanggan',p.pelanggan_id))} · ${rp(p.total)}</p>
 
     <div class="field"><label>Terapis penerima</label><div id="b_terapis"></div>
@@ -2618,11 +2718,8 @@ function bonusOrder(pesananId){
       <div class="hint" style="margin-bottom:6px">Bonus yang sudah diberikan untuk order ini</div>
       ${sudah.map(b=>`<div class="list-item" style="padding:7px 0">
         <div style="flex:1">${esc(nm('karyawan',b.karyawan_id))} · ${esc(cap(b.jenis))}</div>
-        <span class="rp">${rp(b.nominal)}</span></div>`).join('')}</div>`:''}
-
-    <div class="row"><button class="btn" id="b_simpan" onclick="simpanBonusOrder('${p.id}')">Simpan bonus</button>
-      <button class="btn ghost" onclick="closeModal()">Batal</button></div>`;
-  modal.classList.add('on');
+        <span class="rp">${rp(b.nominal)}</span></div>`).join('')}</div>`:''}`, {kaki: `<button class="btn" id="b_simpan" onclick="simpanBonusOrder('${p.id}')">Simpan bonus</button>
+      <button class="btn ghost" onclick="closeModal()">Batal</button>`})
   gambarTerapisBonus(pesananId);
 }
 function gambarTerapisBonus(pesananId){
@@ -2671,7 +2768,7 @@ async function simpanBonusOrder(pesananId){
 function ubahOrder(pesananId){
   const p=get('pesanan',pesananId);
   const item=DB.item.filter(i=>i.pesanan_id===p.id);
-  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Ubah order</h3>
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">Ubah order</h3>
     <p class="hint" style="margin-bottom:16px">${esc(p.nomor)} · ${esc(nm('pelanggan',p.pelanggan_id))}</p>
     <div class="grid g2">
       <div class="field"><label for="u_tgl">Tanggal pengerjaan</label>
@@ -2697,11 +2794,8 @@ function ubahOrder(pesananId){
         <div class="hint">${esc(nm('karyawan',i.terapis_id))} · ${rp(i.harga)} · komisi ${rp(i.komisi)}</div></div>
       <select style="width:auto" onchange="ubahItem('${i.id}',this.value)">
         ${['menunggu','berjalan','selesai','batal'].map(s=>`<option ${i.status===s?'selected':''}>${s}</option>`).join('')}
-      </select></div>`).join('')}
-
-    <div class="row" style="margin-top:12px"><button class="btn" onclick="simpanUbahOrder('${p.id}')">Simpan perubahan</button>
-      <button class="btn ghost" onclick="closeModal()">Batal</button></div>`;
-  modal.classList.add('on');
+      </select></div>`).join('')}`, {kaki: `<button class="btn" onclick="simpanUbahOrder('${p.id}')">Simpan perubahan</button>
+      <button class="btn ghost" onclick="closeModal()">Batal</button>`})
 }
 async function ubahItem(itemId,status){
   const i=get('item',itemId);
@@ -2746,50 +2840,43 @@ function waTerapis(pesananId){
     const k=get('karyawan',punya[0].terapis_id);
     return window.open(tautanWa(k.telepon,pesanTerapis(p,k.id)),'_blank','noopener');
   }
-  sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:4px">Kirim ke terapis</h3>
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Kirim ke terapis</h3>
     <p class="hint" style="margin-bottom:14px">${esc(p.nomor)} · ${item.length} terapis bertugas</p>
     ${item.map(i=>{const k=get('karyawan',i.terapis_id)||{};
       return k.telepon
         ? `<a class="btn amber" style="width:100%;margin-bottom:8px" target="_blank" rel="noopener"
              href="${tautanWa(k.telepon,pesanTerapis(p,k.id))}">${esc(k.nama)}</a>`
-        : `<p class="hint" style="margin-bottom:8px">${esc(k.nama||'Terapis')} belum punya nomor HP.</p>`;}).join('')}
-    <button class="btn ghost" style="width:100%;margin-top:6px" onclick="closeModal()">Tutup</button>`;
-  modal.classList.add('on');
+        : `<p class="hint" style="margin-bottom:8px">${esc(k.nama||'Terapis')} belum punya nomor HP.</p>`;}).join('')}`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:6px" onclick="closeModal()">Tutup</button>`})
 }
 
 function kirimOrder(pesananId){
   const p=get('pesanan',pesananId);
   const pel=get('pelanggan',p.pelanggan_id)||{};
   const item=DB.item.filter(i=>i.pesanan_id===p.id);
-  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:4px">Order tersimpan</h3>
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">Order tersimpan</h3>
     <p class="hint" style="margin-bottom:14px">${esc(p.nomor)} · ${rp(p.total)}</p>
     <div class="card" style="background:var(--mist);box-shadow:none;padding:14px;white-space:pre-wrap;
       font-size:12.5px;line-height:1.65;margin-bottom:14px">${esc(pesanPelanggan(p))}</div>
 
-    <div class="row">
-      ${pel.telepon?`<a class="btn" style="flex:1" target="_blank" rel="noopener"
-          href="${tautanWa(pel.telepon,pesanPelanggan(p))}">WA Customer</a>`
-        :`<button class="btn" style="flex:1" disabled>WA Customer</button>`}
-      <button class="btn amber" style="flex:1" onclick="waTerapis('${p.id}')">WA Terapis</button>
-    </div>
+    
     ${pel.telepon?'':'<p class="hint" style="margin-top:8px">Nomor HP pelanggan belum diisi.</p>'}
     <p class="hint" style="margin-top:10px">Pesan ke terapis sengaja tidak memuat nomor HP pelanggan.</p>
-    <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Selesai</button>`;
-  modal.classList.add('on');
+    <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Selesai</button>`, {kaki: `${pel.telepon?`<a class="btn" style="flex:1" target="_blank" rel="noopener"
+          href="${tautanWa(pel.telepon,pesanPelanggan(p))}">WA Customer</a>`
+        :`<button class="btn" style="flex:1" disabled>WA Customer</button>`}
+      <button class="btn amber" style="flex:1" onclick="waTerapis('${p.id}')">WA Terapis</button>`})
 }
 
 function formKas(){
-  sheet.innerHTML=`<h3 style="font-size:20px;margin-bottom:16px">Catat kas manual</h3>
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:16px">Catat kas manual</h3>
    <div class="field"><label>Tanggal</label><input type="date" id="k_tgl" value="${today()}"></div>
    <div class="field"><label>Cabang</label><select id="k_cab" ${opsiRef('cabang').length<2?'disabled':''}>${opsiRef('cabang').map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select></div>
    <div class="field"><label>Jenis</label><select id="k_jns"><option value="masuk">Kas masuk</option><option value="keluar">Kas keluar</option></select></div>
    <div class="field"><label>Kategori</label><input id="k_kat" placeholder="Modal, setoran, penarikan…"></div>
    <div class="field"><label>Nominal</label><input type="number" id="k_nom"></div>
    <div class="field"><label>Metode</label><select id="k_met"><option>tunai</option><option>transfer</option><option>qris</option></select></div>
-   <div class="field"><label>Keterangan</label><textarea id="k_ket" rows="2"></textarea></div>
-   <div class="row"><button class="btn" onclick="simpanKas()">Simpan</button>
-     <button class="btn ghost" onclick="closeModal()">Batal</button></div>`;
-  modal.classList.add('on');
+   <div class="field"><label>Keterangan</label><textarea id="k_ket" rows="2"></textarea></div>`, {kaki: `<button class="btn" onclick="simpanKas()">Simpan</button>
+     <button class="btn ghost" onclick="closeModal()">Batal</button>`})
 }
 async function simpanKas(){
   const n=Number(k_nom.value); if(!n) return toast('Isi nominal');
