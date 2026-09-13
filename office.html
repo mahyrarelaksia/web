@@ -45,10 +45,12 @@ aside .brand{color:#fff;padding:0 8px 14px}
 .nav{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:12px;cursor:pointer;font-size:13.5px}
 .nav:hover{background:rgba(255,255,255,.13);color:#fff}
 .nav.on{background:#fff;color:var(--jade);font-weight:600}
-.nav .ic{width:18px;text-align:center}
+.nav .ic{width:22px;display:grid;place-items:center;flex:none;opacity:.9}
+.nav.on .ic{opacity:1}
 main{padding:22px;max-width:1400px;width:100%}
 .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px;
- flex-wrap:wrap;position:sticky;top:0;z-index:25;background:var(--mist);padding:14px 0 12px;margin-top:-14px}
+ flex-wrap:wrap;position:sticky;top:0;z-index:25;background:var(--mist);padding:14px 0 12px;margin-top:-14px;
+ box-shadow:0 8px 12px -8px rgba(31,64,120,.12)}
 .topbar h1{font-size:26px}.topbar p{color:var(--muted);font-size:13px;margin-top:2px}
 .who{display:flex;align-items:center;gap:10px;background:var(--paper);padding:8px 12px;border-radius:14px;box-shadow:var(--sh)}
 .av{width:36px;height:36px;border-radius:12px;background:linear-gradient(150deg,#7FBCE8,#2F6FBF);color:#fff;display:grid;place-items:center;font-weight:600;flex:none}
@@ -140,6 +142,7 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
  background:var(--mist);border:1px solid var(--line);color:var(--jade);
  display:grid;place-items:center;font-size:16px;-webkit-tap-highlight-color:transparent}
 .lonceng:active{transform:scale(.94)}
+.lonceng svg{display:block}
 .lonceng .titik{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;
  background:#C0707E;color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;
  padding:0 5px;border:2px solid #fff}
@@ -187,23 +190,22 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
   .modal .sheet:before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);
     width:40px;height:4px;border-radius:4px;background:var(--line);z-index:2}
   .shell{grid-template-columns:1fr}
-  main{padding:14px 14px 96px}
   #app{padding-bottom:0}
 
   .mobbar{display:flex;align-items:center;gap:10px;
     background:linear-gradient(170deg,#4C8FD6,#2F6FBF 60%,#1F4C86);
-    color:#fff;padding:calc(12px + env(safe-area-inset-top)) 14px 14px;
-    position:fixed;top:0;left:0;right:0;z-index:70;border-radius:0 0 20px 20px;
-    box-shadow:0 6px 20px rgba(31,76,134,.22)}
-  #app{padding-top:74px}   /* ruang untuk header yang menempel */
+    color:#fff;padding:calc(13px + env(safe-area-inset-top)) 14px 15px;
+    position:fixed;top:0;left:0;right:0;z-index:70;border-radius:0 0 22px 22px;
+    box-shadow:0 8px 24px rgba(31,76,134,.22)}
+  /* ruang untuk header yang menempel, diberikan pada isi halaman */
+  main{padding:calc(78px + env(safe-area-inset-top)) 14px 96px}
   .mobbar .judul{flex:1;min-width:0}
   .mobbar .judul b{font-size:14.5px;display:block;line-height:1.2}
   .mobbar .judul span{font-size:11px;color:#DCEAF8}
   .mobbar .lonceng{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.34);color:#fff}
   .mobbar .lonceng .titik{border-color:#2F6FBF}
   .who{display:none}
-  .topbar{margin-bottom:10px;position:sticky;top:0;z-index:25;background:var(--mist);
-    padding:10px 0 8px;margin-top:-10px}
+  .topbar{margin-bottom:10px;position:static;background:none;padding:0;margin-top:0}
   .topbar h1{font-size:19px}
   body.panel-buka .tabbar{transform:translateY(110%)}
   .tabbar{position:fixed;bottom:0;left:0;right:0;width:100%;z-index:60;display:grid;
@@ -216,11 +218,12 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
     padding:4px 2px;border-radius:12px;cursor:pointer;color:#93A4BD;font-size:9.5px;font-weight:600;
     line-height:1.2;text-align:center;min-width:0;-webkit-tap-highlight-color:transparent}
   .tab span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-  .tab .ic{font-size:17px;line-height:1;height:20px;display:grid;place-items:center}
+  .tab .ic{height:22px;display:grid;place-items:center}
+  .tab .ic svg{display:block}
   .tab.on{color:var(--jade)}
   .tab.pusat{color:var(--jade);position:relative}
   .tab.pusat .ic{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);
-    width:54px;height:54px;border-radius:20px;display:grid;place-items:center;font-size:24px;
+    width:54px;height:54px;border-radius:20px;display:grid;place-items:center;
     color:#fff;background:linear-gradient(150deg,#8FC6EC,#2F6FBF 62%,#1F4C86);border:4px solid #fff;
     box-shadow:0 8px 20px rgba(47,111,191,.38)}
   .tab.pusat span:last-child{margin-top:38px}
@@ -228,8 +231,8 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
   .menulist{display:grid;gap:6px;margin-top:6px}
   .menulist button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);
     background:#fff;padding:13px 14px;border-radius:14px;cursor:pointer;font-weight:600;font-size:13.5px}
-  .menulist .ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;flex:none;
-    background:#E8F1FC;color:var(--jade);font-size:14px}
+  .menulist .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;
+    background:#E8F1FC;color:var(--jade)}
 }
 .biaya-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .pos{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
@@ -268,14 +271,17 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .list-item:last-child{border-bottom:0}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--jade);margin-top:6px;flex:none}
 @media(max-width:760px){.hanya-desktop{display:none}.hanya-mobil{display:block}}
-@media(max-width:900px){.shell{grid-template-columns:1fr}
-aside{position:fixed;left:-260px;width:250px;z-index:60;transition:.22s}
-aside.open{left:0;box-shadow:0 0 0 100vmax rgba(0,0,0,.4)}
-main{padding:14px}
-.mobbar{display:flex;align-items:center;gap:10px;background:var(--jade);color:#fff;padding:11px 14px;position:sticky;top:0;z-index:20}
-.mobbar button{background:rgba(255,255,255,.15);border:0;color:#fff;padding:7px 11px;border-radius:9px;cursor:pointer}
-.g4,.g3,.g2{grid-template-columns:1fr 1fr}.topbar h1{font-size:21px}}
-@media(max-width:520px){.g4,.g3,.g2{grid-template-columns:1fr}}
+/* Antara 761px dan 900px: sidebar disembunyikan, tata letak satu kolom.
+   Aturan header ada di media query 760px di atas, jangan ditimpa di sini. */
+@media(min-width:761px) and (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  aside{position:fixed;left:-260px;width:250px;z-index:60;transition:.22s}
+  aside.open{left:0;box-shadow:0 0 0 100vmax rgba(0,0,0,.4)}
+  main{padding:16px}
+  .g4,.g3,.g2{grid-template-columns:1fr 1fr}
+  .topbar h1{font-size:21px}
+}
+@media(max-width:520px){.g4,.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -299,7 +305,7 @@ main{padding:14px}
     <div class="mark" style="width:36px;height:36px"><img src="logo.png" alt="Mahyra"></div>
     <div class="judul"><b id="mobNama">Office</b><span id="mobPeran"></span></div>
     <button class="lonceng" onclick="bukaNotif()" aria-label="Notifikasi">
-      <span>🔔</span><span class="titik" id="jmlNotif" style="display:none">0</span></button>
+      <span id="icLonceng"></span><span class="titik" id="jmlNotif" style="display:none">0</span></button>
   </div>
   <div class="shell">
     <aside id="side"></aside>
@@ -308,7 +314,7 @@ main{padding:14px}
         <div><h1 id="pgTitle">Dashboard</h1><p id="pgSub"></p></div>
         <div class="who">
           <button class="lonceng" onclick="bukaNotif()" aria-label="Notifikasi">
-            <span>🔔</span><span class="titik" id="jmlNotif2" style="display:none">0</span></button>
+            <span id="icLonceng2"></span><span class="titik" id="jmlNotif2" style="display:none">0</span></button>
           <div class="av" id="meAv">M</div>
           <div><div style="font-weight:600" id="meName"></div><div class="hint" id="meRole"></div></div>
           <button class="btn ghost sm" onclick="keluar()">Keluar</button></div>
@@ -318,7 +324,7 @@ main{padding:14px}
   </div>
   <nav class="tabbar" id="tabbar"></nav>
   <div class="pop" id="popNotif" onclick="dariPop()">
-    <div class="ikon">◎</div>
+    <div class="ikon" id="icPop"></div>
     <div style="flex:1;min-width:0"><h5 id="popJudul"></h5><p id="popPesan"></p></div>
   </div>
 </div>
@@ -338,7 +344,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.13.7";
+const VERSI_APP = "2026.09.13.8";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -576,6 +582,51 @@ function opsiRef(ref){
   if(ref==='cabang')   return daftar.filter(o=>o.id===ME.cabang_id);
   if(ref==='karyawan') return daftar.filter(o=>o.cabang_id===ME.cabang_id);
   return daftar;
+}
+
+const IKON = {
+  absen: '<path d="M9 11.5l2.5 2.5 5-5.5"/><rect x="3.5" y="4.5" width="17" height="16" rx="3"/>',
+  absensi: '<rect x="4" y="4.5" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',
+  akses: '<rect x="4.5" y="10" width="15" height="10.5" rx="2.5"/><path d="M8 10V7.5a4 4 0 018 0V10"/><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"/>',
+  aturan_bonus: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/><path d="M9.5 12.5l1.8 1.8 3.4-3.6" stroke-width="1.5"/>',
+  biaya: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v8.5l6 4.2"/>',
+  bonus: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/>',
+  cabang: '<path d="M3.5 20.5h17"/><path d="M5.5 20.5V9l6.5-4.5L18.5 9v11.5"/><rect x="10" y="13" width="4" height="7.5"/>',
+  dash: '<path d="M3 12l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/>',
+  gaji: '<rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M7.5 9.5h9M7.5 13h6M7.5 16.5h4"/>',
+  izin: '<path d="M5 4.5h9l5 5v10a2 2 0 01-2 2H5a2 2 0 01-2-2v-13a2 2 0 012-2z"/><path d="M14 4.5V10h5"/><path d="M7.5 14h7M7.5 17.5h4"/>',
+  jabatan: '<path d="M5 21V8l7-4.5L19 8v13"/><path d="M9.5 21v-6h5v6"/><path d="M12 8.5v2"/>',
+  jadwal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="9" cy="14.5" r="1.1" fill="currentColor" stroke="none"/>',
+  karyawan: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.4 2.9-5.8 6.5-5.8s6.5 2.4 6.5 5.8"/><path d="M17 8.5h4.5M19.25 6.25v4.5"/>',
+  kas: '<rect x="2.5" y="6" width="19" height="12.5" rx="2.5"/><circle cx="12" cy="12.2" r="2.6"/><path d="M6 12.2h.01M18 12.2h.01"/>',
+  kasbon: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M14.5 9.8c-.6-.8-1.5-1.2-2.5-1.2-1.4 0-2.4.8-2.4 1.9 0 2.6 5 1.4 5 4 0 1.2-1.1 2-2.6 2-1.1 0-2-.4-2.6-1.2"/>',
+  kategori_pengeluaran: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/>',
+  kerja: '<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5a2 2 0 012-2h3a2 2 0 012 2V7"/><path d="M3 12h18"/>',
+  komisi: '<path d="M19 6L6 19"/><circle cx="8" cy="8" r="2.6"/><circle cx="17" cy="17" r="2.6"/>',
+  laporan: '<path d="M4 20.5h16"/><rect x="5.5" y="12" width="3.5" height="7"/><rect x="10.5" y="7.5" width="3.5" height="11.5"/><rect x="15.5" y="10" width="3.5" height="9"/>',
+  layanan: '<path d="M12 3.5c2.4 3 4 5.4 4 7.6a4 4 0 11-8 0c0-2.2 1.6-4.6 4-7.6z"/><path d="M4 20.5h16"/>',
+  libur: '<path d="M20 13.5A8 8 0 1110.5 4a6.5 6.5 0 009.5 9.5z"/>',
+  lonceng: '<path d="M18 8.5a6 6 0 10-12 0c0 6-2 7-2 7h16s-2-1-2-7z"/><path d="M13.7 20a2 2 0 01-3.4 0"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  order: '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  pelanggan: '<circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6"/>',
+  pengaturan: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5"/>',
+  pengeluaran: '<path d="M12 4.5v13"/><path d="M7.5 13l4.5 4.5 4.5-4.5"/><path d="M4 20.5h16"/>',
+  peta: '<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+  profil: '<circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6"/>',
+  shift: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.4 2"/>',
+  skema_gaji: '<rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M7.5 9h9M7.5 12.5h9M7.5 16h5"/><circle cx="17" cy="16" r="1.6" fill="currentColor" stroke="none"/>',
+  slip: '<path d="M6 3.5h12v17l-3-1.8-3 1.8-3-1.8-3 1.8z"/><path d="M9 8.5h6M9 12.5h6"/>',
+  tambah: '<path d="M12 5v14M5 12h14"/>',
+  target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>'
+};
+
+/* Ikon garis seragam. Ukuran diatur lewat argumen, warna ikut teks induknya. */
+function ikon(nama, ukuran){
+  const d = IKON[nama] || IKON.menu;
+  return '<svg viewBox="0 0 24 24" width="'+(ukuran||20)+'" height="'+(ukuran||20)+'" fill="none" '
+       + 'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" '
+       + 'aria-hidden="true">'+d+'</svg>';
 }
 
 /* --------------------------- utilitas --------------------------- */
@@ -819,6 +870,9 @@ function notifSaya(){
 }
 function belumDibaca(){ return NOTIF.filter(n=>!NOTIF_DILIHAT.has(n.id)); }
 function gambarLonceng(){
+  ['icLonceng','icLonceng2'].forEach(id=>{
+    const e=document.getElementById(id); if(e&&!e.innerHTML) e.innerHTML=ikon('lonceng',18);
+  });
   const n=belumDibaca().length;
   ['jmlNotif','jmlNotif2'].forEach(id=>{
     const t=document.getElementById(id); if(!t) return;
@@ -827,12 +881,13 @@ function gambarLonceng(){
 }
 function bukaNotif(){
   const baru=new Set(belumDibaca().map(n=>n.id));
-  const ikon={order:'◎',checkin:'✓',izin:'✎',bonus:'★',libur:'☾'};
+  const jenisIkon={order:'order',checkin:'absensi',izin:'izin',bonus:'bonus',libur:'libur'};
   bukaPanel(`<h3 style="font-size:19px;margin-bottom:3px">Notifikasi</h3>
     <p class="hint" style="margin-bottom:14px">${NOTIF.length?NOTIF.length+' catatan terbaru':'Belum ada notifikasi'}</p>
     ${NOTIF.map(n=>`<div class="notif-item ${baru.has(n.id)?'baru':''}">
       <span class="dot" style="background:${baru.has(n.id)?'var(--jade)':'var(--line)'};margin-top:6px"></span>
-      <div style="flex:1;min-width:0"><h5>${ikon[n.tipe]||'•'} ${esc(n.judul)}</h5>
+      <div style="flex:1;min-width:0"><h5 style="display:flex;gap:7px;align-items:center">
+        <span style="color:var(--jade);flex:none">${ikon(jenisIkon[n.tipe]||'menu',16)}</span>${esc(n.judul)}</h5>
         <div class="hint">${esc(n.pesan||'')}</div>
         <div class="hint" style="font-size:11px;margin-top:3px">${n.waktu?tgl(String(n.waktu).slice(0,10)):''}</div>
       </div></div>`).join('')
@@ -874,6 +929,7 @@ function deringNotif(){
 }, {once:true, passive:true}));
 
 function tampilkanPop(n){
+  const ip=document.getElementById('icPop'); if(ip&&!ip.innerHTML) ip.innerHTML=ikon('lonceng',20);
   POP_ANTRE=n;
   const j=document.getElementById('popJudul'), p=document.getElementById('popPesan');
   if(!j) return;
@@ -1194,12 +1250,17 @@ const F={
 };
 
 const MENU=[
- ['Ringkasan',[['dash','◈','Dashboard'],['order','◎','Order']]],
- ['Operasional',[['m_pelanggan','☺','Pelanggan'],['m_layanan','✦','Layanan & Tarif'],['m_jadwal','▤','Jadwal Kerja'],['m_libur','☾','Tanggal Libur'],['m_shift','◔','Shift Kerja']]],
- ['SDM',[['m_karyawan','⚇','Karyawan'],['m_jabatan','⚑','Jabatan'],['m_cabang','⌂','Cabang'],['m_absensi','✓','Absensi'],['izin','✎','Izin & Cuti'],['m_kasbon','◇','Kasbon']]],
- ['Keuangan',[['kas','₪','Kas'],['m_pengeluaran','↓','Pengeluaran'],['m_komisi','%','Komisi'],['m_bonus','★','Bonus'],['m_skema_gaji','◈','Skema Gaji'],['gaji','▦','Penggajian']]],
- ['Analitik',[['laporan','▣','Laporan'],['biaya','◑','Struktur Biaya & Laba']]],
- ['Pengaturan',[['m_aturan_bonus','⚙','Aturan Bonus'],['m_target','◉','Target'],['m_kategori_pengeluaran','⊞','Kategori Biaya'],['akses','⚿','Hak Akses & Peran'],['pengaturan','⚒','Profil Usaha']]]
+ ['Ringkasan',[['dash','dash','Dashboard'],['order','order','Order']]],
+ ['Operasional',[['m_pelanggan','pelanggan','Pelanggan'],['m_layanan','layanan','Layanan & Tarif'],
+   ['m_jadwal','jadwal','Jadwal Kerja'],['m_libur','libur','Tanggal Libur'],['m_shift','shift','Shift Kerja']]],
+ ['SDM',[['m_karyawan','karyawan','Karyawan'],['m_jabatan','jabatan','Jabatan'],['m_cabang','cabang','Cabang'],
+   ['m_absensi','absensi','Absensi'],['izin','izin','Izin & Cuti'],['m_kasbon','kasbon','Kasbon']]],
+ ['Keuangan',[['kas','kas','Kas'],['m_pengeluaran','pengeluaran','Pengeluaran'],['m_komisi','komisi','Komisi'],
+   ['m_bonus','bonus','Bonus'],['m_skema_gaji','skema_gaji','Skema Gaji'],['gaji','gaji','Penggajian']]],
+ ['Analitik',[['laporan','laporan','Laporan'],['biaya','biaya','Struktur Biaya & Laba']]],
+ ['Pengaturan',[['m_aturan_bonus','aturan_bonus','Aturan Bonus'],['m_target','target','Target'],
+   ['m_kategori_pengeluaran','kategori_pengeluaran','Kategori Biaya'],['akses','akses','Hak Akses & Peran'],
+   ['pengaturan','pengaturan','Profil Usaha']]]
 ];
 function buildSide(){
   side.innerHTML=`<div class="brand"><div class="mark"><img src="logo.png" alt="Mahyra Relaksia"></div><div><strong style="font-family:Fraunces,serif">Mahyra</strong>
@@ -1211,7 +1272,7 @@ function buildSide(){
       const isi=it.filter(([id])=>boleh(id.startsWith('m_')?id.slice(2):id,'lihat'));
       if(!isi.length) return '';
       return `<div class="navgrp">${g}</div>`+isi.map(([id,ic,l])=>
-        `<div class="nav" id="nv_${id}" onclick="go('${id}')"><span class="ic">${ic}</span>${l}</div>`).join('');
+        `<div class="nav" id="nv_${id}" onclick="go('${id}')"><span class="ic">${ikon(ic,19)}</span>${l}</div>`).join('');
      }).join('');
 }
 /* Halaman pembuka = menu pertama yang diizinkan untuk jabatan ini */
@@ -1224,8 +1285,8 @@ function halamanPertama(){
 /* ---- Tab bawah untuk layar kecil. Isinya menyesuaikan hak akses. ---- */
 /* Lima slot tetap: dua kiri, tombol Order di tengah, satu kanan, lalu Menu. */
 const TAB_PILIHAN=[
-  ['dash','◈','Beranda'], ['m_pelanggan','☺','Pelanggan'], ['order','◎','Daftar order'],
-  ['m_absensi','✓','Absensi'], ['kas','₪','Kas'], ['laporan','▣','Laporan']];
+  ['dash','dash','Beranda'], ['m_pelanggan','pelanggan','Pelanggan'], ['order','order','Daftar order'],
+  ['m_absensi','absensi','Absensi'], ['kas','kas','Kas'], ['laporan','laporan','Laporan']];
 function daftarTab(){
   const bisa=TAB_PILIHAN.filter(([id])=>boleh(id.startsWith('m_')?id.slice(2):id,'lihat'));
   return { kiri:bisa.slice(0,2), kanan:bisa.slice(2,3),
@@ -1235,20 +1296,20 @@ function buildTab(){
   const bar=document.getElementById('tabbar'); if(!bar) return;
   const {kiri,kanan,buat,lihatOrder}=daftarTab();
   const sel=n=>`<div class="tab" id="tb_${n[0]}" onclick="go('${n[0]}')">
-    <span class="ic">${n[1]}</span><span>${n[2]}</span></div>`;
-  const kosong='<div class="tab" style="visibility:hidden"><span class="ic">·</span><span>·</span></div>';
+    <span class="ic">${ikon(n[1],21)}</span><span>${n[2]}</span></div>`;
+  const kosong='<div class="tab" style="visibility:hidden"><span class="ic"></span><span>·</span></div>';
   const tengah = buat
     ? `<div class="tab pusat" id="tb_order" onclick="formOrder()">
-         <span class="ic">+</span><span>Buat order</span></div>`
+         <span class="ic">${ikon('tambah',26)}</span><span>Buat order</span></div>`
     : lihatOrder
-      ? `<div class="tab" id="tb_order" onclick="go('order')"><span class="ic">◎</span><span>Order</span></div>`
+      ? `<div class="tab" id="tb_order" onclick="go('order')"><span class="ic">${ikon('order',21)}</span><span>Order</span></div>`
       : kosong;
 
   const sisiKiri  = [...kiri.map(sel)];  while(sisiKiri.length<2)  sisiKiri.push(kosong);
   const sisiKanan = [...kanan.map(sel)]; while(sisiKanan.length<1) sisiKanan.push(kosong);
 
   bar.innerHTML = sisiKiri.join('') + tengah + sisiKanan.join('')
-    + `<div class="tab" id="tb_menu" onclick="bukaMenuOffice()"><span class="ic">☰</span><span>Lainnya</span></div>`;
+    + `<div class="tab" id="tb_menu" onclick="bukaMenuOffice()"><span class="ic">${ikon('menu',21)}</span><span>Lainnya</span></div>`;
 }
 /* Seluruh menu, untuk layar kecil */
 function bukaMenuOffice(){
@@ -1257,14 +1318,14 @@ function bukaMenuOffice(){
     if(!bisa.length) return '';
     return `<div class="navgrp" style="color:var(--muted);margin:14px 0 6px">${g}</div>
       <div class="menulist">${bisa.map(([id,ic,l])=>
-      `<button onclick="closeModal();go('${id}')"><span class="ic">${ic}</span>${l}</button>`).join('')}</div>`;
+      `<button onclick="closeModal();go('${id}')"><span class="ic">${ikon(ic,18)}</span>${l}</button>`).join('')}</div>`;
   }).join('');
   bukaPanel(`<h3 style="font-size:19px;margin-bottom:3px">Menu</h3>
     <p class="hint" style="margin-bottom:6px">${esc(ME.nama)} · ${esc(nm('jabatan',ME.jabatan_id))}</p>
     ${isi}
     <div class="menulist" style="margin-top:16px">
       <button onclick="keluar()" style="color:var(--bad);border-color:#F3DDE1">
-        <span class="ic" style="background:#FAEAEC;color:var(--bad)">⏻</span>Keluar dari akun</button></div>`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`})
+        <span class="ic" style="background:#FAEAEC;color:var(--bad)">${ikon('akses',18)}</span>Keluar dari akun</button></div>`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`})
 }
 
 function go(p){ PAGE=p; SEARCH='';
