@@ -39,7 +39,7 @@ aside .mark{background:rgba(255,255,255,.94);border-color:rgba(255,255,255,.55)}
 
 #app{display:none;min-height:100vh}
 .shell{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
-aside{background:linear-gradient(178deg,#4C8FD6 0%,#2F6FBF 45%,#1F4C86 100%);color:#DCEAF8;padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow:auto}
+aside{background:linear-gradient(178deg,#4C8FD6 0%,#2F6FBF 45%,#1F4C86 100%);color:#DCEAF8;padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;align-self:start}
 aside .brand{color:#fff;padding:0 8px 14px}
 .navgrp{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#A9C9EA;margin:16px 10px 6px}
 .nav{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:12px;cursor:pointer;font-size:13.5px}
@@ -47,7 +47,8 @@ aside .brand{color:#fff;padding:0 8px 14px}
 .nav.on{background:#fff;color:var(--jade);font-weight:600}
 .nav .ic{width:18px;text-align:center}
 main{padding:22px;max-width:1400px;width:100%}
-.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px;
+ flex-wrap:wrap;position:sticky;top:0;z-index:25;background:var(--mist);padding:14px 0 12px;margin-top:-14px}
 .topbar h1{font-size:26px}.topbar p{color:var(--muted);font-size:13px;margin-top:2px}
 .who{display:flex;align-items:center;gap:10px;background:var(--paper);padding:8px 12px;border-radius:14px;box-shadow:var(--sh)}
 .av{width:36px;height:36px;border-radius:12px;background:linear-gradient(150deg,#7FBCE8,#2F6FBF);color:#fff;display:grid;place-items:center;font-weight:600;flex:none}
@@ -86,7 +87,7 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .bar{height:7px;border-radius:7px;background:var(--mist);overflow:hidden;margin-top:8px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#7FBCE8,#2F6FBF);border-radius:7px}
 .modal{position:fixed;inset:0;background:rgba(23,52,96,.45);backdrop-filter:blur(3px);display:none;
- place-items:center;padding:16px;z-index:50;overscroll-behavior:contain}
+ place-items:center;padding:16px;z-index:120;overscroll-behavior:contain}
 .modal.on{display:grid}
 .sheet{background:var(--paper);border-radius:22px;width:100%;max-width:620px;
  max-height:min(86vh,760px);display:flex;flex-direction:column;padding:0;overflow:hidden;position:relative}
@@ -106,7 +107,7 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .err.on{display:block}
 
 /* ---------- Ajakan pasang aplikasi ---------- */
-.pasang{position:fixed;left:50%;transform:translateX(-50%) translateY(150%);bottom:14px;z-index:96;
+.pasang{position:fixed;left:50%;transform:translateX(-50%) translateY(150%);bottom:14px;z-index:110;
  width:calc(100% - 24px);max-width:460px;background:#fff;border:1px solid var(--line);border-radius:20px;
  padding:15px 16px;box-shadow:0 20px 48px rgba(16,44,80,.26);display:flex;gap:13px;align-items:flex-start;
  transition:transform .38s cubic-bezier(.2,.8,.3,1)}
@@ -121,7 +122,7 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
  font-size:17px;cursor:pointer;line-height:1;padding:4px}
 .langkah-ios{background:var(--mist);border-radius:12px;padding:11px 13px;margin-top:8px;font-size:12.5px;line-height:1.7}
 .langkah-ios b{font-weight:600}
-.pop{position:fixed;left:50%;transform:translateX(-50%) translateY(-140%);top:12px;z-index:95;
+.pop{position:fixed;left:50%;transform:translateX(-50%) translateY(-140%);top:12px;z-index:130;
  width:calc(100% - 28px);max-width:440px;background:#fff;border-radius:18px;padding:14px 16px;
  box-shadow:0 18px 44px rgba(16,44,80,.28);border:1px solid var(--line);
  display:flex;gap:12px;align-items:flex-start;transition:transform .35s cubic-bezier(.2,.8,.3,1)}
@@ -150,7 +151,7 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 @media(max-width:760px){
   aside{display:none}
   /* Semua kotak selebar layar, tidak ada yang meluber ke samping */
-  html,body{max-width:100%;overflow-x:hidden}
+  html,body{max-width:100%;overflow-x:clip}   /* clip, bukan hidden: hidden mematikan header menempel */
   #app,.shell,main,.card{max-width:100%}
   .card{padding:14px;border-radius:16px}
   .grid{gap:10px}
@@ -180,24 +181,33 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
     box-shadow:0 -10px 40px rgba(16,44,80,.3)}
   .modal .sheet>*{padding-left:16px;padding-right:16px}
   .modal .sheet-isi{padding-top:26px}
-  .modal .sheet-kaki{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+  .modal .sheet-kaki{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .modal .sheet{padding-bottom:0}
   /* garis pegangan di atas panel */
   .modal .sheet:before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);
     width:40px;height:4px;border-radius:4px;background:var(--line);z-index:2}
   .shell{grid-template-columns:1fr}
   main{padding:14px 14px 96px}
   #app{padding-bottom:0}
-  body{overflow-x:hidden}
-  .mobbar{display:flex;align-items:center;gap:10px;background:linear-gradient(170deg,#4C8FD6,#2F6FBF 60%,#1F4C86);
-    color:#fff;padding:12px 14px 14px;position:sticky;top:0;z-index:30;border-radius:0 0 20px 20px}
+
+  .mobbar{display:flex;align-items:center;gap:10px;
+    background:linear-gradient(170deg,#4C8FD6,#2F6FBF 60%,#1F4C86);
+    color:#fff;padding:calc(12px + env(safe-area-inset-top)) 14px 14px;
+    position:fixed;top:0;left:0;right:0;z-index:70;border-radius:0 0 20px 20px;
+    box-shadow:0 6px 20px rgba(31,76,134,.22)}
+  #app{padding-top:74px}   /* ruang untuk header yang menempel */
   .mobbar .judul{flex:1;min-width:0}
   .mobbar .judul b{font-size:14.5px;display:block;line-height:1.2}
   .mobbar .judul span{font-size:11px;color:#DCEAF8}
   .mobbar .lonceng{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.34);color:#fff}
   .mobbar .lonceng .titik{border-color:#2F6FBF}
   .who{display:none}
-  .topbar{margin-bottom:12px}
+  .topbar{margin-bottom:10px;position:sticky;top:0;z-index:25;background:var(--mist);
+    padding:10px 0 8px;margin-top:-10px}
+  .topbar h1{font-size:19px}
+  body.panel-buka .tabbar{transform:translateY(110%)}
   .tabbar{position:fixed;bottom:0;left:0;right:0;width:100%;z-index:60;display:grid;
+    transition:transform .25s ease;
     grid-template-columns:repeat(5,1fr);align-items:end;background:#fff;
     border-top:1px solid var(--line);margin:0;
     padding:7px 4px calc(7px + env(safe-area-inset-bottom));
@@ -328,7 +338,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.13.5";
+const VERSI_APP = "2026.09.13.7";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1325,16 +1335,26 @@ function bukaPanel(html, opsi){
     + (kaki ? '<div class="sheet-kaki">' + kaki + '</div>' : '');
   if (lebar) _sheet.style.maxWidth = lebar;
   modal.classList.add('on');
+  document.body.classList.add('panel-buka');
   document.body.style.overflow = 'hidden';
   const isi = _sheet.querySelector('.sheet-isi');
   if (isi) isi.scrollTop = 0;
 }
 function closeModal(){
   modal.classList.remove('on');
+  document.body.classList.remove('panel-buka');
   document.body.style.overflow = '';
   _sheet.style.maxWidth = '';
 }
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
+/* Jaga-jaga bila ada panel yang dibuka tanpa lewat bukaPanel */
+new MutationObserver(()=>{
+  const buka=modal.classList.contains('on');
+  document.body.classList.toggle('panel-buka',buka);
+  document.body.style.overflow=buka?'hidden':'';
+}).observe(modal,{attributes:true,attributeFilter:['class']});
+/* Tombol kembali ponsel menutup panel, bukan keluar aplikasi */
+addEventListener('popstate',()=>{ if(modal.classList.contains('on')) closeModal(); });
 
 function renderModule(key){
   const m=F[key]; let rows=DB[key].filter(r=>dalamLingkup(r,key));
