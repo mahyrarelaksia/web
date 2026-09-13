@@ -248,6 +248,14 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
   .menulist .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;
     background:#E8F1FC;color:var(--jade)}
 }
+.omzet-utama{background:linear-gradient(150deg,#F2F8FF,#E8F1FC 60%,#DDEBFA);border:1px solid #CFE0F5}
+.omzet-nilai{font-family:Fraunces,serif;font-size:34px;color:var(--laut,#1B4A82);line-height:1.1;margin:4px 0 12px}
+.omzet-rinci{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding-top:12px;
+ border-top:1px solid rgba(47,111,191,.18)}
+.omzet-rinci div{display:flex;flex-direction:column;gap:2px}
+.omzet-rinci span{font-size:11px;color:var(--muted)}
+.omzet-rinci b{font-size:14px;font-variant-numeric:tabular-nums}
+@media(max-width:560px){.omzet-nilai{font-size:27px}.omzet-rinci{grid-template-columns:1fr 1fr}}
 .biaya-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .pos{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
 .pos .kepala{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}
@@ -387,7 +395,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.14.3";
+const VERSI_APP = "2026.09.14.5";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -861,6 +869,28 @@ function bersihkan(key,row){
   Object.keys(r).forEach(k=>{ if(r[k]==='') r[k]=null; });
   return r;
 }
+/* Menyimpan sebagian kolom saja. Mengirim seluruh baris sering ditolak
+   aturan akses karena ikut menyentuh kolom yang tidak boleh diubah. */
+async function simpanSebagian(key,id,patch){
+  if(LIVE){
+    const bersih=bersihkan(key,{...patch});
+    delete bersih.id;
+    const {data,error}=await sb.from(TBL[key]).update(bersih).eq('id',id).select().single();
+    if(error){
+      console.error('Gagal memperbarui '+TBL[key]+':',error,patch);
+      if(/row-level security/i.test(error.message||'')) jelaskanPenolakan(key,{id,...patch});
+      else toast('Gagal menyimpan ('+TBL[key]+'): '+error.message);
+      return null;
+    }
+    const i=DB[key].findIndex(x=>x.id===id);
+    if(i>=0) DB[key][i]=data; else DB[key].push(data);
+    return data;
+  }
+  const i=DB[key].findIndex(x=>x.id===id);
+  if(i>=0){ DB[key][i]={...DB[key][i],...patch}; return DB[key][i]; }
+  return null;
+}
+
 async function simpan(key,row){
   if(LIVE){ const {data,error}=await sb.from(TBL[key]).upsert(bersihkan(key,row)).select().single();
     if(error){ console.error('Gagal menyimpan ke '+TBL[key]+':',error,row);
@@ -1213,7 +1243,9 @@ const F={
    {k:'periode',l:'Periode (YYYY-MM)'},{k:'deskripsi',l:'Keterangan'},{k:'nominal',l:'Nominal',t:'rp'},
    {k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
   cols:[{k:'periode'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'jenis',t:'tag'},{k:'deskripsi'},
-   {k:'ord',l:'Dari order',fn:r=>r.pesanan_id?esc(get('pesanan',r.pesanan_id)?.nomor||'-'):'—'},
+   {k:'ord',l:'Dari order',fn:r=>{
+     const p=r.pesanan_id?get('pesanan',r.pesanan_id):null;
+     return p?esc(nm('pelanggan',p.pelanggan_id)):'<span class="hint">—</span>';}},
    {k:'nominal',t:'rp'},{k:'status',t:'tag'}]},
  aturan_bonus:{title:'Aturan Bonus',sub:'Skema insentif yang berlaku untuk terapis.',
   fields:[{k:'nama',l:'Nama skema'},{k:'jenis',l:'Jenis',t:'sel',o:['tips','transport','lembur','target','kehadiran','rating','referral']},
@@ -1744,7 +1776,29 @@ dash(){
     ...DB.pengeluaran.filter(e=>e.status==='menunggu').map(e=>[`Pengeluaran ${rp(e.nominal)} — ${e.deskripsi}`,'m_pengeluaran']),
     ...DB.kasbon.filter(k=>k.status==='menunggu').map(k=>[`Kasbon ${rp(k.nominal)} — ${nm('karyawan',k.karyawan_id)}`,'m_kasbon']),
     ...DB.karyawan.filter(k=>k.role==='terapis'&&!k.user_id).map(k=>[`${k.nama} belum punya akun login`,'m_karyawan'])];
-  return `<div class="grid g4">
+  // omzet pada rentang yang dipilih penyaring
+  const rentang=DB.pesanan.filter(x=>dalamLingkup(x,'pesanan')&&dalamFilter(x.tgl_kerja||x.tanggal)
+    &&['selesai','complete'].includes(x.status));
+  const lunas=rentang.filter(x=>x.status_bayar==='lunas');
+  const bulan=DB.pesanan.filter(x=>dalamLingkup(x,'pesanan')
+    &&String(x.tgl_kerja||x.tanggal).startsWith(periode())
+    &&['selesai','complete'].includes(x.status));
+  const judulRentang={semua:'Bulan ini',hari:'Hari ini',kemarin:'Kemarin',besok:'Besok',rentang:'Rentang dipilih'}[FIL.mode]||'Bulan ini';
+  const dataOmzet=FIL.mode==='semua'?bulan:rentang;
+
+  return `<div class="card omzet-utama">
+    <div class="head"><h3>Omzet ${judulRentang.toLowerCase()}</h3>
+      <span class="tag ${FIL.mode==='semua'?'info':'ok'}">${dataOmzet.length} order</span></div>
+    ${barisFilter()}
+    <div class="omzet-nilai">${rp(sum(dataOmzet,'total'))}</div>
+    <div class="omzet-rinci">
+      <div><span>Sudah dibayar</span><b>${rp(sum(dataOmzet.filter(x=>x.status_bayar==='lunas'),'total'))}</b></div>
+      <div><span>Belum dibayar</span><b>${rp(sum(dataOmzet.filter(x=>x.status_bayar!=='lunas'),'total'))}</b></div>
+      <div><span>Rata-rata per order</span><b>${rp(dataOmzet.length?sum(dataOmzet,'total')/dataOmzet.length:0)}</b></div>
+    </div>
+  </div>
+
+  <div class="grid g4" style="margin-top:14px">
     ${stat('Omzet hari ini',rp(omzet),sel.length+' order selesai')}
     ${stat('Order berjalan',o.filter(x=>x.status==='berjalan').length,'sedang dikerjakan','a')}
     ${stat('Saldo kas',rp(masuk-keluar),'masuk '+rp(masuk)+' · keluar '+rp(keluar),'g')}
@@ -1761,13 +1815,16 @@ dash(){
       ${tableHtml(kinerja,[{k:'nama',l:'Terapis'},{k:'cabang'},{k:'n',l:'Order'},{k:'komisi',t:'rp'}])}</div></div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Order terbaru</h3>
     <button class="btn ghost sm" onclick="go('order')">Lihat semua</button></div>
-    ${tableHtml(DB.pesanan.slice(-5).reverse().map(p=>({...p,pel:nm('pelanggan',p.pelanggan_id),cab:nm('cabang',p.cabang_id)})),
-      [{k:'nomor',l:'No. order'},{k:'jam'},{k:'pel',l:'Pelanggan'},{k:'cab',l:'Cabang'},{k:'total',t:'rp'},{k:'status',t:'tag'}])}</div>
-  ${ME.role==='kasir' ? kartuLiburTerapis() : `
-  <div class="card" style="margin-top:14px"><div class="head"><h3>Perlu tindakan</h3></div>
-    ${antre.length?antre.map(([t,p])=>`<div class="list-item"><span class="dot" style="background:var(--amber)"></span>
-      <div style="flex:1">${esc(t)}</div><button class="btn ghost sm" onclick="go('${p}')">Tinjau</button></div>`).join('')
-      :'<div class="empty">Tidak ada antrean persetujuan. Semua beres.</div>'}</div>`}`;
+    ${tableHtml(DB.pesanan.filter(p=>dalamLingkup(p,'pesanan'))
+      .slice().sort((a,b)=>String((b.tgl_kerja||b.tanggal)+(b.jam_kerja||b.jam||''))
+        .localeCompare(String((a.tgl_kerja||a.tanggal)+(a.jam_kerja||a.jam||'')))).slice(0,6)
+      .map(p=>({...p,pel:nm('pelanggan',p.pelanggan_id),
+        lay:DB.item.filter(i=>i.pesanan_id===p.id).map(i=>nm('layanan',i.layanan_id)).join(', ')||'—',
+        ter:DB.item.filter(i=>i.pesanan_id===p.id&&i.terapis_id).map(i=>nm('karyawan',i.terapis_id)).join(', ')||'—'})),
+      [{k:'kerja',l:'Pengerjaan',fn:r=>hariTgl(r.tgl_kerja||r.tanggal)+' · '+String(r.jam_kerja||r.jam||'-').slice(0,5)},
+       {k:'pel',l:'Pelanggan'},{k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},
+       {k:'total',t:'rp'},{k:'status',l:'Status',fn:r=>lencanaOrder(r)}])}</div>
+  ${kartuLiburTerapis()}`;
 },
 order(){
   const rows=DB.pesanan.filter(p=>dalamLingkup(p,'pesanan')&&dalamFilter(p.tgl_kerja||p.tanggal))
@@ -2910,15 +2967,22 @@ function pesanPelanggan(p){
 }
 
 function pesanTerapis(p, terapisId){
-  const item = DB.item.find(i => i.pesanan_id === p.id && i.terapis_id === terapisId);
-  const l = item ? get('layanan', item.layanan_id) : null;
+  const milikku = DB.item.filter(i => i.pesanan_id === p.id && i.terapis_id === terapisId);
+  const item = milikku[0];
   const bagian = [];
   bagian.push(`Halo *${nm('karyawan', terapisId)}*, ada orderan baru untuk Anda.`);
   bagian.push(GARIS);
   bagian.push(`*DETAIL TUGAS*\nNo. ${p.nomor}`);
   bagian.push(rincianOrder(p, {denganHp: false}));
-  if (l) bagian.push(`*Bagian Anda*\n${l.nama}${l.durasi_menit ? ` (${l.durasi_menit} menit)` : ''}`);
-  if (item && item.komisi) bagian.push(`*Komisi Anda*\n${rp(item.komisi)}`);
+  if (milikku.length) {
+    const daftar = milikku.map(i => {
+      const l = get('layanan', i.layanan_id) || {};
+      return `• ${l.nama || '-'}${l.durasi_menit ? ` (${l.durasi_menit} menit)` : ''}`;
+    }).join('\n');
+    bagian.push(`*Bagian Anda*\n${daftar}`);
+    const komisi = milikku.reduce((a, i) => a + Number(i.komisi || 0), 0);
+    if (komisi) bagian.push(`*Komisi Anda*\n${rp(komisi)}`);
+  }
   bagian.push(GARIS);
   bagian.push(`Mohon konfirmasi kesiapan Anda.\n` +
     `Lakukan *check in* lewat Portal Terapis saat mulai bekerja, ` +
@@ -2926,6 +2990,13 @@ function pesanTerapis(p, terapisId){
   return bagian.join('\n\n');
 }
 
+/* Nomor lokal 08xx diubah ke format internasional 62xx */
+const noWa = n => {
+  let s = String(n||'').replace(/[^0-9]/g,'');
+  if (s.startsWith('0')) s = '62' + s.slice(1);
+  else if (s.startsWith('8')) s = '62' + s;
+  return s;
+};
 function tautanWa(nomor,pesan){
   return 'https://wa.me/'+noWa(nomor)+'?text='+encodeURIComponent(pesan);
 }
@@ -2939,7 +3010,7 @@ function kartuOrder(r, urut){
       <div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
         ${lencanaOrder(r)}</div></div>
     <dl>
-      <dt>Pengerjaan</dt><dd>${tgl(r.tgl_kerja||r.tanggal)} · ${esc(String(r.jam_kerja||r.jam||'-').slice(0,5))}</dd>
+      <dt>Pengerjaan</dt><dd>${hariTgl(r.tgl_kerja||r.tanggal)}<br>pukul ${esc(String(r.jam_kerja||r.jam||'-').slice(0,5))}</dd>
       <dt>Layanan</dt><dd>${esc(r.lay||'-')}</dd>
       <dt>Terapis</dt><dd>${esc(r.ter||'-')}</dd>
       <dt>Bayar</dt><dd>${cap(r.metode_bayar||'-')}</dd>
@@ -3001,7 +3072,9 @@ function formBayar(pesananId){
       ${p.bukti_bayar?`<img src="${p.bukti_bayar}" alt="Bukti transaksi"
           style="width:100%;border-radius:14px;border:1px solid var(--line);margin-top:12px">`
         :'<p class="hint" style="margin-top:10px">Tidak ada gambar bukti yang tersimpan.</p>'}
-      <div class="row" style="margin-top:12px">
+      <button class="btn blok" style="width:100%;margin-top:12px" onclick="kirimBukti('${p.id}')">
+        Kirim konfirmasi ke pelanggan</button>
+      <div class="row" style="margin-top:8px">
         <label class="btn ghost" style="flex:1;text-align:center;cursor:pointer">Ganti bukti
           <input type="file" accept="image/*" style="display:none" onchange="pilihBukti(this,'${p.id}')"></label>
         <button class="btn ghost" style="flex:1" onclick="batalBayar('${p.id}')">Batalkan pembayaran</button></div>`
@@ -3055,12 +3128,14 @@ function pilihBukti(input,pesananId){
 async function simpanBukti(pesananId,gambar){
   const p=get('pesanan',pesananId);
   const metode=document.getElementById('b_metode')?.value||p.metode_bayar;
-  const hasil=await simpan('pesanan',{...p, bukti_bayar:gambar, metode_bayar:metode,
+  const hasil=await simpanSebagian('pesanan',pesananId,{
+    bukti_bayar:gambar, metode_bayar:metode,
     status_bayar:'lunas', tgl_bayar:new Date().toISOString(), alasan_batal:null,
     status: p.status==='selesai' ? 'complete' : p.status});
   if(!hasil) return;
   if(!LIVE) await catatKasDemo(hasil);
-  closeModal(); render();
+  render();
+  formBayar(pesananId);          // buka lagi agar tombol kirim bukti muncul
   toast('Bukti tersimpan. Pembayaran ditandai lunas.');
 }
 
@@ -3068,7 +3143,7 @@ async function batalBayar(pesananId){
   const p=get('pesanan',pesananId);
   const alasan=(document.getElementById('b_alasan')?.value||'').trim();
   if(p.status_bayar!=='lunas' && !alasan) return toast('Tulis alasan pembatalannya dulu');
-  const hasil=await simpan('pesanan',{...p, status_bayar:'batal',
+  const hasil=await simpanSebagian('pesanan',pesananId,{status_bayar:'batal',
     alasan_batal:alasan||'Dibatalkan dari rincian pembayaran',
     dibatalkan_oleh:ME.id,
     status: p.status==='complete' ? 'selesai' : p.status});
@@ -3077,10 +3152,21 @@ async function batalBayar(pesananId){
 }
 
 async function batalkanPembatalan(pesananId){
-  const p=get('pesanan',pesananId);
-  const hasil=await simpan('pesanan',{...p, status_bayar:'belum', alasan_batal:null});
+  const hasil=await simpanSebagian('pesanan',pesananId,{status_bayar:'belum',alasan_batal:null});
   if(!hasil) return;
   closeModal(); render(); toast('Dikembalikan ke belum dibayar');
+}
+
+/* Kirim bukti pembayaran ke pelanggan lewat WhatsApp */
+function kirimBukti(pesananId){
+  const p=get('pesanan',pesananId), pel=get('pelanggan',p.pelanggan_id)||{};
+  if(!pel.telepon) return toast('Nomor HP pelanggan belum diisi');
+  const pesan=`Halo *${pel.nama}*, pembayaran Anda sudah kami terima.\n\n`
+    + `*No. order*\n${p.nomor}\n\n`
+    + `*Jumlah*\n${rp(p.total)}\n\n`
+    + `*Metode*\n${cap(p.metode_bayar)}\n\n`
+    + `Terima kasih telah mempercayakan perawatan Anda kepada Mahyra Massage.`;
+  window.open(tautanWa(pel.telepon,pesan),'_blank','noopener');
 }
 
 /* Mode demo: catat kas sendiri karena tidak ada trigger database */
@@ -3115,11 +3201,15 @@ function bonusOrder(pesananId){
     <div class="field"><label for="b_ket">Keterangan</label>
       <input id="b_ket" placeholder="Contoh: tips dari pelanggan"></div>
 
-    ${sudah.length?`<div class="card" style="background:var(--mist);box-shadow:none;padding:12px;margin-bottom:12px">
-      <div class="hint" style="margin-bottom:6px">Bonus yang sudah diberikan untuk order ini</div>
-      ${sudah.map(b=>`<div class="list-item" style="padding:7px 0">
-        <div style="flex:1">${esc(nm('karyawan',b.karyawan_id))} · ${esc(cap(b.jenis))}</div>
-        <span class="rp">${rp(b.nominal)}</span></div>`).join('')}</div>`:''}`, {kaki: `<button class="btn" id="b_simpan" onclick="simpanBonusOrder('${p.id}')">Simpan bonus</button>
+    ${sudah.length?`<div class="card" style="background:var(--mist);box-shadow:none;padding:12px;margin-bottom:14px">
+      <div class="hint" style="margin-bottom:8px">Bonus yang sudah diberikan untuk order ini</div>
+      ${sudah.map(b=>`<div class="list-item" style="padding:8px 0">
+        <div style="flex:1;min-width:0"><strong>${esc(nm('karyawan',b.karyawan_id))}</strong>
+          <div class="hint">${esc(cap(b.jenis))}${b.deskripsi?' · '+esc(b.deskripsi):''}</div></div>
+        <div class="row" style="flex-wrap:nowrap;align-items:center">
+          <span class="rp">${rp(b.nominal)}</span>
+          <button class="btn ghost sm" onclick="ubahBonus('${b.id}','${p.id}')">Ubah</button>
+          <button class="btn rose sm" onclick="hapusBonus('${b.id}','${p.id}')">Hapus</button></div></div>`).join('')}</div>`:''}`, {kaki: `<button class="btn" id="b_simpan" onclick="simpanBonusOrder('${p.id}')">Simpan bonus</button>
       <button class="btn ghost" onclick="closeModal()">Batal</button>`})
   gambarTerapisBonus(pesananId);
 }
@@ -3144,6 +3234,41 @@ function pilihSemuaBonus(pesananId){
   BON.terapis = BON.terapis.length===item.length ? [] : item.map(i=>i.terapis_id);
   gambarTerapisBonus(pesananId);
 }
+/* Ubah nominal atau jenis sebuah bonus yang sudah diberikan */
+function ubahBonus(bonusId,pesananId){
+  const b=get('bonus',bonusId); if(!b) return;
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Ubah bonus</h3>
+    <p class="hint" style="margin-bottom:16px">${esc(nm('karyawan',b.karyawan_id))} · ${esc(cap(b.jenis))}</p>
+    <div class="grid g2">
+      <div class="field"><label for="ub_jenis">Jenis bonus</label><select id="ub_jenis">
+        ${['tips','transport','lembur','manual'].map(j=>
+          `<option value="${j}" ${b.jenis===j?'selected':''}>${cap(j)}</option>`).join('')}</select></div>
+      <div class="field"><label for="ub_nominal">Nominal</label>
+        <input type="number" id="ub_nominal" value="${b.nominal||0}"></div>
+    </div>
+    <div class="field"><label for="ub_ket">Keterangan</label>
+      <input id="ub_ket" value="${esc(b.deskripsi||'')}"></div>
+    ${b.dibayar?'<p class="hint" style="color:var(--warn)">Bonus ini sudah masuk slip gaji yang dibayarkan. Perubahan tidak mengubah slip lama.</p>':''}`,
+    {kaki:`<button class="btn" onclick="simpanUbahBonus('${bonusId}','${pesananId}')">Simpan</button>
+      <button class="btn ghost" onclick="bonusOrder('${pesananId}')">Batal</button>`});
+}
+async function simpanUbahBonus(bonusId,pesananId){
+  const nominal=Number(document.getElementById('ub_nominal').value)||0;
+  if(!nominal) return toast('Isi nominalnya');
+  const hasil=await simpanSebagian('bonus',bonusId,{
+    jenis:document.getElementById('ub_jenis').value,
+    nominal,
+    deskripsi:document.getElementById('ub_ket').value.trim()||null});
+  if(!hasil) return;
+  render(); bonusOrder(pesananId); toast('Bonus diperbarui');
+}
+async function hapusBonus(bonusId,pesananId){
+  const b=get('bonus',bonusId);
+  if(b&&b.dibayar) return toast('Bonus ini sudah dibayarkan, tidak bisa dihapus');
+  if(!await hapus('bonus',bonusId)) return;
+  render(); bonusOrder(pesananId); toast('Bonus dihapus');
+}
+
 async function simpanBonusOrder(pesananId){
   const p=get('pesanan',pesananId);
   const nominal=Number(document.getElementById('b_nominal').value)||0;
@@ -3161,7 +3286,8 @@ async function simpanBonusOrder(pesananId){
       deskripsi:ket,nominal,status:'disetujui',dibayar:false,dibuat_oleh:ME.id});
     if(hasil) n++;
   }
-  closeModal(); render();
+  render();
+  if(n) bonusOrder(p.id); else closeModal();
   toast(n?`Bonus ${rp(nominal)} diberikan ke ${n} terapis`:'Bonus gagal disimpan');
 }
 
@@ -3283,27 +3409,43 @@ function tombolWa(pesananId){
     <button class="btn ghost sm" onclick="waPelanggan('${pesananId}')">WA Customer</button>
     <button class="btn ghost sm" onclick="waTerapis('${pesananId}')">WA Terapis</button></div>`;
 }
+function bukaWa(tautan){
+  // sebagian peramban memblokir jendela baru; sediakan jalur cadangan
+  const w=window.open(tautan,'_blank','noopener');
+  if(!w||w.closed||typeof w.closed==='undefined') location.href=tautan;
+}
 function waPelanggan(pesananId){
-  const p=get('pesanan',pesananId), pel=get('pelanggan',p.pelanggan_id)||{};
-  if(!pel.telepon) return toast('Nomor HP '+(pel.nama||'pelanggan')+' belum diisi');
-  window.open(tautanWa(pel.telepon,pesanPelanggan(p)),'_blank','noopener');
+  try{
+    const p=get('pesanan',pesananId);
+    if(!p) return toast('Order tidak ditemukan');
+    const pel=get('pelanggan',p.pelanggan_id)||{};
+    if(!pel.telepon) return toast('Nomor HP '+(pel.nama||'pelanggan')+' belum diisi di data pelanggan');
+    bukaWa(tautanWa(pel.telepon,pesanPelanggan(p)));
+  }catch(e){ console.error(e); toast('Gagal menyiapkan pesan: '+e.message); }
 }
 function waTerapis(pesananId){
+  try{
   const p=get('pesanan',pesananId);
-  const item=DB.item.filter(i=>i.pesanan_id===p.id);
-  const punya=item.filter(i=>get('karyawan',i.terapis_id)?.telepon);
-  if(!punya.length) return toast('Terapis pada order ini belum punya nomor HP');
+  if(!p) return toast('Order tidak ditemukan');
+  const item=DB.item.filter(i=>i.pesanan_id===p.id&&i.terapis_id);
+  if(!item.length) return toast('Order ini belum punya terapis. Tugaskan lewat tombol Ubah.');
+  // satu terapis bisa memegang beberapa layanan; kirim satu pesan saja per orang
+  const idUnik=[...new Set(item.map(i=>i.terapis_id))];
+  const punya=idUnik.filter(id=>get('karyawan',id)?.telepon);
+  if(!punya.length) return toast('Terapis pada order ini belum punya nomor HP di data karyawan');
   if(punya.length===1){
-    const k=get('karyawan',punya[0].terapis_id);
-    return window.open(tautanWa(k.telepon,pesanTerapis(p,k.id)),'_blank','noopener');
+    const k=get('karyawan',punya[0]);
+    return bukaWa(tautanWa(k.telepon,pesanTerapis(p,k.id)));
   }
   bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Kirim ke terapis</h3>
-    <p class="hint" style="margin-bottom:14px">${esc(p.nomor)} · ${item.length} terapis bertugas</p>
-    ${item.map(i=>{const k=get('karyawan',i.terapis_id)||{};
+    <p class="hint" style="margin-bottom:14px">${esc(p.nomor)} · ${idUnik.length} terapis bertugas</p>
+    ${idUnik.map(id=>{const k=get('karyawan',id)||{};
       return k.telepon
         ? `<a class="btn amber" style="width:100%;margin-bottom:8px" target="_blank" rel="noopener"
-             href="${tautanWa(k.telepon,pesanTerapis(p,k.id))}">${esc(k.nama)}</a>`
-        : `<p class="hint" style="margin-bottom:8px">${esc(k.nama||'Terapis')} belum punya nomor HP.</p>`;}).join('')}`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:6px" onclick="closeModal()">Tutup</button>`})
+             href="${tautanWa(k.telepon,pesanTerapis(p,id))}">${esc(k.nama)}</a>`
+        : `<p class="hint" style="margin-bottom:8px">${esc(k.nama||'Terapis')} belum punya nomor HP.</p>`;}).join('')}`,
+    {kaki: `<button class="btn ghost" onclick="closeModal()">Tutup</button>`});
+  }catch(e){ console.error(e); toast('Gagal menyiapkan pesan: '+e.message); }
 }
 
 function kirimOrder(pesananId){
