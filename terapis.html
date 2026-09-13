@@ -592,7 +592,7 @@ function seedDemo(){
    const kom=Math.round(l.harga*l.komisi_persen/100);
    DB.item.push({id:'it'+n,pesanan_id:o.id,layanan_id:lay,terapis_id:ter,ruangan:'Room '+(n+1),qty:1,harga:l.harga,
      durasi:l.durasi_menit,subtotal:l.harga,komisi:kom,status:st,rating:rat});
-   if(st==='selesai') DB.komisi.push({id:'km'+n,karyawan_id:ter,item_id:'it'+n,tanggal:today(),periode:periode(),
+   if(st==='selesai') DB.komisi.push({id:'km'+n,karyawan_id:ter,pesanan_item_id:'it'+n,tanggal:today(),periode:periode(),
      dasar:l.harga,persen:l.komisi_persen,nominal:kom,dibayar:false});
   });
 }
@@ -714,7 +714,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.14.3';
+const VERSI_APP='2026.09.14.4';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -1074,7 +1074,8 @@ komisi(){
     ${stat('Belum dibayarkan',rp(sum(my.filter(c=>!c.dibayar),'nominal')),'akan masuk slip gaji','a')}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Rincian komisi</h3></div>
     ${tableHtml(my,[{k:'tanggal',t:'date'},
-      {k:'lay',l:'Layanan',fn:r=>nm('layanan',DB.item.find(i=>i.id===r.item_id)?.layanan_id)},
+      {k:'lay',l:'Layanan',fn:r=>layananKomisi(r)},
+      {k:'pel',l:'Pelanggan',fn:r=>pelangganKomisi(r)},
       {k:'dasar',l:'Harga',t:'rp'},{k:'ps',l:'Persen',fn:r=>r.persen+'%'},{k:'nominal',l:'Komisi',t:'rp'},
       {k:'db',l:'Status',fn:r=>r.dibayar?'<span class="tag ok">Dibayar</span>':'<span class="tag warn">Belum</span>'}])}</div>`;
 },
@@ -1310,14 +1311,7 @@ function bonusSkemaSaya(jmlOrder){
 }
 
 function kartuBonus(b){
-  const p=b.pesanan_id?get('pesanan',b.pesanan_id):null;
-  // nama pelanggan diambil dari order; bila order tak terbaca, cari lewat pekerjaan
-  let pel=p?get('pelanggan',p.pelanggan_id)?.nama:null;
-  if(!pel&&b.pesanan_item_id){
-    const i=get('item',b.pesanan_item_id), o=i?get('pesanan',i.pesanan_id):null;
-    pel=o?get('pelanggan',o.pelanggan_id)?.nama:null;
-  }
-  if(!pel) pel=String(b.deskripsi||'').replace(/\s*dari order\s+\S+/i,'').trim()||cap(b.jenis);
+  const pel=pelangganBonus(b);
   return `<div class="kartu-bonus">
     <div style="flex:1;min-width:0">
       <h4>${esc(pel)}</h4>
@@ -1388,6 +1382,30 @@ function listKerja(items){
   }).join('');
 }
 /* Komisi pekerjaan. Bila kantor belum mengisinya, dihitung dari skema gaji. */
+/* Komisi menyimpan tautan ke pekerjaan sebagai pesanan_item_id.
+   Data lama memakai item_id, jadi keduanya diperiksa. */
+/* Nama pelanggan pada sebuah bonus, ditelusuri lewat order atau pekerjaannya */
+function pelangganBonus(b){
+  let p=b.pesanan_id?get('pesanan',b.pesanan_id):null;
+  if(!p&&b.pesanan_item_id){ const i=get('item',b.pesanan_item_id); p=i?get('pesanan',i.pesanan_id):null; }
+  const nama=p?get('pelanggan',p.pelanggan_id)?.nama:null;
+  if(nama) return nama;
+  return String(b.deskripsi||'').replace(/\s*dari order\s+\S+/i,'').trim()||cap(b.jenis);
+}
+
+function itemKomisi(c){
+  return get('item', c.pesanan_item_id || c.item_id) || null;
+}
+function layananKomisi(c){
+  const i=itemKomisi(c);
+  return i ? esc(nm('layanan', i.layanan_id)) : '<span class="hint">—</span>';
+}
+function pelangganKomisi(c){
+  const i=itemKomisi(c); if(!i) return '<span class="hint">—</span>';
+  const p=get('pesanan', i.pesanan_id);
+  return p ? esc(nm('pelanggan', p.pelanggan_id)) : '<span class="hint">—</span>';
+}
+
 function komisiSaya(i){
   if(Number(i.komisi)>0) return Number(i.komisi);
   const sk=skemaGaji();
@@ -1534,8 +1552,8 @@ async function selesaikanItem(i){
   const persen=ME.persen_komisi||j?.persen_komisi||l?.komisi_persen||0;
   const komisi=fee>0?fee*(i.qty||1):Math.round((i.subtotal||i.harga)*persen/100);
   await simpan('item',{...i,status:'selesai',jam_selesai:new Date().toISOString(),komisi});
-  if(!DB.komisi.some(c=>c.item_id===i.id))
-    await simpan('komisi',{id:uid(),karyawan_id:ME.id,item_id:i.id,tanggal:today(),periode:periode(),
+  if(!DB.komisi.some(c=>(c.pesanan_item_id||c.item_id)===i.id))
+    await simpan('komisi',{id:uid(),karyawan_id:ME.id,pesanan_item_id:i.id,tanggal:today(),periode:periode(),
       dasar:i.subtotal||i.harga,persen:fee>0?0:persen,nominal:komisi,dibayar:false});
   await segarkanStatusOrder(i.pesanan_id);
 }
