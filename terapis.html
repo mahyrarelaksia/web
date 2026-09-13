@@ -61,10 +61,11 @@ body.panel-buka .tabbar{transform:translateX(-50%) translateY(110%)}
  padding:9px 6px calc(9px + env(safe-area-inset-bottom));box-shadow:0 -8px 26px rgba(31,64,120,.09)}
 .tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 2px;border-radius:14px;
  cursor:pointer;color:#93A4BD;font-size:10.5px;font-weight:600;transition:.15s;-webkit-tap-highlight-color:transparent}
-.tab .ic{font-size:19px;line-height:1}
+.tab .ic{height:23px;display:grid;place-items:center}
+.tab .ic svg{display:block}
 .tab.on{color:var(--jade)}
 .tab.pusat{margin-top:-36px;color:var(--jade)}
-.tab.pusat .ic{width:64px;height:64px;border-radius:24px;display:grid;place-items:center;font-size:28px;color:#fff;
+.tab.pusat .ic{width:64px;height:64px;border-radius:24px;display:grid;place-items:center;color:#fff;
  background:linear-gradient(150deg,#8FC6EC,#2F6FBF 62%,#1F4C86);border:4px solid #fff;
  box-shadow:0 12px 26px rgba(47,111,191,.42);transition:.18s}
 .tab.pusat:active .ic{transform:scale(.94)}
@@ -160,8 +161,9 @@ body.panel-buka .tabbar{transform:translateX(-50%) translateY(110%)}
 .kartu-bonus .rp{font-size:15px;color:var(--jade);white-space:nowrap}
 .kartu-kerja .bintang{color:var(--amber);border-color:#F0E0C4}
 .jejak .jam{font-family:Fraunces,serif;font-size:15px;line-height:1.25}
+.lonceng svg{display:block}
 .menulist .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;
- background:#E8F1FC;color:var(--jade);font-size:15px}
+ background:#E8F1FC;color:var(--jade)}
 .grid{display:grid;gap:14px}
 .g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
 .card{background:var(--paper);border-radius:var(--r);box-shadow:var(--sh);padding:16px}
@@ -268,11 +270,11 @@ tr:last-child td{border-bottom:0}.tw{overflow-x:auto}
     <div style="flex:1;min-width:0">
       <div class="nama" id="meName"></div><div class="sub" id="meRole"></div></div>
     <button class="lonceng" id="lonceng" onclick="bukaNotif()" aria-label="Notifikasi">
-      <span>🔔</span><span class="titik" id="jmlNotif" style="display:none">0</span></button>
+      <span id="icLonceng"></span><span class="titik" id="jmlNotif" style="display:none">0</span></button>
     <div class="av" id="meAv">M</div>
   </header>
   <div class="pop" id="popNotif" onclick="dariPop()">
-    <div class="ikon">◎</div>
+    <div class="ikon" id="icPop"></div>
     <div style="flex:1;min-width:0"><h5 id="popJudul"></h5><p id="popPesan"></p></div>
   </div>
   <main>
@@ -477,6 +479,50 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
  komisi:'komisi',bonus:'bonus',gaji:'gaji',kasbon:'kasbon',
  absen_log:'absen_log',skema_gaji:'skema_gaji',notifikasi:'notifikasi',libur:'libur'};
 
+const IKON = {
+  absen: '<path d="M9 11.5l2.5 2.5 5-5.5"/><rect x="3.5" y="4.5" width="17" height="16" rx="3"/>',
+  absensi: '<rect x="4" y="4.5" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',
+  akses: '<rect x="4.5" y="10" width="15" height="10.5" rx="2.5"/><path d="M8 10V7.5a4 4 0 018 0V10"/><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"/>',
+  aturan_bonus: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/><path d="M9.5 12.5l1.8 1.8 3.4-3.6" stroke-width="1.5"/>',
+  biaya: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v8.5l6 4.2"/>',
+  bonus: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/>',
+  cabang: '<path d="M3.5 20.5h17"/><path d="M5.5 20.5V9l6.5-4.5L18.5 9v11.5"/><rect x="10" y="13" width="4" height="7.5"/>',
+  dash: '<path d="M3 12l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/>',
+  gaji: '<rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M7.5 9.5h9M7.5 13h6M7.5 16.5h4"/>',
+  izin: '<path d="M5 4.5h9l5 5v10a2 2 0 01-2 2H5a2 2 0 01-2-2v-13a2 2 0 012-2z"/><path d="M14 4.5V10h5"/><path d="M7.5 14h7M7.5 17.5h4"/>',
+  jabatan: '<path d="M5 21V8l7-4.5L19 8v13"/><path d="M9.5 21v-6h5v6"/><path d="M12 8.5v2"/>',
+  jadwal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="9" cy="14.5" r="1.1" fill="currentColor" stroke="none"/>',
+  karyawan: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.4 2.9-5.8 6.5-5.8s6.5 2.4 6.5 5.8"/><path d="M17 8.5h4.5M19.25 6.25v4.5"/>',
+  kas: '<rect x="2.5" y="6" width="19" height="12.5" rx="2.5"/><circle cx="12" cy="12.2" r="2.6"/><path d="M6 12.2h.01M18 12.2h.01"/>',
+  kasbon: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M14.5 9.8c-.6-.8-1.5-1.2-2.5-1.2-1.4 0-2.4.8-2.4 1.9 0 2.6 5 1.4 5 4 0 1.2-1.1 2-2.6 2-1.1 0-2-.4-2.6-1.2"/>',
+  kategori_pengeluaran: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/>',
+  kerja: '<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5a2 2 0 012-2h3a2 2 0 012 2V7"/><path d="M3 12h18"/>',
+  komisi: '<path d="M19 6L6 19"/><circle cx="8" cy="8" r="2.6"/><circle cx="17" cy="17" r="2.6"/>',
+  laporan: '<path d="M4 20.5h16"/><rect x="5.5" y="12" width="3.5" height="7"/><rect x="10.5" y="7.5" width="3.5" height="11.5"/><rect x="15.5" y="10" width="3.5" height="9"/>',
+  layanan: '<path d="M12 3.5c2.4 3 4 5.4 4 7.6a4 4 0 11-8 0c0-2.2 1.6-4.6 4-7.6z"/><path d="M4 20.5h16"/>',
+  libur: '<path d="M20 13.5A8 8 0 1110.5 4a6.5 6.5 0 009.5 9.5z"/>',
+  lonceng: '<path d="M18 8.5a6 6 0 10-12 0c0 6-2 7-2 7h16s-2-1-2-7z"/><path d="M13.7 20a2 2 0 01-3.4 0"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  order: '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  pelanggan: '<circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6"/>',
+  pengaturan: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5"/>',
+  pengeluaran: '<path d="M12 4.5v13"/><path d="M7.5 13l4.5 4.5 4.5-4.5"/><path d="M4 20.5h16"/>',
+  peta: '<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+  profil: '<circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6"/>',
+  shift: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.4 2"/>',
+  skema_gaji: '<rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M7.5 9h9M7.5 12.5h9M7.5 16h5"/><circle cx="17" cy="16" r="1.6" fill="currentColor" stroke="none"/>',
+  slip: '<path d="M6 3.5h12v17l-3-1.8-3 1.8-3-1.8-3 1.8z"/><path d="M9 8.5h6M9 12.5h6"/>',
+  tambah: '<path d="M12 5v14M5 12h14"/>',
+  target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>'
+};
+
+function ikon(nama, ukuran){
+  const d = IKON[nama] || IKON.menu;
+  return '<svg viewBox="0 0 24 24" width="'+(ukuran||20)+'" height="'+(ukuran||20)+'" fill="none" '
+       + 'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" '
+       + 'aria-hidden="true">'+d+'</svg>';
+}
+
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
 const rp=n=>'Rp '+(Number(n)||0).toLocaleString('id-ID');
 /* Tanggal menurut waktu perangkat, bukan UTC.
@@ -668,7 +714,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.13.7';
+const VERSI_APP='2026.09.13.8';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -733,27 +779,28 @@ function pesanLogin(teks){
 }
 
 /* Tab bawah ala aplikasi. Tombol Absen di tengah, ukurannya paling besar. */
-const TAB=[['dash','◈','Beranda'],['kerja','◎','Kerjaan'],['absen','✓','Absen'],['komisi','%','Komisi'],['menu','☰','Lainnya']];
-const MENU_LAIN=[['jadwal','▤','Jadwal Saya','Shift kerja Anda ke depan'],
- ['bonus','★','Bonus Saya','Bonus dan skema yang bisa dikejar'],
- ['slip','▦','Slip Gaji','Rincian penerimaan per periode'],
- ['izin','✎','Izin & Cuti','Ajukan izin, sakit, cuti, tukar shift'],
- ['profil','☺','Profil Saya','Data kepegawaian Anda']];
+const TAB=[['dash','dash','Beranda'],['kerja','kerja','Kerjaan'],['absen','absen','Absen'],
+ ['komisi','komisi','Komisi'],['menu','menu','Lainnya']];
+const MENU_LAIN=[['jadwal','jadwal','Jadwal Saya','Shift kerja Anda ke depan'],
+ ['bonus','bonus','Bonus Saya','Bonus dan skema yang bisa dikejar'],
+ ['slip','slip','Slip Gaji','Rincian penerimaan per periode'],
+ ['izin','izin','Izin & Cuti','Ajukan izin, sakit, cuti, tukar shift'],
+ ['profil','profil','Profil Saya','Data kepegawaian Anda']];
 
 function buildSide(){
   tabbar.innerHTML=TAB.map(([id,ic,l])=>{
     const aksi = id==='menu' ? 'bukaMenu()' : `go('${id}')`;
     return `<div class="tab ${id==='absen'?'pusat':''}" id="tb_${id}" onclick="${aksi}">
-      <span class="ic">${ic}</span><span>${l}</span></div>`;}).join('');
+      <span class="ic">${ikon(ic, id==='absen'?27:21)}</span><span>${l}</span></div>`;}).join('');
 }
 function bukaMenu(){
   sheet.innerHTML=`<h3 style="font-size:19px;margin-bottom:4px">Menu lainnya</h3>
     <p class="hint" style="margin-bottom:14px">${esc(ME.nama)} · ${esc(nm('jabatan',ME.jabatan_id))}</p>
     <div class="menulist">${MENU_LAIN.map(([id,ic,l,s])=>
-      `<button onclick="closeModal();go('${id}')"><span class="ic">${ic}</span>
+      `<button onclick="closeModal();go('${id}')"><span class="ic">${ikon(ic,18)}</span>
         <span>${l}<br><span class="hint" style="font-weight:400">${s}</span></span></button>`).join('')}
       <button onclick="keluar()" style="color:var(--bad);border-color:#F3DDE1">
-        <span class="ic" style="background:#FAEAEC;color:var(--bad)">⏻</span>Keluar dari akun</button></div>
+        <span class="ic" style="background:#FAEAEC;color:var(--bad)">${ikon('akses',18)}</span>Keluar dari akun</button></div>
     <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`;
   modal.classList.add('on');
 }
@@ -867,7 +914,7 @@ dash(){
   return `${lbr?`<div class="card" style="background:linear-gradient(160deg,#EEF4FA,#DCE9F6);
       border:1px solid #C6DAF0;margin-bottom:14px">
       <div class="row" style="align-items:center;gap:12px">
-        <div style="font-size:26px">☾</div>
+        <div style="color:var(--laut,#1B4A82);flex:none">${ikon('libur',26)}</div>
         <div style="flex:1"><strong style="font-size:15px">Hari ini libur</strong>
           <div class="hint">${hariTgl(today())}${lbr.keterangan?' · '+esc(lbr.keterangan):''}</div></div></div></div>`:''}
   <div class="grid g4">
@@ -1301,7 +1348,7 @@ function kartuKerja(i){
       <div><span>Bonus</span><b>${nBon?rp(nBon):'—'}</b></div>
     </div>
     ${bon.length?`<div class="isi">${bon.map(b=>`<span class="bintang">${esc(cap(b.jenis))} ${rp(b.nominal)}</span>`).join('')}</div>`:''}
-    ${i.rating?`<div class="isi"><span class="bintang">★ ${i.rating}</span></div>`:''}
+    ${i.rating?`<div class="isi"><span class="bintang">${'★'.repeat(i.rating)}</span></div>`:''}
   </div>`;
 }
 
@@ -1332,7 +1379,8 @@ function listKerja(items){
       <div class="tombol">
         ${i.status==='menunggu'?`<button class="btn" onclick="bukaAbsen('${i.id}','masuk')">Check in</button>`:''}
         ${i.status==='berjalan'?`<button class="btn amber" onclick="bukaAbsen('${i.id}','pulang')">Check out</button>`:''}
-        <button class="btn ghost" onclick="bukaPeta('${p.pelanggan_id||''}')">Buka peta</button>
+        <button class="btn ghost" onclick="bukaPeta('${p.pelanggan_id||''}')">
+          <span style="display:flex;align-items:center;gap:6px;justify-content:center">${ikon('peta',16)} Buka peta</span></button>
       </div></div>`;
   }).join('');
 }
@@ -1583,7 +1631,7 @@ function tampilkanLibur(){
   const judul={libur:'Hari ini libur',cuti_bersama:'Cuti bersama',
     tutup:'Cabang tutup hari ini',pelatihan:'Hari ini ada pelatihan'}[l.jenis]||'Hari ini libur';
   sheet.innerHTML=`<div style="text-align:center;padding:8px 4px">
-      <div style="font-size:44px;line-height:1;margin-bottom:10px">☾</div>
+      <div style="color:var(--jade);margin-bottom:10px;display:flex;justify-content:center">${ikon('libur',44)}</div>
       <h3 style="font-size:23px;margin-bottom:6px">${judul}</h3>
       <p class="hint" style="margin-bottom:4px">${new Date().toLocaleDateString('id-ID',
         {weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
@@ -1626,6 +1674,8 @@ function notifSaya(){
 function belumDibaca(){ return NOTIF.filter(n=>!NOTIF_DILIHAT.has(n.id)); }
 
 function gambarLonceng(){
+  const e=document.getElementById('icLonceng');
+  if(e&&!e.innerHTML) e.innerHTML=ikon('lonceng',18);
   const n=belumDibaca().length, t=document.getElementById('jmlNotif');
   if(!t) return;
   t.textContent=n>9?'9+':n;
@@ -1687,6 +1737,7 @@ function deringNotif(){
 /* Popup melayang saat ada penugasan baru */
 let POP_ANTRE=null;
 function tampilkanPop(n){
+  const ip=document.getElementById('icPop'); if(ip&&!ip.innerHTML) ip.innerHTML=ikon('lonceng',20);
   POP_ANTRE=n;
   document.getElementById('popJudul').textContent=n.judul;
   document.getElementById('popPesan').textContent=n.pesan||'';
