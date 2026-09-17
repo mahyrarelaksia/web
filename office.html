@@ -416,7 +416,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.14.6";
+const VERSI_APP = "2026.09.15.1";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -2579,13 +2579,35 @@ function kartuLiburTerapis(){
     <p class="hint" style="margin-top:12px">Periksa di sini sebelum menugaskan terapis pada sebuah order.</p></div>`;
 }
 
+/* ---------- Diskon dibagikan ke tiap layanan ----------
+   Pos berharga manual seperti transport tidak ikut dipotong.
+   Mengembalikan daftar {harga, diskon, subtotal} sejajar dengan barisnya. */
+function sebarDiskon(baris, diskon){
+  const nilai=baris.map(b=>Number(b.harga||0));
+  const bisa=baris.map(b=>{const l=get('layanan',b.layanan_id)||{}; return !l.harga_manual;});
+  const dasar=nilai.reduce((a,v,i)=>a+(bisa[i]?v:0),0);
+  let sisa=Math.min(Number(diskon||0), dasar);
+  const total=sisa;
+  const terakhir=bisa.lastIndexOf(true);
+
+  return baris.map((b,i)=>{
+    if(!bisa[i]||dasar<=0) return {harga:nilai[i],diskon:0,subtotal:nilai[i]};
+    let bagian;
+    if(i===terakhir){ bagian=sisa; }
+    else { bagian=Math.round(total*nilai[i]/dasar); sisa-=bagian; }
+    return {harga:nilai[i],diskon:bagian,subtotal:Math.max(0,nilai[i]-bagian)};
+  });
+}
+
 /* Komisi seorang terapis untuk sebuah layanan, mengikuti skema gajinya.
    Imbalan tetap per orderan menang atas persentase. */
 function komisiUntuk(karyawanId, layanan, diskon){
   const k=get('karyawan',karyawanId); if(!k||!layanan) return 0;
+  if(layanan.butuh_terapis===false) return 0;
   const s=skemaKaryawan(k);
   if(s.fee>0) return Math.round(s.fee);
   const persen=s.persen||Number(layanan.komisi_persen||0);
+  // dasar komisi adalah harga bersih setelah diskon
   const dasar=Math.max(0,Number(layanan.harga||0)-Number(diskon||0));
   return Math.round(dasar*persen/100);
 }
@@ -2843,16 +2865,20 @@ function hitungOrder(){
     return (l.butuh_terapis!==false && !b.terapis_id) || (l.harga_manual && !b.harga);
   }).length;
 
+  const bagian=sebarDiskon(ORD.baris,disk);
   kotak.innerHTML=`
-    ${ORD.baris.map(b=>{const l=get('layanan',b.layanan_id)||{};
+    ${ORD.baris.map((b,i)=>{const l=get('layanan',b.layanan_id)||{}; const g=bagian[i];
       return `<div class="row" style="justify-content:space-between;gap:10px;font-size:13px;padding:3px 0">
-        <span class="hint" style="min-width:0">${esc(l.nama||'-')}${b.terapis_id?' · '+esc(nm('karyawan',b.terapis_id)):''}</span>
-        <span class="rp">${rp(b.harga)}</span></div>`}).join('')
+        <span class="hint" style="min-width:0">${esc(l.nama||'-')}${b.terapis_id?' · '+esc(nm('karyawan',b.terapis_id)):''}
+          ${g.diskon?`<br><span style="color:var(--bad)">diskon ${rp(g.diskon)} → bersih ${rp(g.subtotal)}</span>`:''}</span>
+        <span class="rp">${rp(g.harga)}</span></div>`}).join('')
       ||'<p class="hint">Belum ada layanan.</p>'}
     ${disk?`<div class="row" style="justify-content:space-between"><span class="hint">Diskon</span>
       <span class="rp" style="color:var(--bad)">− ${rp(disk)}</span></div>`:''}
     <div class="row" style="justify-content:space-between;border-top:1px dashed var(--line);margin-top:8px;padding-top:8px">
       <strong>Total</strong><strong class="rp" style="font-size:17px">${rp(total)}</strong></div>
+    ${disk?`<p class="hint" style="margin-top:7px">Diskon dibagi ke tiap layanan secara sebanding.
+      Komisi terapis dihitung dari harga bersihnya.</p>`:''}
     ${kosong?`<p class="hint" style="margin-top:7px;color:var(--warn)">${kosong} baris belum lengkap — periksa terapis atau nominalnya.</p>`:''}`;
 }
 
@@ -2935,13 +2961,13 @@ async function simpanOrder(){
   if(!tersimpan){ btn.disabled=false; btn.textContent='Simpan order'; return; }
 
   const ruangan=document.getElementById('o_room').value;
-  for(const b of ORD.baris){
-    const l=get('layanan',b.layanan_id)||{};
-    const berkomisi=l.butuh_terapis!==false;
+  const bagian=sebarDiskon(ORD.baris,disk);
+  for(let i=0;i<ORD.baris.length;i++){
+    const b=ORD.baris[i], g=bagian[i], l=get('layanan',b.layanan_id)||{};
     await simpan('item',{id:uid(),pesanan_id:p.id,layanan_id:b.layanan_id,
       terapis_id:b.terapis_id||null,ruangan,qty:1,
-      harga:Number(b.harga||0),durasi:l.durasi_menit||0,subtotal:Number(b.harga||0),
-      komisi:berkomisi&&b.terapis_id?komisiUntuk(b.terapis_id,{...l,harga:Number(b.harga||0)},0):0,
+      harga:g.harga,diskon:g.diskon,subtotal:g.subtotal,durasi:l.durasi_menit||0,
+      komisi:b.terapis_id?komisiUntuk(b.terapis_id,{...l,harga:g.subtotal},0):0,
       catatan:b.catatan||null,status:'menunggu'});
   }
   render(); kirimOrder(p.id);
@@ -2973,7 +2999,9 @@ function rincianOrder(p, {denganHp}){
     if (l.durasi_menit) s += ` (${l.durasi_menit} menit)`;
     if (i.terapis_id)   s += `\n   Terapis: ${nm('karyawan', i.terapis_id)}`;
     if (i.catatan)      s += `\n   ${i.catatan}`;
-    s += `\n   ${rp(i.harga)}`;
+    s += Number(i.diskon) > 0
+      ? `\n   ${rp(i.harga)} − diskon ${rp(i.diskon)} = ${rp(i.subtotal)}`
+      : `\n   ${rp(i.harga)}`;
     return s;
   }).join('\n');
 
@@ -2998,14 +3026,21 @@ function pesanPelanggan(p){
   bagian.push(rincianOrder(p, {denganHp: true}));
   bagian.push(GARIS);
 
-  // biaya, dirinci per layanan
+  // biaya, dirinci per layanan lalu diskon sebagai baris tersendiri
+  const kotor = item.reduce((a, i) => a + Number(i.harga || 0), 0);
+  const potongan = Number(p.diskon || 0);
+
   const biaya = item.map(i => {
     const l = get('layanan', i.layanan_id) || {};
     return `${l.nama || 'Layanan'}   ${rp(i.harga)}`;
   });
-  if (p.diskon > 0) biaya.push(`Diskon   −${rp(p.diskon)}`);
-  biaya.push(`*Total   ${rp(p.total)}*`);
+  if (potongan > 0) {
+    biaya.push(`Subtotal   ${rp(kotor)}`);
+    biaya.push(`Diskon   −${rp(potongan)}`);
+  }
+  biaya.push(`*Total bayar   ${rp(p.total)}*`);
   bagian.push(`*BIAYA*\n` + biaya.join('\n'));
+  if (potongan > 0) bagian.push(`Anda hemat ${rp(potongan)} pada pesanan ini.`);
   bagian.push(GARIS);
 
   // pembayaran
@@ -3481,20 +3516,38 @@ async function segarkanStatusOrder(pesananId){
   }
   if(baru!==p.status) await simpan('pesanan',{...p,status:baru});
 }
+/* Diskon disebar ulang ke tiap pekerjaan, lalu komisinya dihitung ulang */
+async function sebarUlangDiskon(pesananId){
+  const p=get('pesanan',pesananId); if(!p) return;
+  const item=DB.item.filter(i=>i.pesanan_id===pesananId&&i.status!=='batal');
+  if(!item.length) return;
+  const bagian=sebarDiskon(item,p.diskon||0);
+  for(let i=0;i<item.length;i++){
+    const it=item[i], g=bagian[i], l=get('layanan',it.layanan_id)||{};
+    await simpanSebagian('item',it.id,{diskon:g.diskon,subtotal:g.subtotal,
+      komisi:it.terapis_id?komisiUntuk(it.terapis_id,{...l,harga:g.subtotal},0):0});
+  }
+}
+
 async function simpanUbahOrder(pesananId){
   const p=get('pesanan',pesananId);
   const item=DB.item.filter(i=>i.pesanan_id===p.id&&i.status!=='batal');
-  const sub=sum(item,'subtotal')||sum(item,'harga');
+  const kotor=item.reduce((a,i)=>a+Number(i.harga||0),0);
   const disk=Number(document.getElementById('u_disk').value)||0;
-  const hasil=await simpan('pesanan',{...p,
+
+  const hasil=await simpanSebagian('pesanan',pesananId,{
     tgl_kerja:document.getElementById('u_tgl').value,
     jam_kerja:document.getElementById('u_jam').value,
     jam:document.getElementById('u_jam').value,
     status:document.getElementById('u_status').value,
     metode_bayar:document.getElementById('u_bayar').value,
-    diskon:disk,subtotal:sub,total:Math.max(0,sub-disk),
+    diskon:disk, subtotal:kotor, total:Math.max(0,kotor-disk),
     catatan:document.getElementById('u_cat').value});
   if(!hasil) return;
+
+  // diskon dibagi ulang ke tiap layanan, komisi ikut menyesuaikan
+  if(!LIVE || true) await sebarUlangDiskon(pesananId);
+
   closeModal(); render(); toast('Order '+p.nomor+' diperbarui');
 }
 
