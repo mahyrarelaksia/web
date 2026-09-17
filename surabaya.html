@@ -352,7 +352,7 @@ const PAGES = [
     <div class="areas"><span>SURABAYA</span><span>SIDOARJO</span></div>
     ${foto("area.jpg","band")}
     <div class="qa"><b>09.00 – 22.00 WIB, setiap hari</b>Pemesanan terakhir pukul 20.30. Di luar area masih dilayani dengan tambahan biaya perjalanan.</div>
-    <div class="qa"><b>Ingin menambah waktu?</b>Tambah 30 menit Rp 50.000, tambah 1 jam Rp 80.000. Hubungi admin lebih dulu, bukan langsung ke terapis.</div>
+    <div class="qa"><b>Ingin menambah waktu?</b>Tambah 30 menit Rp 70.000, tambah 1 jam Rp 120.000. Hubungi admin lebih dulu, bukan langsung ke terapis.</div>
     <div class="qa"><b>Berapa lama terapis sampai?</b>Rata-rata 30–60 menit setelah pesanan dikonfirmasi. Untuk jam sibuk, sebaiknya pesan dua jam sebelumnya.</div>
     ${folio(12,"AREA &amp; JAM LAYANAN")}
   </div>`},
@@ -414,45 +414,45 @@ const buat = (k, o) => Object.assign({}, JENIS[k], {
 });
 
 const LAYANAN = [
-  buat("sig",{durasi:"60 Menit",  harga:"Rp 100.000"}),
-  buat("sig",{durasi:"90 Menit",  harga:"Rp 130.000", gambar:"fullbody-2.jpg", mirror:true, extra:["Waktu lebih lama di area keluhan"]}),
-  buat("sig",{durasi:"120 Menit", harga:"Rp 180.000", extra:["Peregangan penutup"]}),
+  buat("sig",{durasi:"60 Menit",  harga:"Rp 150.000"}),
+  buat("sig",{durasi:"90 Menit",  harga:"Rp 180.000", gambar:"fullbody-2.jpg", mirror:true, extra:["Waktu lebih lama di area keluhan"]}),
+  buat("sig",{durasi:"120 Menit", harga:"Rp 280.000", extra:["Peregangan penutup"]}),
 
-  buat("rad",{durasi:"90 Menit",  harga:"Rp 120.000", mirror:true}),
-  buat("rad",{durasi:"120 Menit", harga:"Rp 135.000", gambar:"totok-2.jpg", extra:["Pijat bahu lebih lama"]}),
-  buat("rad",{durasi:"150 Menit", harga:"Rp 155.000", mirror:true, extra:["Totok wajah sesi penuh"]}),
+  buat("rad",{durasi:"90 Menit",  harga:"Rp 170.000", mirror:true}),
+  buat("rad",{durasi:"120 Menit", harga:"Rp 200.000", gambar:"totok-2.jpg", extra:["Pijat bahu lebih lama"]}),
+  buat("rad",{durasi:"150 Menit", harga:"Rp 230.000", mirror:true, extra:["Totok wajah sesi penuh"]}),
 
-  buat("off",{durasi:"90 Menit",  harga:"Rp 120.000"}),
-  buat("off",{durasi:"120 Menit", harga:"Rp 135.000", gambar:"head-2.jpg", mirror:true, extra:["Pijat leher lebih lama"]}),
-  buat("off",{durasi:"150 Menit", harga:"Rp 155.000", extra:["Peregangan bahu penutup"]}),
+  buat("off",{durasi:"90 Menit",  harga:"Rp 170.000"}),
+  buat("off",{durasi:"120 Menit", harga:"Rp 200.000", gambar:"head-2.jpg", mirror:true, extra:["Pijat leher lebih lama"]}),
+  buat("off",{durasi:"150 Menit", harga:"Rp 230.000", extra:["Peregangan bahu penutup"]}),
 
-  buat("slp",{durasi:"90 Menit",  harga:"Rp 120.000", mirror:true}),
-  buat("slp",{durasi:"120 Menit", harga:"Rp 135.000", gambar:"reflexy-2.jpg"}),
-  buat("slp",{durasi:"150 Menit", harga:"Rp 155.000", mirror:true, extra:["Refleksi kaki sesi penuh"]}),
+  buat("slp",{durasi:"90 Menit",  harga:"Rp 170.000", mirror:true}),
+  buat("slp",{durasi:"120 Menit", harga:"Rp 200.000", gambar:"reflexy-2.jpg"}),
+  buat("slp",{durasi:"150 Menit", harga:"Rp 230.000", mirror:true, extra:["Refleksi kaki sesi penuh"]}),
 
   { nama:"Triple Treatment Favorit <small>· 150 Menit</small>", tag:"Paling Laris", gambar:"paket.jpg",
     termasuk:["Full Body Massage","Head Massage","Totok Wajah"],
     manfaat:["Tiga perawatan satu sesi","Satu harga, tanpa tambahan"],
     fokus:[["punggung.jpg","Badan"],["kepala.jpg","Kepala"],["wajah.jpg","Wajah"]],
-    waktu:"150 Menit", harga:[["HARGA HOME SERVICE","Rp 160.000"]] },
+    waktu:"150 Menit", harga:[["HARGA HOME SERVICE","Rp 240.000"]] },
 
   { nama:"Triple Treatment Rileks <small>· 150 Menit</small>", tag:"Badan Pegal", gambar:"paket-2.jpg", mirror:true,
     termasuk:["Full Body Massage","Totok Wajah","Foot Reflexy"],
     manfaat:["Badan dan kaki lebih ringan","Wajah terasa segar"],
     fokus:[["punggung.jpg","Badan"],["wajah.jpg","Wajah"],["kaki.jpg","Kaki"]],
-    waktu:"150 Menit", harga:[["HARGA HOME SERVICE","Rp 165.000"]] },
+    waktu:"150 Menit", harga:[["HARGA HOME SERVICE","Rp 250.000"]] },
 
   { nama:"Triple Treatment Puas <small>· 150 Menit</small>", tag:"Capek Kerja", gambar:"paket.jpg",
     termasuk:["Full Body Massage","Head Massage","Foot Reflexy"],
     manfaat:["Kepala dan kaki lebih ringan","Tidur lebih nyenyak"],
     fokus:[["punggung.jpg","Badan"],["kepala.jpg","Kepala"],["kaki.jpg","Kaki"]],
-    waktu:"150 Menit", harga:[["HARGA HOME SERVICE","Rp 165.000"]] },
+    waktu:"150 Menit", harga:[["HARGA HOME SERVICE","Rp 250.000"]] },
 
   { nama:"Couple Serenity", tag:"Berdua", gambar:"couple.jpg", mirror:true,
     termasuk:["Dua terapis bersamaan","Layanan boleh berbeda","Oil &amp; Aromatherapy"],
     manfaat:["Selesai bersamaan","Cocok untuk pasangan"],
     fokus:"Menyesuaikan permintaan masing-masing",
-    waktu:"Menyesuaikan", harga:[["MULAI DARI","Rp 340.000"]] }
+    waktu:"Menyesuaikan", harga:[["MULAI DARI","Rp 500.000"]] }
 ];
 
 /* dua kartu per halaman, disisipkan setelah halaman daftar isi */
