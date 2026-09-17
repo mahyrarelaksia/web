@@ -139,6 +139,65 @@ select:hover{border-color:var(--langit)}
 .tautan-induk:hover{color:#fff;border-bottom-color:#fff}
 .hint-harga{text-align:center;font-size:14px;color:var(--redup);margin-top:26px}
 
+/* ============ KODE DISKON ============ */
+.promo-slot{margin:22px auto 0;max-width:580px}
+.promo-slot[hidden]{display:none}
+.pesan .promo-slot{margin:0 0 4px;max-width:none}
+.promo{border:1.5px dashed rgba(176,131,67,.55);border-radius:18px;padding:5px;
+ background:linear-gradient(140deg,#FFFCF6,#FFF5E6)}
+.promo.terbuka{padding:18px}
+.promo.sukses{padding:14px 16px;border-style:solid;border-color:rgba(42,106,184,.4);
+ background:linear-gradient(140deg,#F3F9FE,#E7F1FB);display:flex;align-items:center;gap:13px}
+.promo-buka{display:flex;align-items:center;gap:13px;width:100%;background:none;border:0;cursor:pointer;
+ padding:13px 15px;border-radius:14px;text-align:left;font-family:inherit;color:var(--tinta);transition:.18s}
+.promo-buka:hover{background:rgba(176,131,67,.1)}
+.promo-ikon{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+ background:linear-gradient(140deg,var(--emas),#8A6630);color:#fff;
+ font-family:Fraunces,serif;font-size:19px;font-weight:700;line-height:1}
+.promo-ikon.ok{background:linear-gradient(140deg,#3D83CC,var(--laut));font-size:17px}
+.promo-teks{flex:1;min-width:0}
+.promo-teks strong{display:block;font-size:15.5px;font-weight:700;line-height:1.35}
+.promo-teks small{display:block;font-size:12.5px;color:var(--redup);margin-top:1px;line-height:1.45}
+.promo-panah{flex:none;color:var(--emas);font-size:19px;font-weight:700;line-height:1}
+.promo-label{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+ color:#8A6630;font-weight:700;margin-bottom:9px}
+.promo-kode{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;
+ border:1.5px solid rgba(176,131,67,.45);border-radius:13px;padding:9px 9px 9px 16px;margin-bottom:11px}
+.promo-kode b{font-family:Fraunces,serif;font-size:21px;font-weight:700;letter-spacing:.12em;color:var(--laut)}
+.promo-salin{border:0;background:var(--laut);color:#fff;border-radius:10px;padding:9px 15px;
+ font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.18s;flex:none}
+.promo-salin:hover{background:var(--biru)}
+.promo-baris{display:flex;gap:8px}
+.promo-input{flex:1;min-width:0;font-family:inherit;font-size:15px;font-weight:600;letter-spacing:.06em;
+ padding:13px 15px;border:1.5px solid var(--garis);border-radius:13px;background:#fff;
+ color:var(--tinta);text-transform:uppercase}
+.promo-input::placeholder{font-weight:500;letter-spacing:0;text-transform:none;color:#93A2B6}
+.promo-input:focus{outline:0;border-color:var(--biru)}
+.promo-pakai{flex:none;border:0;border-radius:13px;padding:13px 22px;cursor:pointer;font-family:inherit;
+ font-size:14.5px;font-weight:700;color:#fff;transition:.18s;
+ background:linear-gradient(135deg,#3D83CC,var(--biru) 52%,var(--laut))}
+.promo-pakai:hover{filter:brightness(1.07)}
+.promo-pesan{font-size:12.5px;line-height:1.5;color:var(--redup);margin-top:9px}
+.promo-pesan.salah{color:#B4402B;font-weight:600}
+.promo-batal{flex:none;border:1.5px solid #C3D3E6;background:#fff;color:var(--redup);border-radius:10px;
+ padding:8px 13px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.18s}
+.promo-batal:hover{border-color:var(--biru);color:var(--laut)}
+
+/* harga coret saat diskon aktif */
+.lay{position:relative}
+.cap-promo{position:absolute;top:-11px;left:24px;background:linear-gradient(135deg,var(--emas),#8A6630);
+ color:#fff;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;
+ padding:4px 11px;border-radius:999px;box-shadow:0 6px 16px rgba(176,131,67,.35)}
+.lay .harga s{display:block;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:500;
+ color:#8A9AAE;letter-spacing:0;margin-bottom:1px}
+.lay .durasi i.hemat{border-color:rgba(176,131,67,.55);background:#FFF9EF}
+.lay .durasi s{color:#8A9AAE;margin-left:5px;font-size:12px}
+.cip button s{color:#93A2B6;font-weight:500;margin-right:4px}
+.total .nom s{display:block;font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:500;
+ color:#8A9AAE;letter-spacing:0;line-height:1.2}
+.tier s{color:#8FA6C0;font-weight:500;font-size:.78em}
+.tier .biaya s{display:inline-block;font-size:18px;margin-right:6px;vertical-align:middle}
+
 /* pemilih cabang sebelum WhatsApp */
 .lapis{position:fixed;inset:0;z-index:90;display:none;place-items:center;padding:20px;
  background:rgba(8,26,47,.6);backdrop-filter:blur(5px)}
@@ -403,6 +462,8 @@ footer.situs a:hover{color:var(--emas-2)}
         <select id="fWaktu"></select>
       </div>
 
+      <div class="promo-slot" hidden></div>
+
       <div class="total">
         <span class="label" style="margin:0">Perkiraan biaya</span>
         <span class="nom" id="fTotal">Rp 0</span>
@@ -432,6 +493,7 @@ footer.situs a:hover{color:var(--emas-2)}
         minyak, dan handuk bersih yang dibawa terapis — tidak ada biaya transportasi di dalam area layanan.</p>
     </div>
     <p class="hint-harga" id="catatanHarga"></p>
+    <div class="promo-slot" hidden></div>
     <div class="kisi k4" id="kisiLayanan"></div>
   </div>
 </section>
@@ -454,13 +516,9 @@ footer.situs a:hover{color:var(--emas-2)}
       <article class="tier masuk">
         <span class="cap">Sekali datang</span>
         <h3>Full Body Massage</h3>
-        <p style="color:#A8BDD6;font-size:15.5px;line-height:1.6">Pijat seluruh badan, 1,5 sampai 2,5 jam.</p>
-        <div class="biaya"><sup>mulai</sup> 100rb</div>
-        <ul>
-          <li>1,5 jam Rp 100.000 · 2 jam Rp 120.000</li>
-          <li>2,5 jam Rp 150.000</li>
-          <li>Bisa digabung totok wajah, head massage, atau refleksi</li>
-        </ul>
+        <p style="color:#A8BDD6;font-size:15.5px;line-height:1.6" id="tierKet">Pijat seluruh badan, 1,5 sampai 2,5 jam.</p>
+        <div class="biaya"><sup>mulai</sup> <span id="tierMulai">100rb</span></div>
+        <ul id="tierRinci"></ul>
         <button class="tbl tbl-emas" data-paket="Full Body Massage">Pesan sesi</button>
         
       </article>
@@ -468,12 +526,8 @@ footer.situs a:hover{color:var(--emas-2)}
         <span class="cap">Paling sering diambil</span>
         <h3>Paket Tiga Perawatan</h3>
         <p style="color:#A8BDD6;font-size:15.5px;line-height:1.6">Dua setengah jam, tiga perawatan sekaligus.</p>
-        <div class="biaya"><sup>mulai</sup> 160rb</div>
-        <ul>
-          <li>Paket Favorit Rp 160.000 — badan, kepala, wajah</li>
-          <li>Paket Rileks Rp 165.000 — badan, wajah, kaki</li>
-          <li>Paket Puas Rp 165.000 — badan, kepala, kaki</li>
-        </ul>
+        <div class="biaya"><sup>mulai</sup> <span id="tierPaketMulai">160rb</span></div>
+        <ul id="tierPaketRinci"></ul>
         <button class="tbl tbl-emas" data-paket="paket tiga perawatan">Pesan sesi</button>
         
       </article>
@@ -675,11 +729,29 @@ const INFO = {
   ]
 };
 
+/* =====================================================================
+   KODE DISKON
+   kode   : yang harus diketik pelanggan (tidak peka huruf besar/kecil)
+   cabang : indeks cabang yang dapat promo — 0 Malang, 1 Surabaya
+   ===================================================================== */
+const DISKON = {
+  kode   : "MAHYRA50",
+  cabang : [1],
+  judul  : "Promo cabang Surabaya",
+  ajakan : "Klik untuk melihat kode diskonnya",
+  ket    : "Berlaku untuk Full Body Massage, semua durasi."
+};
+
 /* Daftar harga resmi. Durasi dalam menit, harga dalam rupiah. */
 const LAYANAN = [
   { nama:"Full Body Massage", kat:"Pijat",
     ket:"Pijat tradisional untuk seluruh badan. Tekanan bisa disesuaikan permintaan.",
-    durasi:[[90,100000],[120,120000],[150,150000]] },
+    durasi:[[90,100000],[120,120000],[150,150000]],
+    /* Harga khusus per cabang: [menit, harga normal, harga setelah diskon].
+       Kalau cabang punya daftar di sini, "selisih" cabang tidak dipakai. */
+    khusus:{
+      1:[[60,150000,100000],[90,180000,130000],[120,280000,180000]]
+    } },
 
   { nama:"Full Body Massage & Totok Wajah", kat:"Kombinasi",
     ket:"Seluruh badan, ditutup totok wajah untuk melepas tegang di dahi dan rahang.",
@@ -694,14 +766,17 @@ const LAYANAN = [
     durasi:[[90,120000],[120,135000],[150,155000]] },
 
   { nama:"Paket Rileks", kat:"Paket", rinci:"Full Body Massage 90 menit · Totok Wajah 30 menit · Foot Reflexy 30 menit",
+    pendek:"badan, wajah, kaki",
     ket:"Tiga perawatan dalam satu sesi, selesai dalam dua setengah jam.",
     durasi:[[150,165000]] },
 
   { nama:"Paket Puas", kat:"Paket", rinci:"Full Body Massage 90 menit · Head Massage 30 menit · Foot Reflexy 30 menit",
+    pendek:"badan, kepala, kaki",
     ket:"Untuk badan yang butuh dilepas total, dari kepala sampai kaki.",
     durasi:[[150,165000]] },
 
   { nama:"Paket Favorit", kat:"Paket", rinci:"Full Body Massage 90 menit · Head Massage 30 menit · Totok Wajah 30 menit",
+    pendek:"badan, kepala, wajah",
     ket:"Paket yang paling sering diambil pelanggan tetap kami.",
     durasi:[[150,160000]] }
 ];
@@ -714,32 +789,163 @@ const JAM = ["Secepatnya hari ini","Siang ini (11.00–14.00)","Sore ini (15.00�
    Isi halaman
    ===================================================================== */
 const rp = n => "Rp " + Number(n).toLocaleString("id-ID");
+const rb = n => Math.round(n/1000) + "rb";
 const el = id => document.getElementById(id);
 let pilihan = { layanan:0, durasi:0, cabang:0 };
+
+/* keadaan kode diskon */
+let promoBuka  = false;   /* kodenya sudah ditampilkan? */
+let promoAktif = false;   /* kodenya sudah dipakai?     */
+let isiKode    = "";
+let pesanPromo = "";
+let pesanSalah = false;
 
 /* --- kartu layanan --- */
 const jamMenit = m => m % 60 === 0 ? (m/60)+" jam" : Math.floor(m/60)+","+(m%60===30?"5":m%60)+" jam";
 
-/* Harga dasar berlaku di Malang; cabang lain ditambah selisihnya. */
+/* Harga dasar berlaku di Malang; cabang lain ditambah selisihnya,
+   kecuali layanan itu punya daftar harga khusus untuk cabang tersebut. */
 const selisih = () => INFO.cabang[pilihan.cabang].selisih || 0;
-const hargaDi = n => n + selisih();
+const adaPromo = () => DISKON.cabang.indexOf(pilihan.cabang) > -1;
+
+function daftarDurasi(l){
+  const k = l.khusus && l.khusus[pilihan.cabang];
+  if (k) return k.map(d => ({ menit:d[0], normal:d[1], promo:(d[2]==null?d[1]:d[2]) }));
+  return l.durasi.map(d => ({ menit:d[0], normal:d[1]+selisih(), promo:d[1]+selisih() }));
+}
+const berlaku     = d => promoAktif ? d.promo : d.normal;
+const adaPotongan = d => promoAktif && d.promo < d.normal;
+const termurah    = ds => ds.reduce((a,b) => berlaku(b) < berlaku(a) ? b : a);
 
 function gambarLayanan(){
-  el("kisiLayanan").innerHTML = LAYANAN.map(l => `
+  el("kisiLayanan").innerHTML = LAYANAN.map(l => {
+    const ds = daftarDurasi(l), m = termurah(ds), hemat = ds.some(adaPotongan);
+    return `
     <article class="kartu lay masuk tampil">
+      ${hemat ? `<span class="cap-promo">Diskon</span>` : ""}
       <div class="atas">
         <h3>${l.nama}</h3>
-        <span class="harga"><small>${l.durasi.length>1?"mulai":"harga"}</small>${rp(hargaDi(Math.min(...l.durasi.map(d=>d[1]))))}</span>
+        <span class="harga"><small>${ds.length>1?"mulai":"harga"}</small>${
+          adaPotongan(m) ? `<s>${rp(m.normal)}</s>` : ""}${rp(berlaku(m))}</span>
       </div>
       <p>${l.ket}</p>
       ${l.rinci?`<p class="isi-paket">${l.rinci}</p>`:""}
-      <div class="durasi">${l.durasi.map(d=>
-        `<i>${jamMenit(d[0])}${l.durasi.length>1?" · "+rp(hargaDi(d[1])):""}</i>`).join("")}</div>
-    </article>`).join("");
-  el("catatanHarga").textContent =
+      <div class="durasi">${ds.map(d =>
+        `<i class="${adaPotongan(d)?"hemat":""}">${jamMenit(d.menit)}${ds.length>1
+          ? " · "+rp(berlaku(d)) + (adaPotongan(d)?`<s>${rp(d.normal)}</s>`:"")
+          : ""}</i>`).join("")}</div>
+    </article>`; }).join("");
+  el("catatanHarga").innerHTML =
     `Harga di cabang ${INFO.cabang[pilihan.cabang].nama}.`+
-    (INFO.cabang.length>1?" Ganti cabang di atas untuk melihat harga wilayah lain.":"");
+    (INFO.cabang.length>1?" Ganti cabang di atas untuk melihat harga wilayah lain.":"")+
+    (promoAktif?` <b style="color:var(--laut)">Kode ${DISKON.kode} sedang aktif.</b>`:"");
 }
+
+/* --- kartu ringkasan di bagian Paket --- */
+function gambarTier(){
+  const ds = daftarDurasi(LAYANAN[0]), m = termurah(ds);
+  el("tierKet").textContent =
+    `Pijat seluruh badan, ${jamMenit(ds[0].menit)} sampai ${jamMenit(ds[ds.length-1].menit)}.`;
+  el("tierMulai").innerHTML =
+    (adaPotongan(m) ? `<s>${rb(m.normal)}</s>` : "") + rb(berlaku(m));
+  el("tierRinci").innerHTML = ds.map(d =>
+    `<li>${jamMenit(d.menit)} ${rp(berlaku(d))}${adaPotongan(d)?` <s>${rp(d.normal)}</s>`:""}</li>`).join("")
+    + `<li>Bisa digabung totok wajah, head massage, atau refleksi</li>`;
+
+  const pk = LAYANAN.filter(l => l.kat === "Paket")
+    .map(l => ({ nama:l.nama, pendek:l.pendek||"", harga:berlaku(daftarDurasi(l)[0]) }))
+    .sort((a,b) => a.harga - b.harga);
+  el("tierPaketMulai").textContent = rb(pk[0].harga);
+  el("tierPaketRinci").innerHTML = pk.map(p =>
+    `<li>${p.nama} ${rp(p.harga)}${p.pendek?` — ${p.pendek}`:""}</li>`).join("");
+}
+
+/* --- kotak kode diskon (muncul di dua tempat, keadaannya sama) --- */
+function gambarPromo(){
+  document.querySelectorAll(".promo-slot").forEach(slot => {
+    if (!adaPromo()) { slot.hidden = true; slot.innerHTML = ""; return; }
+    slot.hidden = false;
+    if (promoAktif) {
+      slot.innerHTML = `
+        <div class="promo sukses">
+          <span class="promo-ikon ok">&#10003;</span>
+          <span class="promo-teks"><strong>Kode ${DISKON.kode} terpakai</strong>
+            <small>Semua harga di halaman ini sudah dipotong.</small></span>
+          <button type="button" class="promo-batal">Batalkan</button>
+        </div>`;
+    } else if (!promoBuka) {
+      slot.innerHTML = `
+        <div class="promo">
+          <button type="button" class="promo-buka">
+            <span class="promo-ikon">%</span>
+            <span class="promo-teks"><strong>${DISKON.judul}</strong>
+              <small>${DISKON.ajakan}</small></span>
+            <span class="promo-panah">&rarr;</span>
+          </button>
+        </div>`;
+    } else {
+      slot.innerHTML = `
+        <div class="promo terbuka">
+          <p class="promo-label">Kode diskon Anda</p>
+          <div class="promo-kode"><b>${DISKON.kode}</b>
+            <button type="button" class="promo-salin">Salin</button></div>
+          <div class="promo-baris">
+            <input type="text" class="promo-input" autocomplete="off" spellcheck="false"
+                   placeholder="Ketik kode di sini" aria-label="Kode diskon">
+            <button type="button" class="promo-pakai">Pakai</button>
+          </div>
+          <p class="promo-pesan${pesanSalah?" salah":""}">${pesanPromo || DISKON.ket}</p>
+        </div>`;
+      slot.querySelector(".promo-input").value = isiKode;
+    }
+  });
+}
+
+function segarkan(){ gambarLayanan(); gambarTier(); gambarDurasi(); gambarPromo(); perbarui(); }
+
+function pakaiKode(){
+  const k = (isiKode || "").trim().toUpperCase();
+  if (!k)                  { pesanPromo = "Kode diskonnya belum diisi."; pesanSalah = true; }
+  else if (k !== DISKON.kode){ pesanPromo = `Kode "${k}" tidak dikenali. Pakai kode ${DISKON.kode}.`; pesanSalah = true; }
+  else { promoAktif = true; pesanPromo = ""; pesanSalah = false; segarkan(); return; }
+  gambarPromo();
+  const inp = document.querySelector(".promo-input");
+  if (inp) { inp.focus(); inp.select(); }
+}
+
+document.addEventListener("click", e => {
+  const buka  = e.target.closest(".promo-buka"),
+        salin = e.target.closest(".promo-salin"),
+        pakai = e.target.closest(".promo-pakai"),
+        batal = e.target.closest(".promo-batal");
+  if (buka) {
+    const slot = buka.closest(".promo-slot");
+    promoBuka = true; pesanPromo = ""; pesanSalah = false;
+    gambarPromo();
+    const inp = slot.querySelector(".promo-input");
+    if (inp) inp.focus();
+  } else if (salin) {
+    isiKode = DISKON.kode;
+    document.querySelectorAll(".promo-input").forEach(i => i.value = DISKON.kode);
+    if (navigator.clipboard) navigator.clipboard.writeText(DISKON.kode).catch(()=>{});
+    salin.textContent = "Tersalin";
+    setTimeout(() => { if (salin.isConnected) salin.textContent = "Salin"; }, 1600);
+  } else if (pakai) {
+    pakaiKode();
+  } else if (batal) {
+    promoAktif = false; promoBuka = true; isiKode = "";
+    pesanPromo = "Diskon dibatalkan. Harga kembali normal."; pesanSalah = false;
+    segarkan();
+  }
+});
+document.addEventListener("input", e => {
+  if (!e.target.classList.contains("promo-input")) return;
+  isiKode = e.target.value;
+  document.querySelectorAll(".promo-input").forEach(i => { if (i !== e.target) i.value = isiKode; });
+});
+document.addEventListener("keydown", e => {
+  if (e.target.classList.contains("promo-input") && e.key === "Enter") { e.preventDefault(); pakaiKode(); }
+});
 
 el("fLay").innerHTML = LAYANAN.slice(0,5).map(l=>`<a href="#layanan">${l.nama}</a>`).join("");
 el("fLayanan").innerHTML = LAYANAN.map((l,i)=>`<option value="${i}">${l.nama}</option>`).join("");
@@ -758,11 +964,12 @@ function gambarArea(){
 
 /* --- pilihan durasi --- */
 function gambarDurasi(){
-  const l = LAYANAN[pilihan.layanan];
-  el("fDurasi").innerHTML = l.durasi.map((d,i)=>
+  const ds = daftarDurasi(LAYANAN[pilihan.layanan]);
+  if (pilihan.durasi >= ds.length) pilihan.durasi = 0;
+  el("fDurasi").innerHTML = ds.map((d,i)=>
     `<button type="button" class="${i===pilihan.durasi?"aktif":""}" onclick="pilihDurasi(${i})">
-       ${jamMenit(d[0])}<small>${rp(hargaDi(d[1]))}</small></button>`).join("");
-  el("kolomDurasi").style.display = l.durasi.length>1 ? "" : "none";
+       ${jamMenit(d.menit)}<small>${adaPotongan(d)?`<s>${rp(d.normal)}</s>`:""}${rp(berlaku(d))}</small></button>`).join("");
+  el("kolomDurasi").style.display = ds.length>1 ? "" : "none";
 }
 function pilihDurasi(i){ pilihan.durasi = i; gambarDurasi(); perbarui(); }
 
@@ -771,21 +978,24 @@ el("fLayanan").addEventListener("change", e => {
 });
 el("fCabang").addEventListener("change", e => {
   pilihan.cabang = +e.target.value;
-  gambarArea(); gambarLayanan(); gambarDurasi(); gambarPaket(); perbarui();
+  if (!adaPromo()) { promoAktif = false; promoBuka = false; isiKode = ""; pesanPromo = ""; pesanSalah = false; }
+  gambarArea(); gambarPaket(); segarkan();
 });
 ["fArea","fWaktu"].forEach(id => el(id).addEventListener("change", perbarui));
 
 /* --- total & tautan WhatsApp --- */
 function perbarui(){
-  const l = LAYANAN[pilihan.layanan], d = l.durasi[pilihan.durasi];
+  const l = LAYANAN[pilihan.layanan], ds = daftarDurasi(l);
+  const d = ds[pilihan.durasi] || ds[0];
   const c = INFO.cabang[pilihan.cabang];
-  el("fTotal").textContent = rp(hargaDi(d[1]));
+  el("fTotal").innerHTML = (adaPotongan(d) ? `<s>${rp(d.normal)}</s>` : "") + rp(berlaku(d));
   const pesan =
     `Halo Mahyra Relaksia ${c.nama}, saya ingin memesan sesi.\n\n` +
     `Layanan : ${l.nama}\n` +
     (l.rinci ? `Isi     : ${l.rinci}\n` : "") +
-    `Durasi  : ${jamMenit(d[0])}\n` +
-    `Biaya   : ${rp(hargaDi(d[1]))}\n` +
+    `Durasi  : ${jamMenit(d.menit)}\n` +
+    `Biaya   : ${rp(berlaku(d))}\n` +
+    (adaPotongan(d) ? `Diskon  : ${DISKON.kode} (normal ${rp(d.normal)})\n` : "") +
     `Area    : ${el("fArea").value}\n` +
     `Waktu   : ${el("fWaktu").value}\n\n` +
     `Mohon dikonfirmasi ketersediaan terapisnya. Terima kasih.`;
@@ -826,8 +1036,8 @@ function tutupPilihCabang(){ el("pilihCabang").classList.remove("on"); }
 
 /* tombol di kotak pemesanan: cabangnya sudah dipilih, kirim langsung */
 el("fKirim").addEventListener("click", e => {
-  const l = LAYANAN[pilihan.layanan], d = l.durasi[pilihan.durasi];
-  if(!l || !d) e.preventDefault();
+  const l = LAYANAN[pilihan.layanan];
+  if(!l || !daftarDurasi(l)[pilihan.durasi]) e.preventDefault();
 });
 
 /* tombol pada tiap paket: tanya cabang dulu, sertakan nama paketnya */
@@ -860,7 +1070,7 @@ el("fTt").href = INFO.tiktok;
   a.target = "_blank"; a.rel = "noopener";
 });
 
-gambarArea(); gambarLayanan(); gambarDurasi(); gambarPaket(); perbarui();
+gambarArea(); gambarPaket(); segarkan();
 
 /* --- nav menempel saat digulir --- */
 const kepala = document.querySelector("header");
