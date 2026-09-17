@@ -714,7 +714,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.14.4';
+const VERSI_APP='2026.09.15.1';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -1340,7 +1340,8 @@ function kartuKerja(i){
       <div><span>Jadwal</span><b>${String(p.jam_kerja||p.jam||'-').slice(0,5)}</b></div>
       <div><span>Dikerjakan</span><b>${jamDari(i.jam_mulai)}–${jamDari(i.jam_selesai)}</b></div>
       <div><span>Durasi</span><b>${l.durasi_menit||0} menit</b></div>
-      <div><span>Harga layanan</span><b>${rp(i.harga)}</b></div>
+      <div><span>Harga layanan</span><b>${rp(hargaBersih(i))}</b></div>
+      ${Number(i.diskon)>0?`<div><span>Diskon</span><b style="color:var(--bad)">− ${rp(i.diskon)}</b></div>`:''}
       <div><span>Komisi</span><b>${rp(komisiSaya(i))}</b></div>
       <div><span>Bonus</span><b>${nBon?rp(nBon):'—'}</b></div>
     </div>
@@ -1367,9 +1368,12 @@ function listKerja(items){
       <div class="rinci">
         <div><span>Layanan</span><b>${esc(l.nama||'-')}</b></div>
         <div><span>Durasi</span><b>${l.durasi_menit||0} menit</b></div>
-        <div><span>Harga</span><b>${rp(i.harga)}</b></div>
+        <div><span>Harga</span><b>${rp(hargaBersih(i))}</b></div>
         <div><span>Komisi</span><b>${rp(komisiSaya(i))}</b></div>
       </div>
+      ${Number(i.diskon)>0?`<div class="hint" style="margin-top:6px">
+        Harga awal ${rp(i.harga)} dikurangi diskon ${rp(i.diskon)}.
+        Komisi dihitung dari harga setelah diskon.</div>`:''}
       ${pel.alamat?`<div class="alamat">${esc(pel.alamat)}</div>`:''}
       ${p.catatan?`<div class="catatan"><b>Catatan order:</b> ${esc(p.catatan)}</div>`:''}
       ${pel.catatan?`<div class="catatan"><b>Catatan pelanggan:</b> ${esc(pel.catatan)}</div>`:''}
@@ -1406,14 +1410,18 @@ function pelangganKomisi(c){
   return p ? esc(nm('pelanggan', p.pelanggan_id)) : '<span class="hint">—</span>';
 }
 
+/* Harga bersih sebuah pekerjaan, yaitu setelah dikurangi bagian diskonnya */
+function hargaBersih(i){
+  if(i.subtotal!=null) return Number(i.subtotal);
+  return Math.max(0, Number(i.harga||0) - Number(i.diskon||0));
+}
 function komisiSaya(i){
   if(Number(i.komisi)>0) return Number(i.komisi);
   const sk=skemaGaji();
   if(sk.fee>0) return Math.round(sk.fee*(i.qty||1));
   const l=get('layanan',i.layanan_id)||{};
   const persen=sk.persen||Number(l.komisi_persen||0);
-  const dasar=Number(i.subtotal||i.harga||l.harga||0);
-  return Math.round(dasar*persen/100);
+  return Math.round(hargaBersih(i)*persen/100);   // komisi dari harga setelah diskon
 }
 function bukaPeta(pelangganId){
   const pel=get('pelanggan',pelangganId)||{};
