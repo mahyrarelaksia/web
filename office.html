@@ -124,10 +124,11 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 
 /* ---------- Ajakan pasang aplikasi ---------- */
 .pasang{position:fixed;left:50%;transform:translateX(-50%) translateY(150%);bottom:14px;z-index:110;
+ pointer-events:none;
  width:calc(100% - 24px);max-width:460px;background:#fff;border:1px solid var(--line);border-radius:20px;
  padding:15px 16px;box-shadow:0 20px 48px rgba(16,44,80,.26);display:flex;gap:13px;align-items:flex-start;
  transition:transform .38s cubic-bezier(.2,.8,.3,1)}
-.pasang.on{transform:translateX(-50%) translateY(0)}
+.pasang.on{transform:translateX(-50%) translateY(0);pointer-events:auto}
 .pasang img{width:46px;height:46px;border-radius:14px;border:1px solid var(--line);padding:3px;
  object-fit:contain;flex:none;background:#fff}
 .pasang h5{font-size:14.5px;font-weight:600;line-height:1.3}
@@ -139,15 +140,18 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .langkah-ios{background:var(--mist);border-radius:12px;padding:11px 13px;margin-top:8px;font-size:12.5px;line-height:1.7}
 .langkah-ios b{font-weight:600}
 .pop{position:fixed;left:50%;transform:translateX(-50%) translateY(-140%);top:12px;z-index:130;
+ pointer-events:none;
  width:calc(100% - 28px);max-width:440px;background:#fff;border-radius:18px;padding:14px 16px;
  box-shadow:0 18px 44px rgba(16,44,80,.28);border:1px solid var(--line);
  display:flex;gap:12px;align-items:flex-start;transition:transform .35s cubic-bezier(.2,.8,.3,1)}
-.pop.on{transform:translateX(-50%) translateY(0)}
+.pop.on{transform:translateX(-50%) translateY(0);pointer-events:auto}
 .pop .ikon{width:40px;height:40px;border-radius:13px;flex:none;display:grid;place-items:center;font-size:19px;
  background:linear-gradient(150deg,#4C8FD6,#1F4C86);color:#fff}
 .pop h5{font-size:14px;font-weight:600}
 .pop p{font-size:12.5px;color:var(--muted);margin-top:2px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:99}
+.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+ padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:99;
+ pointer-events:none;max-width:calc(100% - 28px);text-align:center}
 .toast.on{opacity:1}
 .hanya-mobil{display:none}
 /* ---- Tampilan aplikasi untuk layar kecil ---- */
@@ -222,24 +226,30 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
   .topbar{margin-bottom:10px;position:static;background:none;padding:0;margin-top:0}
   .topbar h1{font-size:19px}
   body.panel-buka .tabbar{transform:translateY(110%)}
-  .tabbar{position:fixed;bottom:0;left:0;right:0;width:100%;z-index:60;display:grid;
-    transition:transform .25s ease;
+  .tabbar{position:fixed;bottom:0;left:0;right:0;width:100%;z-index:90;display:grid;
+    transition:transform .25s ease;pointer-events:auto;
     grid-template-columns:repeat(5,1fr);align-items:end;background:#fff;
     border-top:1px solid var(--line);margin:0;
     padding:7px 4px calc(7px + env(safe-area-inset-bottom));
     box-shadow:0 -6px 22px rgba(31,64,120,.1)}
   .tab{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;
-    padding:4px 2px;border-radius:12px;cursor:pointer;color:#93A4BD;font-size:9.5px;font-weight:600;
-    line-height:1.2;text-align:center;min-width:0;-webkit-tap-highlight-color:transparent}
+    padding:6px 2px;border-radius:12px;cursor:pointer;color:#93A4BD;font-size:9.5px;font-weight:600;
+    line-height:1.2;text-align:center;min-width:0;min-height:46px;position:relative;z-index:1;
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+  .tab:active{background:var(--mist)}
   .tab span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
   .tab .ic{height:22px;display:grid;place-items:center}
   .tab .ic svg{display:block}
   .tab.on{color:var(--jade)}
   .tab.pusat{color:var(--jade);position:relative}
+  .tab.pusat{overflow:visible}
   .tab.pusat .ic{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);
     width:54px;height:54px;border-radius:20px;display:grid;place-items:center;
     color:#fff;background:linear-gradient(150deg,#8FC6EC,#2F6FBF 62%,#1F4C86);border:4px solid #fff;
-    box-shadow:0 8px 20px rgba(47,111,191,.38)}
+    box-shadow:0 8px 20px rgba(47,111,191,.38);pointer-events:none}
+  /* area sentuh tombol tengah dilebarkan ke atas bilah */
+  .tab.pusat:before{content:'';position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+    width:70px;height:70px;border-radius:24px}
   .tab.pusat span:last-child{margin-top:38px}
   .tab.pusat:active .ic{transform:scale(.94)}
   .menulist{display:grid;gap:6px;margin-top:6px}
@@ -416,7 +426,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.15.1";
+const VERSI_APP = "2026.09.15.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1434,7 +1444,11 @@ function bukaMenuOffice(){
         <span class="ic" style="background:#FAEAEC;color:var(--bad)">${ikon('akses',18)}</span>Keluar dari akun</button></div>`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`})
 }
 
-function go(p){ PAGE=p; SEARCH='';
+function go(p){
+  // pengaman: pastikan tidak ada sisa keadaan panel yang menyembunyikan menu
+  document.body.classList.remove('panel-buka');
+  document.body.style.overflow='';
+  PAGE=p; SEARCH='';
   document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
   document.getElementById('nv_'+p)?.classList.add('on');
   document.querySelectorAll('.tab').forEach(n=>n.classList.remove('on'));
