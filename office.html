@@ -318,6 +318,9 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .unggah .ikon{color:var(--jade)}
 .unggah strong{font-size:14px}
 .btn.blok{width:100%}
+.peringatan{font-size:12.5px;line-height:1.5;border-radius:10px;padding:8px 11px;margin:8px 0;
+ background:#FAEAEC;border:1px solid #F0D4D8;color:#A03A46}
+.peringatan.warn{background:#FFF8EC;border-color:#F0E0C4;color:#8A6520}
 .baris-layanan{border:1px solid var(--line);border-radius:13px;padding:11px 12px;margin-bottom:8px;background:#fff}
 .baris-layanan .atas{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .baris-layanan .atas strong{font-size:13.5px;font-weight:600}
@@ -426,7 +429,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.15.2";
+const VERSI_APP = "2026.09.18.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -902,6 +905,22 @@ function bersihkan(key,row){
 }
 /* Menyimpan sebagian kolom saja. Mengirim seluruh baris sering ditolak
    aturan akses karena ikut menyentuh kolom yang tidak boleh diubah. */
+/* Menyimpan satu pekerjaan. Bila database menolak karena ada kolom yang
+   belum dikenal, kolom itu dibuang lalu dicoba lagi — supaya order tetap
+   tersimpan meski skrip terbaru belum sempat dijalankan. */
+async function simpanItem(baris){
+  // subtotal adalah kolom terhitung di database: harga − diskon
+  const isi={...baris, subtotal:Math.max(0,Number(baris.harga||0)*(baris.qty||1)-Number(baris.diskon||0))};
+  const hasil=await simpan('item',isi);
+  if(hasil) return hasil;
+
+  const cadangan={...isi};
+  ['diskon','catatan','durasi'].forEach(k=>delete cadangan[k]);
+  const ulang=await simpan('item',cadangan);
+  if(ulang) console.warn('Pekerjaan tersimpan tanpa kolom tambahan. Jalankan skrip SQL terbaru.');
+  return ulang;
+}
+
 async function simpanSebagian(key,id,patch){
   if(LIVE){
     const bersih=bersihkan(key,{...patch});
@@ -1880,7 +1899,10 @@ order(){
       ' · '+tgl(FIL.dari)+(FIL.dari===FIL.sampai?'':' sampai '+tgl(FIL.sampai))}</p>
     <div class="hanya-desktop">${tableHtml(rows,[{k:'nomor',l:'No. order'},
       {k:'kerja',l:'Pengerjaan',fn:r=>tgl(r.tgl_kerja||r.tanggal)+' · '+String(r.jam_kerja||r.jam||'-').slice(0,5)},
-      {k:'pel',l:'Pelanggan'},{k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},{k:'total',t:'rp'},
+      {k:'pel',l:'Pelanggan'},
+      {k:'lay',l:'Layanan',fn:r=>r.lay?esc(r.lay):'<span class="tag bad">Belum ada layanan</span>'},
+      {k:'ter',l:'Terapis',fn:r=>r.ter?esc(r.ter):'<span class="tag warn">Belum ditugaskan</span>'},
+      {k:'total',t:'rp'},
       {k:'metode_bayar',l:'Metode'},
       {k:'status',l:'Status',fn:r=>lencanaOrder(r)},
       {k:'aksi',l:'Tindakan',fn:r=>tombolOrder(r.id)}])}</div>
@@ -2976,14 +2998,25 @@ async function simpanOrder(){
 
   const ruangan=document.getElementById('o_room').value;
   const bagian=sebarDiskon(ORD.baris,disk);
+  let berhasil=0; const galat=[];
   for(let i=0;i<ORD.baris.length;i++){
     const b=ORD.baris[i], g=bagian[i], l=get('layanan',b.layanan_id)||{};
-    await simpan('item',{id:uid(),pesanan_id:p.id,layanan_id:b.layanan_id,
+    const hasil=await simpanItem({id:uid(),pesanan_id:p.id,layanan_id:b.layanan_id,
       terapis_id:b.terapis_id||null,ruangan,qty:1,
       harga:g.harga,diskon:g.diskon,subtotal:g.subtotal,durasi:l.durasi_menit||0,
       komisi:b.terapis_id?komisiUntuk(b.terapis_id,{...l,harga:g.subtotal},0):0,
       catatan:b.catatan||null,status:'menunggu'});
+    if(hasil) berhasil++; else galat.push(l.nama||'layanan');
   }
+
+  if(!berhasil){
+    // order tanpa satu pun pekerjaan tidak ada gunanya, jadi dibatalkan
+    await hapus('pesanan',p.id);
+    btn.disabled=false; btn.textContent='Simpan order';
+    return toast('Layanan gagal disimpan, order dibatalkan. Periksa hak akses Anda.');
+  }
+  if(galat.length) toast('Sebagian layanan gagal disimpan: '+galat.join(', '));
+
   render(); kirimOrder(p.id);
   toast('Order '+p.nomor+' dibuat');
 }
@@ -3153,10 +3186,12 @@ function kartuOrder(r, urut){
       <h4>${esc(r.pel||'-')}</h4></div>
       <div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
         ${lencanaOrder(r)}</div></div>
+    ${!r.lay?'<div class="peringatan">Order ini belum punya layanan. Ketuk Ubah untuk menambahkannya.</div>'
+      :!r.ter?'<div class="peringatan warn">Belum ada terapis yang ditugaskan.</div>':''}
     <dl>
       <dt>Pengerjaan</dt><dd>${hariTgl(r.tgl_kerja||r.tanggal)}<br>pukul ${esc(String(r.jam_kerja||r.jam||'-').slice(0,5))}</dd>
-      <dt>Layanan</dt><dd>${esc(r.lay||'-')}</dd>
-      <dt>Terapis</dt><dd>${esc(r.ter||'-')}</dd>
+      <dt>Layanan</dt><dd>${r.lay?esc(r.lay):'<span class="tag bad">belum ada</span>'}</dd>
+      <dt>Terapis</dt><dd>${r.ter?esc(r.ter):'<span class="tag warn">belum ditugaskan</span>'}</dd>
       <dt>Bayar</dt><dd>${cap(r.metode_bayar||'-')}</dd>
       <dt>Total</dt><dd><span class="rp">${rp(r.total)}</span></dd>
     </dl>
@@ -3468,10 +3503,16 @@ function ubahOrder(pesananId){
       const l=get('layanan',i.layanan_id)||{};
       const perlu=l.butuh_terapis!==false;
       const terapis=opsiRef('karyawan').filter(k=>k.role==='terapis'&&k.status==='aktif');
+      const layananCab=layananCabang(p.cabang_id);
       return `<div class="baris-layanan">
-        <div class="atas"><div style="min-width:0">
-          <strong>${esc(l.nama||'-')}</strong> ${tagHtml(i.status)}
-          <div class="hint">${rp(i.harga)}${i.komisi?' · komisi '+rp(i.komisi):''}</div></div></div>
+        <div class="atas"><div style="min-width:0;flex:1">
+          <select onchange="gantiLayanan('${i.id}',this.value)" style="font-weight:600;padding:7px 9px">
+            ${layananCab.map(x=>`<option value="${x.id}" ${x.id===i.layanan_id?'selected':''}>${esc(x.nama)}</option>`).join('')}
+          </select>
+          <div class="hint" style="margin-top:4px">${tagHtml(i.status)}
+            ${Number(i.diskon)>0?` · diskon ${rp(i.diskon)}`:''}${i.komisi?` · komisi ${rp(i.komisi)}`:''}</div></div>
+          <button type="button" class="hapus-baris" onclick="hapusItem('${i.id}','${p.id}')"
+            aria-label="Hapus layanan">${ikon('tambah',15)}</button></div>
         <div class="isian">
           ${perlu?`<div><label>Terapis</label>
             <select onchange="gantiTerapis('${i.id}',this.value)">
@@ -3482,9 +3523,91 @@ function ubahOrder(pesananId){
             <select onchange="ubahItem('${i.id}',this.value)">
               ${['menunggu','berjalan','selesai','batal'].map(s=>`<option ${i.status===s?'selected':''}>${s}</option>`).join('')}
             </select></div>
-        </div></div>`}).join('')}`, {kaki: `<button class="btn" onclick="simpanUbahOrder('${p.id}')">Simpan perubahan</button>
+        </div>
+        <div style="margin-top:8px"><label class="mini">Nominal</label>
+          <input type="number" value="${i.harga}" ${l.harga_manual?'':'readonly'}
+            onchange="ubahHargaItem('${i.id}','${p.id}',this.value)"></div>
+      </div>`}).join('')}
+
+    <div class="row" style="gap:7px;margin-top:10px">
+      <select id="u_tambahLay" style="flex:1;min-width:170px">
+        ${layananCabang(p.cabang_id).map(x=>`<option value="${x.id}">${esc(x.nama)}${
+          x.harga_manual?' — nominal manual':' — '+rp(x.harga)}</option>`).join('')}
+      </select>
+      <button type="button" class="btn" onclick="tambahItemOrder('${p.id}')">Tambah layanan</button>
+    </div>`, {kaki: `<button class="btn" onclick="simpanUbahOrder('${p.id}')">Simpan perubahan</button>
       <button class="btn ghost" onclick="closeModal()">Batal</button>`})
 }
+/* ---------- Mengubah isi order yang sudah tersimpan ---------- */
+
+/* Ganti layanan pada sebuah pekerjaan */
+async function gantiLayanan(itemId, layananBaru){
+  const i=get('item',itemId); if(!i||i.layanan_id===layananBaru) return;
+  const l=get('layanan',layananBaru)||{};
+  const harga=l.harga_manual?Number(i.harga||0):Number(l.harga||0);
+  const hasil=await simpanSebagian('item',itemId,{
+    layanan_id:layananBaru, harga, subtotal:harga, diskon:0,
+    durasi:l.durasi_menit||0,
+    terapis_id:l.butuh_terapis===false?null:i.terapis_id,
+    komisi:(l.butuh_terapis!==false&&i.terapis_id)?komisiUntuk(i.terapis_id,{...l,harga},0):0});
+  if(!hasil) return;
+  await sesuaikanOrder(i.pesanan_id);
+  render(); ubahOrder(i.pesanan_id);
+  toast('Layanan diganti menjadi '+(l.nama||'-'));
+}
+
+/* Ubah nominal sebuah pekerjaan */
+async function ubahHargaItem(itemId, pesananId, nilai){
+  const i=get('item',itemId); if(!i) return;
+  const harga=Number(nilai)||0;
+  if(harga===Number(i.harga)) return;
+  const l=get('layanan',i.layanan_id)||{};
+  const hasil=await simpanSebagian('item',itemId,{harga, subtotal:harga,
+    komisi:i.terapis_id?komisiUntuk(i.terapis_id,{...l,harga},0):0});
+  if(!hasil) return;
+  await sesuaikanOrder(pesananId);
+  render(); ubahOrder(pesananId);
+  toast('Nominal diperbarui');
+}
+
+/* Tambah layanan ke order yang sudah tersimpan */
+async function tambahItemOrder(pesananId){
+  const p=get('pesanan',pesananId);
+  const id=document.getElementById('u_tambahLay')?.value;
+  const l=get('layanan',id); if(!l) return toast('Pilih layanan dulu');
+  const harga=l.harga_manual?0:Number(l.harga||0);
+  const ruangan=DB.item.find(i=>i.pesanan_id===pesananId)?.ruangan||'Rumah pelanggan';
+  const hasil=await simpanItem({id:uid(),pesanan_id:pesananId,layanan_id:id,
+    terapis_id:null,ruangan,qty:1,harga,diskon:0,subtotal:harga,
+    durasi:l.durasi_menit||0,komisi:0,status:'menunggu'});
+  if(!hasil) return;
+  await sesuaikanOrder(pesananId);
+  render(); ubahOrder(pesananId);
+  toast(l.harga_manual?'Layanan ditambahkan. Isi nominalnya.':'Layanan ditambahkan. Pilih terapisnya.');
+}
+
+/* Hapus sebuah pekerjaan dari order */
+async function hapusItem(itemId, pesananId){
+  const sisa=DB.item.filter(i=>i.pesanan_id===pesananId&&i.id!==itemId&&i.status!=='batal');
+  if(!sisa.length) return toast('Order harus punya minimal satu layanan');
+  const i=get('item',itemId);
+  if(i&&i.status==='selesai') return toast('Pekerjaan yang sudah selesai tidak bisa dihapus');
+  if(!await hapus('item',itemId)) return;
+  await sesuaikanOrder(pesananId);
+  render(); ubahOrder(pesananId);
+  toast('Layanan dihapus dari order');
+}
+
+/* Hitung ulang nilai order setelah isinya berubah */
+async function sesuaikanOrder(pesananId){
+  const p=get('pesanan',pesananId); if(!p) return;
+  const item=DB.item.filter(i=>i.pesanan_id===pesananId&&i.status!=='batal');
+  const kotor=item.reduce((a,i)=>a+Number(i.harga||0),0);
+  const disk=Math.min(Number(p.diskon||0),kotor);
+  await simpanSebagian('pesanan',pesananId,{subtotal:kotor,diskon:disk,total:Math.max(0,kotor-disk)});
+  await sebarUlangDiskon(pesananId);
+}
+
 /* Mengganti terapis: yang lama diberi tahu bahwa tugasnya dialihkan */
 async function gantiTerapis(itemId,terapisBaru){
   const i=get('item',itemId);
@@ -3540,6 +3663,8 @@ async function sebarUlangDiskon(pesananId){
     const it=item[i], g=bagian[i], l=get('layanan',it.layanan_id)||{};
     await simpanSebagian('item',it.id,{diskon:g.diskon,subtotal:g.subtotal,
       komisi:it.terapis_id?komisiUntuk(it.terapis_id,{...l,harga:g.subtotal},0):0});
+    // mode demo tidak punya kolom terhitung, jadi subtotal disetel di sini
+    if(!LIVE){ const x=get('item',it.id); if(x) x.subtotal=g.subtotal; }
   }
 }
 
