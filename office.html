@@ -432,7 +432,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.18.3";
+const VERSI_APP = "2026.09.18.4";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1296,6 +1296,7 @@ const F={
    {k:'periode',l:'Periode (YYYY-MM)'},{k:'deskripsi',l:'Keterangan'},{k:'nominal',l:'Nominal',t:'rp'},
    {k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
   cols:[{k:'periode'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'jenis',t:'tag'},{k:'deskripsi'},
+   {k:'jarak',l:'Jarak',fn:r=>r.jarak_km?r.jarak_km+' km':'<span class="hint">—</span>'},
    {k:'ord',l:'Dari order',fn:r=>{
      const p=r.pesanan_id?get('pesanan',r.pesanan_id):null;
      return p?esc(nm('pelanggan',p.pelanggan_id)):'<span class="hint">—</span>';}},
@@ -2014,6 +2015,11 @@ pengaturan(){
       <div class="field"><label>Tanggal gajian</label><input type="number" value="28"></div>
       <div class="field"><label>Potongan telat per menit</label><input type="number" value="1000"></div>
       <div class="field"><label>Radius absensi (meter)</label><input type="number" value="150"></div>
+      <div class="field"><label for="set_tarifkm">Tarif transport per kilometer</label>
+        <input type="number" id="set_tarifkm" value="${tarifKm()}">
+        <p class="hint" style="margin-top:6px">Dipakai saat memberi bonus transport: cukup isi jaraknya,
+          nominalnya dihitung dari tarif ini.</p></div>
+      <button class="btn" onclick="simpanTarifKm()">Simpan tarif transport</button>
       <button class="btn" onclick="toast('Kebijakan tersimpan')">Simpan perubahan</button></div></div>
   <div class="card" style="margin-top:14px"><h3 style="margin-bottom:6px">Akun & hak akses</h3>
     <p class="hint" style="margin-bottom:12px">Akun terapis dibuat dari menu Karyawan. Portal Office menolak login bertipe terapis, begitu pula sebaliknya.</p>
@@ -3373,13 +3379,13 @@ function bonusOrder(pesananId){
     <div class="field"><label>Terapis penerima</label><div id="b_terapis"></div>
       <p class="hint" style="margin-top:6px">Nominal di bawah diberikan ke tiap terapis yang dipilih.</p></div>
 
-    <div class="grid g2">
-      <div class="field"><label for="b_jenis">Jenis bonus</label><select id="b_jenis">
+    <div class="field"><label for="b_jenis">Jenis bonus</label>
+      <select id="b_jenis" onchange="ubahJenisBonus()">
         <option value="tips">Tips</option><option value="transport">Transport</option>
         <option value="lembur">Lembur</option><option value="manual">Lainnya</option></select></div>
-      <div class="field"><label for="b_nominal">Nominal per terapis</label>
-        <input type="number" id="b_nominal" placeholder="50000"></div>
-    </div>
+
+    <div id="b_isian"></div>
+
     <div class="field"><label for="b_ket">Keterangan</label>
       <input id="b_ket" placeholder="Contoh: tips dari pelanggan"></div>
 
@@ -3394,7 +3400,59 @@ function bonusOrder(pesananId){
           <button class="btn rose sm" onclick="hapusBonus('${b.id}','${p.id}')">Hapus</button></div></div>`).join('')}</div>`:''}`, {kaki: `<button class="btn" id="b_simpan" onclick="simpanBonusOrder('${p.id}')">Simpan bonus</button>
       <button class="btn ghost" onclick="closeModal()">Batal</button>`})
   gambarTerapisBonus(pesananId);
+  ubahJenisBonus();
 }
+
+/* Simpan tarif transport dari halaman Profil Usaha */
+async function simpanTarifKm(){
+  const n=Number(document.getElementById('set_tarifkm')?.value)||0;
+  if(n<=0) return toast('Isi tarif per kilometer');
+  const lama=(DB.pengaturan||[])[0];
+  const hasil=lama
+    ? await simpanSebagian('pengaturan',lama.id,{tarif_transport_km:n})
+    : await simpan('pengaturan',{id:uid(),tarif_transport_km:n});
+  if(!hasil) return;
+  render(); toast('Tarif transport disimpan: '+rp(n)+' per kilometer');
+}
+
+/* Tarif transport per kilometer. Ubah di Profil Usaha bila berubah. */
+function tarifKm(){
+  const n=Number((DB.pengaturan||[])[0]?.tarif_transport_km);
+  return n>0?n:1300;
+}
+
+/* Isian menyesuaikan jenis bonus: transport cukup diisi jaraknya */
+function ubahJenisBonus(){
+  const jenis=document.getElementById('b_jenis')?.value;
+  const kotak=document.getElementById('b_isian'); if(!kotak) return;
+
+  if(jenis==='transport'){
+    kotak.innerHTML=`<div class="grid g2">
+      <div class="field"><label for="b_km">Jarak tempuh (kilometer)</label>
+        <input type="number" id="b_km" step="0.1" min="0" placeholder="2" oninput="hitungTransport()"></div>
+      <div class="field"><label>Nominal per terapis</label>
+        <input id="b_nominal" type="number" readonly></div>
+    </div>
+    <p class="hint" id="b_hitung" style="margin:-4px 0 14px">
+      Tarif ${rp(tarifKm())} per kilometer. Isi jaraknya, nominalnya dihitung sendiri.</p>`;
+    hitungTransport();
+  }else{
+    kotak.innerHTML=`<div class="field"><label for="b_nominal">Nominal per terapis</label>
+      <input type="number" id="b_nominal" placeholder="50000"></div>`;
+  }
+}
+
+function hitungTransport(){
+  const km=Number(document.getElementById('b_km')?.value)||0;
+  const nominal=Math.round(km*tarifKm());
+  const isi=document.getElementById('b_nominal');
+  if(isi) isi.value=nominal||'';
+  const ket=document.getElementById('b_hitung');
+  if(ket) ket.innerHTML=km
+    ? `${km} km × ${rp(tarifKm())} = <strong class="rp">${rp(nominal)}</strong> untuk tiap terapis yang dipilih.`
+    : `Tarif ${rp(tarifKm())} per kilometer. Isi jaraknya, nominalnya dihitung sendiri.`;
+}
+
 function gambarTerapisBonus(pesananId){
   const item=DB.item.filter(i=>i.pesanan_id===pesananId);
   const kotak=document.getElementById('b_terapis');
@@ -3419,28 +3477,65 @@ function pilihSemuaBonus(pesananId){
 /* Ubah nominal atau jenis sebuah bonus yang sudah diberikan */
 function ubahBonus(bonusId,pesananId){
   const b=get('bonus',bonusId); if(!b) return;
+  BONUS_EDIT=b;
   bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Ubah bonus</h3>
     <p class="hint" style="margin-bottom:16px">${esc(nm('karyawan',b.karyawan_id))} · ${esc(cap(b.jenis))}</p>
-    <div class="grid g2">
-      <div class="field"><label for="ub_jenis">Jenis bonus</label><select id="ub_jenis">
+    <div class="field"><label for="ub_jenis">Jenis bonus</label>
+      <select id="ub_jenis" onchange="ubahJenisBonusEdit()">
         ${['tips','transport','lembur','manual'].map(j=>
           `<option value="${j}" ${b.jenis===j?'selected':''}>${cap(j)}</option>`).join('')}</select></div>
-      <div class="field"><label for="ub_nominal">Nominal</label>
-        <input type="number" id="ub_nominal" value="${b.nominal||0}"></div>
-    </div>
+    <div id="ub_isian"></div>
     <div class="field"><label for="ub_ket">Keterangan</label>
       <input id="ub_ket" value="${esc(b.deskripsi||'')}"></div>
     ${b.dibayar?'<p class="hint" style="color:var(--warn)">Bonus ini sudah masuk slip gaji yang dibayarkan. Perubahan tidak mengubah slip lama.</p>':''}`,
     {kaki:`<button class="btn" onclick="simpanUbahBonus('${bonusId}','${pesananId}')">Simpan</button>
       <button class="btn ghost" onclick="bonusOrder('${pesananId}')">Batal</button>`});
+  ubahJenisBonusEdit();
 }
+let BONUS_EDIT=null;
+
+/* Isian pada panel ubah bonus, ikut menyesuaikan jenisnya */
+function ubahJenisBonusEdit(){
+  const jenis=document.getElementById('ub_jenis')?.value;
+  const kotak=document.getElementById('ub_isian'); if(!kotak) return;
+  const b=BONUS_EDIT||{};
+
+  if(jenis==='transport'){
+    const km=Number(b.jarak_km)|| (b.nominal?Math.round(b.nominal/tarifKm()*10)/10:'');
+    kotak.innerHTML=`<div class="grid g2">
+      <div class="field"><label for="ub_km">Jarak tempuh (kilometer)</label>
+        <input type="number" id="ub_km" step="0.1" min="0" value="${km||''}" oninput="hitungTransportEdit()"></div>
+      <div class="field"><label>Nominal</label>
+        <input id="ub_nominal" type="number" readonly value="${b.nominal||0}"></div>
+    </div>
+    <p class="hint" id="ub_hitung" style="margin:-4px 0 14px"></p>`;
+    hitungTransportEdit();
+  }else{
+    kotak.innerHTML=`<div class="field"><label for="ub_nominal">Nominal</label>
+      <input type="number" id="ub_nominal" value="${b.nominal||0}"></div>`;
+  }
+}
+function hitungTransportEdit(){
+  const km=Number(document.getElementById('ub_km')?.value)||0;
+  const nominal=Math.round(km*tarifKm());
+  const isi=document.getElementById('ub_nominal');
+  if(isi) isi.value=nominal||'';
+  const ket=document.getElementById('ub_hitung');
+  if(ket) ket.innerHTML=km
+    ? `${km} km × ${rp(tarifKm())} = <strong class="rp">${rp(nominal)}</strong>`
+    : `Tarif ${rp(tarifKm())} per kilometer.`;
+}
+
 async function simpanUbahBonus(bonusId,pesananId){
   const nominal=Number(document.getElementById('ub_nominal').value)||0;
   if(!nominal) return toast('Isi nominalnya');
+  const jenis=document.getElementById('ub_jenis').value;
+  const km=Number(document.getElementById('ub_km')?.value)||0;
+  let ket=document.getElementById('ub_ket').value.trim();
+  if(!ket&&jenis==='transport'&&km) ket=`Transport ${km} km × ${rp(tarifKm())}`;
   const hasil=await simpanSebagian('bonus',bonusId,{
-    jenis:document.getElementById('ub_jenis').value,
-    nominal,
-    deskripsi:document.getElementById('ub_ket').value.trim()||null});
+    jenis, nominal, jarak_km:jenis==='transport'&&km?km:null,
+    deskripsi:ket||null});
   if(!hasil) return;
   render(); bonusOrder(pesananId); toast('Bonus diperbarui');
 }
@@ -3458,14 +3553,18 @@ async function simpanBonusOrder(pesananId){
   if(!BON.terapis.length) return toast('Pilih minimal satu terapis');
   const btn=document.getElementById('b_simpan'); btn.disabled=true; btn.textContent='Menyimpan…';
   const jenis=document.getElementById('b_jenis').value;
-  const ket=document.getElementById('b_ket').value.trim()
-    || cap(jenis)+' dari order '+p.nomor;
+  const km=Number(document.getElementById('b_km')?.value)||0;
+  let ket=document.getElementById('b_ket').value.trim();
+  if(!ket) ket = jenis==='transport'&&km
+    ? `Transport ${km} km × ${rp(tarifKm())}`
+    : cap(jenis)+' dari order '+p.nomor;
   let n=0;
   for(const idTer of BON.terapis){
     const item=DB.item.find(i=>i.pesanan_id===p.id&&i.terapis_id===idTer);
     const hasil=await simpan('bonus',{id:uid(),karyawan_id:idTer,pesanan_id:p.id,
       pesanan_item_id:item?.id||null,jenis,periode:String(p.tanggal).slice(0,7),
-      deskripsi:ket,nominal,status:'disetujui',dibayar:false,dibuat_oleh:ME.id});
+      deskripsi:ket,nominal,jarak_km:jenis==='transport'&&km?km:null,
+      status:'disetujui',dibayar:false,dibuat_oleh:ME.id});
     if(hasil) n++;
   }
   render();
