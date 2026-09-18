@@ -723,7 +723,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.15.2';
+const VERSI_APP='2026.09.18.3';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -1353,7 +1353,7 @@ function kartuKerja(i){
       <div><span>Dikerjakan</span><b>${jamDari(i.jam_mulai)}–${jamDari(i.jam_selesai)}</b></div>
       <div><span>Durasi</span><b>${l.durasi_menit||0} menit</b></div>
       <div><span>Harga layanan</span><b>${rp(hargaBersih(i))}</b></div>
-      ${Number(i.diskon)>0?`<div><span>Diskon</span><b style="color:var(--bad)">− ${rp(i.diskon)}</b></div>`:''}
+
       <div><span>Komisi</span><b>${rp(komisiSaya(i))}</b></div>
       <div><span>Bonus</span><b>${nBon?rp(nBon):'—'}</b></div>
     </div>
@@ -1383,9 +1383,7 @@ function listKerja(items){
         <div><span>Harga</span><b>${rp(hargaBersih(i))}</b></div>
         <div><span>Komisi</span><b>${rp(komisiSaya(i))}</b></div>
       </div>
-      ${Number(i.diskon)>0?`<div class="hint" style="margin-top:6px">
-        Harga awal ${rp(i.harga)} dikurangi diskon ${rp(i.diskon)}.
-        Komisi dihitung dari harga setelah diskon.</div>`:''}
+
       ${pel.alamat?`<div class="alamat">${esc(pel.alamat)}</div>`:''}
       ${p.catatan?`<div class="catatan"><b>Catatan order:</b> ${esc(p.catatan)}</div>`:''}
       ${pel.catatan?`<div class="catatan"><b>Catatan pelanggan:</b> ${esc(pel.catatan)}</div>`:''}
