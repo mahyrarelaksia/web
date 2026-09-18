@@ -321,6 +321,9 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .peringatan{font-size:12.5px;line-height:1.5;border-radius:10px;padding:8px 11px;margin:8px 0;
  background:#FAEAEC;border:1px solid #F0D4D8;color:#A03A46}
 .peringatan.warn{background:#FFF8EC;border-color:#F0E0C4;color:#8A6520}
+.bagian{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+ color:var(--jade);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.bagian:first-of-type{margin-top:6px}
 .baris-layanan{border:1px solid var(--line);border-radius:13px;padding:11px 12px;margin-bottom:8px;background:#fff}
 .baris-layanan .atas{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .baris-layanan .atas strong{font-size:13.5px;font-weight:600}
@@ -429,7 +432,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.18.2";
+const VERSI_APP = "2026.09.18.3";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -3471,73 +3474,6 @@ async function simpanBonusOrder(pesananId){
 }
 
 /* Ubah order yang sudah dibuat */
-function ubahOrder(pesananId){
-  const p=get('pesanan',pesananId);
-  const item=DB.item.filter(i=>i.pesanan_id===p.id);
-  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">Ubah order</h3>
-    <p class="hint" style="margin-bottom:16px">${esc(p.nomor)} · ${esc(nm('pelanggan',p.pelanggan_id))}</p>
-    <div class="grid g2">
-      <div class="field"><label for="u_tgl">Tanggal pengerjaan</label>
-        <input type="date" id="u_tgl" value="${String(p.tgl_kerja||p.tanggal).slice(0,10)}"></div>
-      <div class="field"><label for="u_jam">Jam pengerjaan</label>
-        <input type="time" id="u_jam" step="900" lang="id-ID"
-          value="${esc(String(p.jam_kerja||p.jam||'').slice(0,5))}"></div>
-    </div>
-    <div class="field"><label for="u_status">Status pengerjaan</label><select id="u_status">
-      ${['dijadwalkan','dikerjakan','selesai','complete','batal'].map(s=>
-        `<option value="${s}" ${p.status===s?'selected':''}>${STATUS_ORDER[s]?.teks||s}</option>`).join('')}</select>
-      <p class="hint" style="margin-top:6px">Biasanya berubah sendiri: dikerjakan saat terapis check in,
-        selesai saat check out, complete bila pembayarannya sudah lunas.</p></div>
-    <div class="grid g2">
-      <div class="field"><label for="u_bayar">Metode bayar</label><select id="u_bayar">
-        ${['tunai','qris','transfer','debit'].map(s=>`<option ${p.metode_bayar===s?'selected':''}>${s}</option>`).join('')}</select></div>
-      <div class="field"><label>Status pembayaran</label>
-        <div style="padding:9px 0">${lencanaOrder(p)}</div>
-        <button type="button" class="btn ghost sm" onclick="closeModal();formBayar('${p.id}')">Buka rincian pembayaran</button></div>
-    </div>
-    <div class="field"><label for="u_disk">Diskon</label><input type="number" id="u_disk" value="${p.diskon||0}"></div>
-    <div class="field"><label for="u_cat">Catatan</label><textarea id="u_cat" rows="2">${esc(p.catatan||'')}</textarea></div>
-
-    <label class="label" style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px">Pekerjaan dalam order ini</label>
-    ${item.map(i=>{
-      const l=get('layanan',i.layanan_id)||{};
-      const perlu=l.butuh_terapis!==false;
-      const terapis=opsiRef('karyawan').filter(k=>k.role==='terapis'&&k.status==='aktif');
-      const layananCab=layananCabang(p.cabang_id);
-      return `<div class="baris-layanan">
-        <div class="atas"><div style="min-width:0;flex:1">
-          <select onchange="gantiLayanan('${i.id}',this.value)" style="font-weight:600;padding:7px 9px">
-            ${layananCab.map(x=>`<option value="${x.id}" ${x.id===i.layanan_id?'selected':''}>${esc(x.nama)}</option>`).join('')}
-          </select>
-          <div class="hint" style="margin-top:4px">${tagHtml(i.status)}
-            ${Number(i.diskon)>0?` · diskon ${rp(i.diskon)}`:''}${i.komisi?` · komisi ${rp(i.komisi)}`:''}</div></div>
-          <button type="button" class="hapus-baris" onclick="hapusItem('${i.id}','${p.id}')"
-            aria-label="Hapus layanan">${ikon('tambah',15)}</button></div>
-        <div class="isian">
-          ${perlu?`<div><label>Terapis</label>
-            <select onchange="gantiTerapis('${i.id}',this.value)">
-              <option value="">— belum ditentukan —</option>
-              ${terapis.map(k=>`<option value="${k.id}" ${i.terapis_id===k.id?'selected':''}>${esc(k.nama)}</option>`).join('')}
-            </select></div>`:'<div><label>Terapis</label><input value="tidak perlu" disabled></div>'}
-          <div><label>Status</label>
-            <select onchange="ubahItem('${i.id}',this.value)">
-              ${['menunggu','berjalan','selesai','batal'].map(s=>`<option ${i.status===s?'selected':''}>${s}</option>`).join('')}
-            </select></div>
-        </div>
-        <div style="margin-top:8px"><label class="mini">Nominal</label>
-          <input type="number" value="${i.harga}" ${l.harga_manual?'':'readonly'}
-            onchange="ubahHargaItem('${i.id}','${p.id}',this.value)"></div>
-      </div>`}).join('')}
-
-    <div class="row" style="gap:7px;margin-top:10px">
-      <select id="u_tambahLay" style="flex:1;min-width:170px">
-        ${layananCabang(p.cabang_id).map(x=>`<option value="${x.id}">${esc(x.nama)}${
-          x.harga_manual?' — nominal manual':' — '+rp(x.harga)}</option>`).join('')}
-      </select>
-      <button type="button" class="btn" onclick="tambahItemOrder('${p.id}')">Tambah layanan</button>
-    </div>`, {kaki: `<button class="btn" onclick="simpanUbahOrder('${p.id}')">Simpan perubahan</button>
-      <button class="btn ghost" onclick="closeModal()">Batal</button>`})
-}
 /* ---------- Mengubah isi order yang sudah tersimpan ---------- */
 
 /* Ganti layanan pada sebuah pekerjaan */
@@ -3546,11 +3482,11 @@ async function gantiLayanan(itemId, layananBaru){
   const l=get('layanan',layananBaru)||{};
   const harga=l.harga_manual?Number(i.harga||0):Number(l.harga||0);
   const hasil=await simpanSebagian('item',itemId,{
-    layanan_id:layananBaru, harga, subtotal:harga, diskon:0,
-    durasi:l.durasi_menit||0,
+    layanan_id:layananBaru, harga, diskon:0, durasi:l.durasi_menit||0,
     terapis_id:l.butuh_terapis===false?null:i.terapis_id,
     komisi:(l.butuh_terapis!==false&&i.terapis_id)?komisiUntuk(i.terapis_id,{...l,harga},0):0});
   if(!hasil) return;
+  if(!LIVE){ const x=get('item',itemId); if(x) x.subtotal=harga; }
   await sesuaikanOrder(i.pesanan_id);
   render(); ubahOrder(i.pesanan_id);
   toast('Layanan diganti menjadi '+(l.nama||'-'));
@@ -3562,9 +3498,10 @@ async function ubahHargaItem(itemId, pesananId, nilai){
   const harga=Number(nilai)||0;
   if(harga===Number(i.harga)) return;
   const l=get('layanan',i.layanan_id)||{};
-  const hasil=await simpanSebagian('item',itemId,{harga, subtotal:harga,
+  const hasil=await simpanSebagian('item',itemId,{harga,
     komisi:i.terapis_id?komisiUntuk(i.terapis_id,{...l,harga},0):0});
   if(!hasil) return;
+  if(!LIVE){ const x=get('item',itemId); if(x) x.subtotal=harga; }
   await sesuaikanOrder(pesananId);
   render(); ubahOrder(pesananId);
   toast('Nominal diperbarui');
@@ -3572,13 +3509,12 @@ async function ubahHargaItem(itemId, pesananId, nilai){
 
 /* Tambah layanan ke order yang sudah tersimpan */
 async function tambahItemOrder(pesananId){
-  const p=get('pesanan',pesananId);
   const id=document.getElementById('u_tambahLay')?.value;
   const l=get('layanan',id); if(!l) return toast('Pilih layanan dulu');
   const harga=l.harga_manual?0:Number(l.harga||0);
   const ruangan=DB.item.find(i=>i.pesanan_id===pesananId)?.ruangan||'Rumah pelanggan';
   const hasil=await simpanItem({id:uid(),pesanan_id:pesananId,layanan_id:id,
-    terapis_id:null,ruangan,qty:1,harga,diskon:0,subtotal:harga,
+    terapis_id:null,ruangan,qty:1,harga,diskon:0,
     durasi:l.durasi_menit||0,komisi:0,status:'menunggu'});
   if(!hasil) return;
   await sesuaikanOrder(pesananId);
@@ -3614,8 +3550,9 @@ async function gantiTerapis(itemId,terapisBaru){
   const lama=i.terapis_id;
   if(lama===(terapisBaru||null)) return;
   const l=get('layanan',i.layanan_id)||{};
-  const hasil=await simpan('item',{...i,terapis_id:terapisBaru||null,
-    komisi:terapisBaru?komisiUntuk(terapisBaru,{...l,harga:i.harga},0):0});
+  const bersih=Math.max(0,Number(i.harga||0)-Number(i.diskon||0));
+  const hasil=await simpanSebagian('item',itemId,{terapis_id:terapisBaru||null,
+    komisi:terapisBaru?komisiUntuk(terapisBaru,{...l,harga:bersih},0):0});
   if(!hasil) return;
   if(!LIVE){
     const p=get('pesanan',i.pesanan_id)||{};
@@ -3637,7 +3574,7 @@ async function gantiTerapis(itemId,terapisBaru){
 
 async function ubahItem(itemId,status){
   const i=get('item',itemId);
-  await simpan('item',{...i,status});
+  await simpanSebagian('item',itemId,{status});
   if(!LIVE) await segarkanStatusOrder(i.pesanan_id);
   render(); toast('Status pekerjaan diperbarui');
 }
@@ -3651,8 +3588,123 @@ async function segarkanStatusOrder(pesananId){
     if(item.every(i=>i.status==='selesai')) baru = p.status_bayar==='lunas'?'complete':'selesai';
     else if(item.some(i=>i.status==='berjalan'||i.status==='selesai')) baru='dikerjakan';
   }
-  if(baru!==p.status) await simpan('pesanan',{...p,status:baru});
+  if(baru!==p.status) await simpanSebagian('pesanan',pesananId,{status:baru});
 }
+
+function ubahOrder(pesananId){
+  const p=get('pesanan',pesananId);
+  if(!p) return toast('Order tidak ditemukan');
+  const item=DB.item.filter(i=>i.pesanan_id===p.id);
+  const pel=get('pelanggan',p.pelanggan_id)||{};
+  const terapis=opsiRef('karyawan').filter(k=>k.role==='terapis'&&k.status==='aktif');
+  const layananCab=layananCabang(p.cabang_id);
+  const ruangan=item[0]?.ruangan||'';
+
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">Ubah order</h3>
+    <p class="hint" style="margin-bottom:16px">${esc(p.nomor)} · dibuat ${tgl(p.tanggal)}</p>
+
+    <div class="bagian">Pelanggan</div>
+    <div class="field"><label for="u_nama">Nama pelanggan</label>
+      <input id="u_nama" value="${esc(pel.nama||'')}"></div>
+    <div class="grid g2">
+      <div class="field"><label for="u_hp">Nomor HP</label>
+        <input id="u_hp" value="${esc(pel.telepon||'')}" placeholder="08xxxxxxxxxx"></div>
+      <div class="field"><label for="u_cab">Cabang</label>
+        <select id="u_cab">${opsiRef('cabang').map(c=>
+          `<option value="${c.id}" ${c.id===p.cabang_id?'selected':''}>${esc(c.nama)}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label for="u_alamat">Alamat</label>
+      <textarea id="u_alamat" rows="2">${esc(pel.alamat||'')}</textarea></div>
+
+    <div class="bagian">Jadwal & tempat</div>
+    <div class="grid g2">
+      <div class="field"><label for="u_tgl">Tanggal pengerjaan</label>
+        <input type="date" id="u_tgl" value="${String(p.tgl_kerja||p.tanggal).slice(0,10)}"></div>
+      <div class="field"><label for="u_jam">Jam pengerjaan</label>
+        <input type="time" id="u_jam" step="900" lang="id-ID"
+          value="${esc(String(p.jam_kerja||p.jam||'').slice(0,5))}"></div>
+    </div>
+    <div class="field"><label for="u_room">Ruangan / catatan lokasi</label>
+      <input id="u_room" value="${esc(ruangan)}" placeholder="Rumah pelanggan"></div>
+
+    <div class="bagian">Layanan & terapis</div>
+    ${item.map(i=>{
+      const l=get('layanan',i.layanan_id)||{};
+      const perlu=l.butuh_terapis!==false;
+      return `<div class="baris-layanan">
+        <div class="atas"><div style="min-width:0;flex:1">
+          <select onchange="gantiLayanan('${i.id}',this.value)" style="font-weight:600;padding:7px 9px">
+            ${layananCab.map(x=>`<option value="${x.id}" ${x.id===i.layanan_id?'selected':''}>${esc(x.nama)}</option>`).join('')}
+          </select>
+          <div class="hint" style="margin-top:4px">${tagHtml(i.status)}
+            ${Number(i.diskon)>0?` · diskon ${rp(i.diskon)}`:''}${i.komisi?` · komisi ${rp(i.komisi)}`:''}</div></div>
+          <button type="button" class="hapus-baris" onclick="hapusItem('${i.id}','${p.id}')"
+            aria-label="Hapus layanan">${ikon('tambah',15)}</button></div>
+        <div class="isian">
+          ${perlu?`<div><label>Terapis</label>
+            <select onchange="gantiTerapis('${i.id}',this.value)">
+              <option value="">— belum ditentukan —</option>
+              ${terapis.map(k=>`<option value="${k.id}" ${i.terapis_id===k.id?'selected':''}>${esc(k.nama)}</option>`).join('')}
+            </select></div>`:'<div><label>Terapis</label><input value="tidak perlu" disabled></div>'}
+          <div><label>Status</label>
+            <select onchange="ubahItem('${i.id}',this.value)">
+              ${['menunggu','berjalan','selesai','batal'].map(s=>
+                `<option ${i.status===s?'selected':''}>${s}</option>`).join('')}
+            </select></div>
+        </div>
+        <div style="margin-top:8px"><label class="mini">Nominal</label>
+          <input type="number" value="${i.harga}" ${l.harga_manual?'':'readonly'}
+            onchange="ubahHargaItem('${i.id}','${p.id}',this.value)"></div>
+        ${l.harga_manual?`<div style="margin-top:7px"><label class="mini">Keterangan</label>
+          <input value="${esc(i.catatan||'')}" onchange="ubahCatatanItem('${i.id}',this.value)"
+            placeholder="Contoh: Klojen ke Singosari, 12 km"></div>`:''}
+      </div>`}).join('')
+      ||'<p class="hint">Order ini belum punya layanan. Tambahkan di bawah.</p>'}
+
+    <div class="row" style="gap:7px;margin-top:10px">
+      <select id="u_tambahLay" style="flex:1;min-width:170px">
+        ${layananCab.map(x=>`<option value="${x.id}">${esc(x.nama)}${
+          x.harga_manual?' — nominal manual':' — '+rp(x.harga)}</option>`).join('')}
+      </select>
+      <button type="button" class="btn" onclick="tambahItemOrder('${p.id}')">Tambah layanan</button>
+    </div>
+
+    <div class="bagian">Pembayaran & catatan</div>
+    <div class="grid g2">
+      <div class="field"><label for="u_disk">Diskon</label>
+        <input type="number" id="u_disk" value="${p.diskon||0}"></div>
+      <div class="field"><label for="u_bayar">Metode bayar</label>
+        <select id="u_bayar">${['tunai','qris','transfer','debit'].map(m=>
+          `<option ${p.metode_bayar===m?'selected':''}>${m}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label for="u_status">Status pengerjaan</label>
+      <select id="u_status">${['dijadwalkan','dikerjakan','selesai','complete','batal'].map(s=>
+        `<option value="${s}" ${p.status===s?'selected':''}>${STATUS_ORDER[s]?.teks||s}</option>`).join('')}</select>
+      <p class="hint" style="margin-top:6px">Biasanya berubah sendiri: dikerjakan saat terapis check in,
+        selesai saat check out, complete bila pembayarannya sudah lunas.</p></div>
+    <div class="field"><label>Status pembayaran</label>
+      <div style="padding:6px 0">${lencanaOrder(p)}</div>
+      <button type="button" class="btn ghost sm" onclick="closeModal();formBayar('${p.id}')">Buka rincian pembayaran</button></div>
+    <div class="field"><label for="u_cat">Catatan order</label>
+      <textarea id="u_cat" rows="2">${esc(p.catatan||'')}</textarea></div>
+
+    <div class="card" style="background:var(--mist);box-shadow:none;padding:13px">
+      ${item.map(i=>`<div class="row" style="justify-content:space-between;font-size:13px;padding:2px 0">
+        <span class="hint">${esc(nm('layanan',i.layanan_id))}</span><span class="rp">${rp(i.harga)}</span></div>`).join('')}
+      ${p.diskon>0?`<div class="row" style="justify-content:space-between;font-size:13px">
+        <span class="hint">Diskon</span><span class="rp" style="color:var(--bad)">− ${rp(p.diskon)}</span></div>`:''}
+      <div class="row" style="justify-content:space-between;border-top:1px dashed var(--line);margin-top:8px;padding-top:8px">
+        <strong>Total</strong><strong class="rp" style="font-size:16px">${rp(p.total)}</strong></div>
+    </div>`,
+    {kaki:`<button class="btn" onclick="simpanUbahOrder('${p.id}')">Simpan perubahan</button>
+      <button class="btn ghost" onclick="closeModal()">Tutup</button>`});
+}
+
+/* Keterangan pada pos berharga manual, misalnya asal dan tujuan transport */
+async function ubahCatatanItem(itemId, teks){
+  await simpanSebagian('item',itemId,{catatan:teks.trim()||null});
+}
+
 /* Diskon disebar ulang ke tiap pekerjaan, lalu komisinya dihitung ulang */
 async function sebarUlangDiskon(pesananId){
   const p=get('pesanan',pesananId); if(!p) return;
@@ -3661,7 +3713,7 @@ async function sebarUlangDiskon(pesananId){
   const bagian=sebarDiskon(item,p.diskon||0);
   for(let i=0;i<item.length;i++){
     const it=item[i], g=bagian[i], l=get('layanan',it.layanan_id)||{};
-    await simpanSebagian('item',it.id,{diskon:g.diskon,subtotal:g.subtotal,
+    await simpanSebagian('item',it.id,{diskon:g.diskon,
       komisi:it.terapis_id?komisiUntuk(it.terapis_id,{...l,harga:g.subtotal},0):0});
     // mode demo tidak punya kolom terhitung, jadi subtotal disetel di sini
     if(!LIVE){ const x=get('item',it.id); if(x) x.subtotal=g.subtotal; }
@@ -3670,22 +3722,42 @@ async function sebarUlangDiskon(pesananId){
 
 async function simpanUbahOrder(pesananId){
   const p=get('pesanan',pesananId);
+  const nama=document.getElementById('u_nama').value.trim();
+  if(!nama) return toast('Nama pelanggan tidak boleh kosong');
+
+  // data pelanggan ikut diperbarui
+  const pel=get('pelanggan',p.pelanggan_id);
+  if(pel){
+    const hp=document.getElementById('u_hp').value.trim();
+    const alamat=document.getElementById('u_alamat').value.trim();
+    if(nama!==pel.nama||hp!==(pel.telepon||'')||alamat!==(pel.alamat||'')){
+      await simpanSebagian('pelanggan',pel.id,{nama,telepon:hp||null,alamat:alamat||null});
+    }
+  }
+
+  // ruangan tersimpan pada tiap pekerjaan
+  const ruangan=document.getElementById('u_room').value.trim();
+  for(const i of DB.item.filter(x=>x.pesanan_id===pesananId)){
+    if((i.ruangan||'')!==ruangan) await simpanSebagian('item',i.id,{ruangan:ruangan||null});
+  }
+
   const item=DB.item.filter(i=>i.pesanan_id===p.id&&i.status!=='batal');
   const kotor=item.reduce((a,i)=>a+Number(i.harga||0),0);
-  const disk=Number(document.getElementById('u_disk').value)||0;
+  const disk=Math.min(Number(document.getElementById('u_disk').value)||0, kotor);
 
   const hasil=await simpanSebagian('pesanan',pesananId,{
+    cabang_id:document.getElementById('u_cab').value,
     tgl_kerja:document.getElementById('u_tgl').value,
     jam_kerja:document.getElementById('u_jam').value,
     jam:document.getElementById('u_jam').value,
     status:document.getElementById('u_status').value,
     metode_bayar:document.getElementById('u_bayar').value,
     diskon:disk, subtotal:kotor, total:Math.max(0,kotor-disk),
-    catatan:document.getElementById('u_cat').value});
+    catatan:document.getElementById('u_cat').value.trim()||null});
   if(!hasil) return;
 
   // diskon dibagi ulang ke tiap layanan, komisi ikut menyesuaikan
-  if(!LIVE || true) await sebarUlangDiskon(pesananId);
+  await sebarUlangDiskon(pesananId);
 
   closeModal(); render(); toast('Order '+p.nomor+' diperbarui');
 }
