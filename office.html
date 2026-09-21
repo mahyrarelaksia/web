@@ -318,6 +318,13 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .unggah .ikon{color:var(--jade)}
 .unggah strong{font-size:14px}
 .btn.blok{width:100%}
+.kartu-rekening{cursor:pointer;transition:.16s;border:1px solid var(--line)}
+.kartu-rekening:hover{border-color:var(--jade-2);transform:translateY(-1px)}
+.kartu-rekening.dipilih{border-color:var(--jade);box-shadow:0 0 0 2px rgba(47,111,191,.18)}
+.kartu-rekening .saldo{font-family:Fraunces,serif;font-size:24px;margin:10px 0 4px;color:var(--laut,#1B4A82)}
+.kartu-rekening .ikon-rek{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;
+ background:#E8F1FC;color:var(--jade);flex:none}
+.kartu-rekening.rek-tunai .ikon-rek{background:#FFF4E3;color:#B7791F}
 .kartu-audit{border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px;background:#fff;
  border-left-width:5px}
 .kartu-audit.audit-belum{border-left-color:#E0A13A}
@@ -457,7 +464,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.19.3";
+const VERSI_APP = "2026.09.19.4";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -640,11 +647,11 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
  komisi:'komisi',bonus:'bonus',aturan_bonus:'aturan_bonus',gaji:'gaji',kasbon:'kasbon',
  kategori_pengeluaran:'kategori_pengeluaran',pengeluaran:'pengeluaran',kas:'kas',target:'target',
  hak_akses:'hak_akses',absen_log:'absen_log',pengaturan:'pengaturan',skema_gaji:'skema_gaji',
- libur:'libur',notifikasi:'notifikasi'};
+ libur:'libur',notifikasi:'notifikasi',rekening:'rekening'};
 
 /* ------------------ MODUL & MESIN HAK AKSES ------------------ */
 const MODUL=[
- ['dash','Dashboard'],['order','Order'],['audit','Audit Order'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
+ ['dash','Dashboard'],['order','Order'],['audit','Audit Order'],['kasbank','Kas Bank'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
  ['jadwal','Jadwal Kerja'],['shift','Shift Kerja'],['karyawan','Karyawan'],['jabatan','Jabatan'],
  ['cabang','Cabang'],['absensi','Absensi'],['izin','Izin & Cuti'],['kasbon','Kasbon'],
  ['kas','Kas'],['pengeluaran','Pengeluaran'],['komisi','Komisi'],['bonus','Bonus'],['gaji','Penggajian'],['skema_gaji','Skema Gaji'],['libur','Tanggal Libur'],
@@ -656,6 +663,7 @@ const LINGKUP=[['semua','Semua cabang'],['cabang','Cabang sendiri'],['sendiri','
 /* Owner dan admin selalu penuh; sisanya mengikuti tabel hak_akses. */
 function boleh(modul,aksi='lihat'){
   if(!ME) return false;
+  if(modul==='rekening') modul='kasbank';                  // rekening dikelola lewat izin Kas Bank
   if(ME.role==='owner') return true;                       // pemilik selalu penuh
   const baris=(DB.hak_akses||[]).filter(x=>x.jabatan_id===ME.jabatan_id);
   // Jabatan belum pernah diatur sama sekali -> jaring pengaman untuk owner & admin.
@@ -690,6 +698,7 @@ function dalamLingkup(r,key){
 }
 /* Pilihan cabang & karyawan pada formulir ikut dibatasi lingkup */
 function opsiRef(ref){
+  if(ref==='rekening') return daftarRekening();
   const L=lingkupSaya(), daftar=DB[ref]||[];
   if(L==='semua') return daftar;
   if(ref==='cabang')   return daftar.filter(o=>o.id===ME.cabang_id);
@@ -698,6 +707,7 @@ function opsiRef(ref){
 }
 
 const IKON = {
+  bank: '<path d="M3 9.5L12 4l9 5.5"/><path d="M4.5 10v8M9 10v8M15 10v8M19.5 10v8"/><path d="M3 20.5h18"/>',
   audit: '<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.6"/>',
   absen: '<path d="M9 11.5l2.5 2.5 5-5.5"/><rect x="3.5" y="4.5" width="17" height="16" rx="3"/>',
   absensi: '<rect x="4" y="4.5" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',
@@ -813,7 +823,7 @@ const nm=(t,id,f='nama')=>{const r=get(t,id);return r?r[f]:'-'};
 /* ------------------------- data (demo seed) ------------------------- */
 const DB={cabang:[],jabatan:[],karyawan:[],layanan:[],pelanggan:[],shift:[],jadwal:[],pesanan:[],item:[],
  absensi:[],izin:[],komisi:[],bonus:[],aturan_bonus:[],gaji:[],kasbon:[],kategori_pengeluaran:[],
- pengeluaran:[],kas:[],target:[],hak_akses:[],absen_log:[],pengaturan:[],skema_gaji:[],libur:[],notifikasi:[]};
+ pengeluaran:[],kas:[],target:[],hak_akses:[],absen_log:[],pengaturan:[],skema_gaji:[],libur:[],notifikasi:[],rekening:[]};
 
 const AKUN_DEMO={ 'owner@mahyra.id':{pw:'mahyra123',id:'k1'}, 'admin@mahyra.id':{pw:'mahyra123',id:'k2'},
                   'kasir@mahyra.id':{pw:'mahyra123',id:'k6'} };
@@ -1369,11 +1379,13 @@ const F={
   info:'<strong>Pengeluaran</strong> adalah tempat mencatat biaya usaha beserta kategorinya. Setelah disetujui, sistem otomatis membuat kas keluar di Buku Kas — tidak perlu dicatat dua kali.',
   fields:[{k:'tanggal',l:'Tanggal',t:'date'},{k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},
    {k:'kategori_id',l:'Kategori',t:'ref',ref:'kategori_pengeluaran'},{k:'deskripsi',l:'Keperluan'},
-   {k:'nominal',l:'Nominal',t:'rp'},{k:'metode_bayar',l:'Metode bayar',t:'sel',o:['tunai','transfer','qris','debit']},
+   {k:'nominal',l:'Nominal',t:'rp'},{k:'rekening_id',l:'Dibayar dari',t:'ref',ref:'rekening'},
    {k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
   cols:[{k:'tanggal',t:'date'},{k:'cab',l:'Cabang',fn:r=>esc(nm('cabang',r.cabang_id))},
    {k:'kat',l:'Kategori',fn:r=>esc(nm('kategori_pengeluaran',r.kategori_id))},
-   {k:'deskripsi',l:'Keperluan'},{k:'nominal',t:'rp'},{k:'status',t:'tag'},
+   {k:'deskripsi',l:'Keperluan'},{k:'nominal',t:'rp'},
+   {k:'rek',l:'Dari',fn:r=>esc((daftarRekening().find(x=>x.id===r.rekening_id)||rekeningKode(r.metode_bayar==='tunai'?'TUNAI':'BCA')||{}).nama||'-')},
+   {k:'status',t:'tag'},
    {k:'kas',l:'Buku kas',fn:r=>r.status==='disetujui'
      ?(DB.kas.some(x=>x.sumber==='pengeluaran'&&x.ref_id===r.id)||LIVE?'<span class="tag ok">tercatat</span>':'<span class="tag warn">belum</span>')
      :'<span class="hint">menunggu persetujuan</span>'}],
@@ -1385,7 +1397,7 @@ const F={
     if(r.status==='disetujui'&&!ada)
       await simpan('kas',{id:uid(),tanggal:r.tanggal,cabang_id:r.cabang_id,jenis:'keluar',
         kategori:nm('kategori_pengeluaran',r.kategori_id),sumber:'pengeluaran',ref_id:r.id,
-        nominal:r.nominal,metode:r.metode_bayar,keterangan:r.deskripsi});
+        nominal:r.nominal,rekening_id:r.rekening_id,metode:metodeDari(r.rekening_id),keterangan:r.deskripsi});
     if(r.status!=='disetujui'&&ada) await hapus('kas',ada.id);
   }},
  kategori_pengeluaran:{title:'Kategori Pengeluaran',sub:'Pos biaya untuk pengelompokan laporan.',
@@ -1428,6 +1440,13 @@ const F={
    {k:'gaji_minimal',l:'Minimal',t:'rp'},
    {k:'bns',l:'Bonus',fn:r=>ringkasBonusSkema(r)},
    {k:'ak',l:'Status',fn:r=>r.aktif!==false?'<span class="tag ok">Aktif</span>':'<span class="tag">Nonaktif</span>'}]},
+ rekening:{title:'Rekening',sub:'Daftar rekening dan saldo awalnya. Saldo berjalan dihitung dari buku kas sejak tanggal saldo awal.',
+  fields:[{k:'kode',l:'Kode singkat'},{k:'nama',l:'Nama rekening'},
+   {k:'jenis',l:'Jenis',t:'sel',o:['bank','tunai']},
+   {k:'nomor',l:'Nomor rekening'},{k:'atas_nama',l:'Atas nama'},
+   {k:'saldo_awal',l:'Saldo awal',t:'rp'},{k:'tgl_saldo_awal',l:'Per tanggal',t:'date'},
+   {k:'urutan',l:'Urutan tampil',t:'num'},{k:'aktif',l:'Aktif',t:'bool'}],
+  cols:[{k:'nama'},{k:'nomor'},{k:'saldo_awal',l:'Saldo awal',t:'rp'},{k:'tgl_saldo_awal',l:'Per',t:'date'}]},
  libur:{title:'Tanggal Libur',sub:'Hari libur untuk semua orang, satu cabang, atau seorang terapis. Saat tanggalnya tiba, terapis melihat pemberitahuan di aplikasinya.',
   fields:[{k:'tanggal',l:'Tanggal mulai',t:'date'},
    {k:'tgl_selesai',l:'Tanggal selesai (kosongkan bila sehari)',t:'date'},
@@ -1455,7 +1474,7 @@ const MENU=[
    ['m_jadwal','jadwal','Jadwal Kerja'],['m_libur','libur','Tanggal Libur'],['m_shift','shift','Shift Kerja']]],
  ['SDM',[['m_karyawan','karyawan','Karyawan'],['m_jabatan','jabatan','Jabatan'],['m_cabang','cabang','Cabang'],
    ['m_absensi','absensi','Absensi'],['izin','izin','Izin & Cuti'],['m_kasbon','kasbon','Kasbon']]],
- ['Keuangan',[['audit','audit','Audit Order'],['kas','kas','Kas'],['m_pengeluaran','pengeluaran','Pengeluaran'],['m_komisi','komisi','Komisi'],
+ ['Keuangan',[['audit','audit','Audit Order'],['kasbank','bank','Kas Bank'],['kas','kas','Buku Kas'],['m_pengeluaran','pengeluaran','Pengeluaran'],['m_komisi','komisi','Komisi'],
    ['m_bonus','bonus','Bonus'],['m_skema_gaji','skema_gaji','Skema Gaji'],['gaji','gaji','Penggajian']]],
  ['Analitik',[['laporan','laporan','Laporan'],['biaya','biaya','Struktur Biaya & Laba']]],
  ['Pengaturan',[['m_aturan_bonus','aturan_bonus','Aturan Bonus'],['m_target','target','Target'],
@@ -1559,8 +1578,9 @@ function openForm(key,id){
   const BAWAAN={karyawan:{role:'kasir',status:'aktif',cabang_id:ME.cabang_id},
                 jabatan:{lingkup:'cabang',level:1},
                 libur:{jenis:'libur',tanggal:today(),cabang_id:null,karyawan_id:null},
+                rekening:{jenis:'bank',aktif:true,saldo_awal:0,tgl_saldo_awal:today(),urutan:4},
                 layanan:{aktif:true,butuh_terapis:true,harga_manual:false,durasi_menit:60},
-                pengeluaran:{tanggal:today(),status:'menunggu',metode_bayar:'tunai',cabang_id:ME?.cabang_id},
+                pengeluaran:{tanggal:today(),status:'menunggu',rekening_id:rekeningKode('BCA')?.id,cabang_id:ME?.cabang_id},
                 skema_gaji:{tipe_gaji:'harian',hari_kerja:26,aktif:true,cabang_id:null,
                   bonus_target1_order:0,bonus_target2_order:0,bonus_service_motor:0,bonus_bpjs:0},
                 pengeluaran:{cabang_id:ME.cabang_id,status:'menunggu'},
@@ -1851,6 +1871,7 @@ async function cabutAkun(karyawanId){
 /* ============================ HALAMAN ============================ */
 const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang.'],
  order:['Order','Buat order baru dan pantau yang sedang berjalan.'],
+ kasbank:['Kas Bank','Saldo dan mutasi tiap rekening: BCA, Mandiri, dan kas tunai.'],
  audit:['Audit Order','Periksa order dan bukti pembayaran seluruh cabang, lalu setujui atau kembalikan.'],
  izin:['Izin & Cuti','Pengajuan yang menunggu keputusan HRD.'],
  kas:['Kas','Arus kas masuk dan keluar per cabang.'],
@@ -1977,6 +1998,62 @@ dash(){
        {k:'total',t:'rp'},{k:'status',l:'Status',fn:r=>lencanaOrder(r)}])}</div>
   ${kartuLiburTerapis()}`;
 },
+kasbank(){
+  const rek=daftarRekening();
+  const pilih=KB_FIL.rekening||'';
+  const semuaSaldo=rek.map(r=>({r,...saldoRekening(r)}));
+  const totalSaldo=sum(semuaSaldo,'saldo');
+  const kelola=boleh('kasbank','ubah');
+
+  // mutasi: sesuai penyaring tanggal dan rekening
+  const mutasi=DB.kas.filter(k=>dalamFilter(k.tanggal)&&(!pilih||rekeningKas(k)?.id===pilih))
+    .sort((a,b)=>String(b.tanggal+(b.created_at||'')).localeCompare(String(a.tanggal+(a.created_at||''))));
+  const mMasuk=sum(mutasi.filter(k=>k.jenis==='masuk'),'nominal');
+  const mKeluar=sum(mutasi.filter(k=>k.jenis==='keluar'),'nominal');
+
+  return `<div class="card omzet-utama">
+    <div class="head"><h3>Total saldo semua rekening</h3>
+      ${kelola?`<button class="btn ghost sm" onclick="go('m_rekening')">Kelola rekening</button>`:''}</div>
+    <div class="omzet-nilai">${rp(totalSaldo)}</div>
+    <div class="omzet-rinci">
+      ${semuaSaldo.map(x=>`<div><span>${esc(x.r.nama)}</span><b>${rp(x.saldo)}</b></div>`).join('')}
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:14px">
+    ${semuaSaldo.map(x=>`<div class="card kartu-rekening ${pilih===x.r.id?'dipilih':''} rek-${x.r.jenis}"
+        onclick="KB_FIL.rekening=KB_FIL.rekening==='${x.r.id}'?'':'${x.r.id}';render()">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div><strong style="font-size:15px">${esc(x.r.nama)}</strong>
+          <div class="hint">${x.r.nomor?esc(x.r.nomor):'Kas tunai'}${x.r.atas_nama?' · '+esc(x.r.atas_nama):''}</div></div>
+        <span class="ikon-rek">${ikon(x.r.jenis==='tunai'?'kas':'bank',20)}</span></div>
+      <div class="saldo">${rp(x.saldo)}</div>
+      <div class="hint">masuk ${rp(x.masuk)} · keluar ${rp(x.keluar)}</div>
+      <div class="hint" style="margin-top:2px">saldo awal ${rp(x.r.saldo_awal)}${x.r.tgl_saldo_awal?' per '+tgl(x.r.tgl_saldo_awal):''}</div>
+    </div>`).join('')}
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="head"><h3>Mutasi ${pilih?esc(daftarRekening().find(r=>r.id===pilih)?.nama||''):'semua rekening'}</h3>
+      ${pilih?`<button class="btn ghost sm" onclick="KB_FIL.rekening='';render()">Tampilkan semua</button>`:''}</div>
+    ${barisFilter()}
+    <div class="grid g3" style="margin:10px 0 14px">
+      ${stat('Masuk',rp(mMasuk),mutasi.filter(k=>k.jenis==='masuk').length+' transaksi','g')}
+      ${stat('Keluar',rp(mKeluar),mutasi.filter(k=>k.jenis==='keluar').length+' transaksi','r')}
+      ${stat('Selisih',rp(mMasuk-mKeluar),'pada rentang ini')}
+    </div>
+    ${tableHtml(mutasi.map(k=>({...k,rek:rekeningKas(k)?.nama||'-',cab:nm('cabang',k.cabang_id)})),[
+      {k:'tanggal',t:'date'},
+      {k:'rek',l:'Rekening',fn:r=>`<strong>${esc(r.rek)}</strong>`},
+      {k:'jns',l:'Jenis',fn:r=>r.jenis==='masuk'?'<span class="tag ok">Masuk</span>':'<span class="tag bad">Keluar</span>'},
+      {k:'kategori'},{k:'keterangan'},
+      {k:'sumber',l:'Sumber',fn:r=>`<span class="tag ${r.sumber==='manual'?'':'info'}">${
+        ({pesanan:'Order',pengeluaran:'Pengeluaran',gaji:'Gaji',manual:'Manual',pindah:'Pindah dana'})[r.sumber]||cap(r.sumber||'-')}</span>`},
+      {k:'cab',l:'Cabang'},
+      {k:'nominal',l:'Nominal',fn:r=>`<strong class="rp" style="color:${r.jenis==='masuk'?'var(--ok)':'var(--bad)'}">${
+        r.jenis==='masuk'?'+':'−'} ${rp(r.nominal)}</strong>`}])}
+  </div>`;
+},
 audit(){
   const semua=DB.pesanan.filter(p=>dalamLingkup(p,'pesanan')&&dalamFilter(p.tgl_kerja||p.tanggal)&&p.status!=='batal');
   const hitung=s=>semua.filter(p=>(p.audit_status||'belum')===s).length;
@@ -2047,7 +2124,7 @@ order(){
       {k:'lay',l:'Layanan',fn:r=>r.lay?esc(r.lay):'<span class="tag bad">Belum ada layanan</span>'},
       {k:'ter',l:'Terapis',fn:r=>r.ter?esc(r.ter):'<span class="tag warn">Belum ditugaskan</span>'},
       {k:'total',t:'rp'},
-      {k:'metode_bayar',l:'Metode'},
+      {k:'metode_bayar',l:'Bayar ke',fn:r=>esc(labelBayar(r))},
       {k:'status',l:'Status',fn:r=>lencanaOrder(r)},
       {k:'aksi',l:'Tindakan',fn:r=>tombolOrder(r.id)}])}</div>
     <div class="hanya-mobil">${rows.length?rows.map((r,i)=>kartuOrder(r,i)).join('')
@@ -2109,9 +2186,10 @@ kas(){
     ${tableHtml([...kasKu].reverse().map(k=>({...k,cab:nm('cabang',k.cabang_id)})),
       [{k:'tanggal',t:'date'},{k:'cab',l:'Cabang'},
        {k:'jns',l:'Jenis',fn:r=>r.jenis==='masuk'?'<span class="tag ok">Masuk</span>':'<span class="tag bad">Keluar</span>'},
+       {k:'rek',l:'Rekening',fn:r=>esc(rekeningKas(r)?.nama||'-')},
        {k:'kategori'},{k:'keterangan'},
-       {k:'sumber',l:'Sumber',fn:r=>({pesanan:'Order',pengeluaran:'Pengeluaran',gaji:'Gaji',manual:'Manual'})[r.sumber]
-         ?`<span class="tag ${r.sumber==='manual'?'':'info'}">${({pesanan:'Order',pengeluaran:'Pengeluaran',gaji:'Gaji',manual:'Manual'})[r.sumber]}</span>`
+       {k:'sumber',l:'Sumber',fn:r=>({pesanan:'Order',pengeluaran:'Pengeluaran',gaji:'Gaji',manual:'Manual',pindah:'Pindah dana'})[r.sumber]
+         ?`<span class="tag ${r.sumber==='manual'?'':'info'}">${({pesanan:'Order',pengeluaran:'Pengeluaran',gaji:'Gaji',manual:'Manual',pindah:'Pindah dana'})[r.sumber]}</span>`
          :'<span class="hint">—</span>'},
        {k:'metode'},{k:'nominal',t:'rp'}])}</div>`;
 },
@@ -2760,6 +2838,48 @@ function skemaJabatan(jabatanId){
 }
 
 /* Jadwal libur terapis di cabang ini, dipakai kasir saat menyusun order */
+/* ===================== REKENING =====================
+   Tiga rekening bawaan: BCA, Mandiri, Tunai. Order, pengeluaran, gaji,
+   dan baris kas menunjuk rekening tempat uangnya masuk atau keluar. */
+const REKENING_BAWAAN=[
+  {id:'rek-bca',kode:'BCA',nama:'BCA',jenis:'bank',nomor:'3888881061',atas_nama:'Klinhome Indonesia',saldo_awal:0,urutan:1,aktif:true},
+  {id:'rek-mdr',kode:'MANDIRI',nama:'Mandiri',jenis:'bank',nomor:'1420027509784',atas_nama:'Klinhome Indonesia',saldo_awal:0,urutan:2,aktif:true},
+  {id:'rek-tun',kode:'TUNAI',nama:'Tunai',jenis:'tunai',nomor:null,atas_nama:null,saldo_awal:0,urutan:3,aktif:true}];
+function daftarRekening(){
+  if(!DB.rekening||!DB.rekening.length) DB.rekening=REKENING_BAWAAN.map(r=>({...r}));
+  return DB.rekening.filter(r=>r.aktif!==false).sort((a,b)=>(a.urutan||9)-(b.urutan||9));
+}
+function rekeningKode(kode){ return daftarRekening().find(r=>r.kode===kode)||null; }
+/* Rekening sebuah order; data lama tanpa rekening ditebak dari metodenya */
+function rekeningOrder(p){
+  if(p.rekening_id) return get('rekening',p.rekening_id)||daftarRekening().find(r=>r.id===p.rekening_id);
+  return rekeningKode(p.metode_bayar==='tunai'?'TUNAI':'BCA');
+}
+function labelBayar(p){ const r=rekeningOrder(p); return r?r.nama:cap(p.metode_bayar||'-'); }
+/* metode lama diisi dari jenis rekening, supaya laporan lama tetap jalan */
+function metodeDari(rekeningId){
+  const r=daftarRekening().find(x=>x.id===rekeningId);
+  return r&&r.jenis==='tunai'?'tunai':'transfer';
+}
+function opsiRekening(pilih){
+  return daftarRekening().map(r=>`<option value="${r.id}" ${r.id===pilih?'selected':''}>${esc(r.nama)}${
+    r.nomor?' · '+esc(r.nomor):''}</option>`).join('');
+}
+/* Saldo rekening: saldo awal + kas masuk − kas keluar sejak tanggal saldo awal */
+function saldoRekening(r, sampai){
+  const dari=String(r.tgl_saldo_awal||'0000-00-00').slice(0,10);
+  const baris=DB.kas.filter(k=>rekeningKas(k)?.id===r.id
+    &&String(k.tanggal).slice(0,10)>=dari&&(!sampai||String(k.tanggal).slice(0,10)<=sampai));
+  const masuk=sum(baris.filter(k=>k.jenis==='masuk'),'nominal');
+  const keluar=sum(baris.filter(k=>k.jenis==='keluar'),'nominal');
+  return {masuk,keluar,saldo:Number(r.saldo_awal||0)+masuk-keluar,baris};
+}
+/* Rekening sebuah baris kas; baris lama ditebak dari metodenya */
+function rekeningKas(k){
+  if(k.rekening_id) return daftarRekening().find(r=>r.id===k.rekening_id)||get('rekening',k.rekening_id);
+  return rekeningKode(k.metode==='tunai'?'TUNAI':'BCA');
+}
+
 /* Order dan pekerjaan asal sebuah catatan komisi */
 function asalKomisi(c){
   const i=get('item',c.pesanan_item_id||c.item_id);
@@ -3081,16 +3201,29 @@ async function bayarGaji(){
   const per=GAJI_FIL.periode;
   const slip=DB.gaji.filter(x=>x.periode===per&&x.status==='draft'&&dalamLingkup(get('karyawan',x.karyawan_id)||{},'karyawan'));
   if(!slip.length) return toast('Tidak ada slip draft. Simpan slip dulu.');
-  if(!confirm(`Tandai ${slip.length} slip periode ${per} sebagai dibayar senilai ${rp(sum(slip,'total_terima'))}?\n\nKas keluar akan tercatat otomatis.`)) return;
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Bayar gaji ${per}</h3>
+    <p class="hint" style="margin-bottom:14px">${slip.length} slip · total ${rp(sum(slip,'total_terima'))}</p>
+    <div class="field"><label for="gj_rek">Dibayar dari</label>
+      <select id="gj_rek">${opsiRekening(rekeningKode('BCA')?.id)}</select></div>
+    <p class="hint">Saldo rekening ini berkurang sebesar total gaji, dan kas keluar tercatat otomatis per karyawan.</p>`,
+    {kaki:`<button class="btn amber" onclick="bayarGajiDari()">Tandai dibayar</button>
+      <button class="btn ghost" onclick="closeModal()">Batal</button>`});
+}
+async function bayarGajiDari(){
+  const per=GAJI_FIL.periode;
+  const rek=document.getElementById('gj_rek')?.value||rekeningKode('BCA')?.id;
+  const slip=DB.gaji.filter(x=>x.periode===per&&x.status==='draft'&&dalamLingkup(get('karyawan',x.karyawan_id)||{},'karyawan'));
+  closeModal();
 
   for(const g of slip){
-    const ok=await simpanSebagian('gaji',g.id,{status:'dibayar',tgl_bayar:today()});
+    const ok=await simpanSebagian('gaji',g.id,{status:'dibayar',tgl_bayar:today(),rekening_id:rek});
     if(!ok) continue;
     // di database, kas keluar dan tanda dibayar komisi/bonus dibuat oleh trigger
     if(LIVE) continue;
     if(!DB.kas.some(x=>x.sumber==='gaji'&&x.ref_id===g.id)){
       await simpan('kas',{id:uid(),tanggal:today(),cabang_id:get('karyawan',g.karyawan_id)?.cabang_id,jenis:'keluar',
-        kategori:'Gaji & Tunjangan',sumber:'gaji',ref_id:g.id,nominal:g.total_terima,metode:'transfer',
+        kategori:'Gaji & Tunjangan',sumber:'gaji',ref_id:g.id,nominal:g.total_terima,
+        rekening_id:rek,metode:metodeDari(rek),
         keterangan:'Gaji '+g.periode+' — '+nm('karyawan',g.karyawan_id),dibuat_oleh:ME.id});
     }
     for(const c of DB.komisi.filter(x=>x.karyawan_id===g.karyawan_id&&x.periode===per&&!x.dibayar))
@@ -3149,8 +3282,8 @@ function formOrder(){
      <div class="field"><label for="o_room">Ruangan / catatan lokasi</label><input id="o_room" value="Rumah pelanggan"></div>
      <div class="field"><label for="o_disk">Diskon</label><input id="o_disk" type="number" value="0" oninput="hitungOrder()"></div>
    </div>
-   <div class="field"><label for="o_bayar">Metode bayar</label>
-     <select id="o_bayar"><option>tunai</option><option>qris</option><option>transfer</option><option>debit</option></select></div>
+   <div class="field"><label for="o_bayar">Pembayaran ke</label>
+     <select id="o_bayar">${opsiRekening(rekeningKode('BCA')?.id)}</select></div>
    <div class="field"><label for="o_cat">Catatan order</label>
      <textarea id="o_cat" rows="2" placeholder="Permintaan khusus, keluhan, preferensi tekanan"></textarea></div>
 
@@ -3277,7 +3410,7 @@ function cekPelanggan(){
       if(item[0].ruangan) document.getElementById('o_room').value=item[0].ruangan;
       gambarBaris();
     }
-    if(lama.metode_bayar) document.getElementById('o_bayar').value=lama.metode_bayar;
+    const rLama=rekeningOrder(lama); if(rLama) document.getElementById('o_bayar').value=rLama.id;
     if(lama.catatan) document.getElementById('o_cat').value=lama.catatan;
     jejak=` · order terakhir ${tgl(lama.tgl_kerja||lama.tanggal)}: ${esc(DB.item.filter(i=>i.pesanan_id===lama.id).map(i=>nm('layanan',i.layanan_id)).join(', '))}`;
   }
@@ -3322,7 +3455,8 @@ async function simpanOrder(){
     jam_kerja:document.getElementById('o_jam').value||jam(),
     cabang_id:cab.id,pelanggan_id:pel.id,kasir_id:ME.id,status:'dijadwalkan',
     subtotal:sub,diskon:disk,total:Math.max(0,sub-disk),
-    metode_bayar:document.getElementById('o_bayar').value,status_bayar:'belum',
+    rekening_id:document.getElementById('o_bayar').value,
+    metode_bayar:metodeDari(document.getElementById('o_bayar').value),status_bayar:'belum',
     catatan:document.getElementById('o_cat').value};
   const tersimpan=await simpan('pesanan',p);
   if(!tersimpan){ btn.disabled=false; btn.textContent='Simpan order'; return; }
@@ -3421,10 +3555,18 @@ function pesanPelanggan(p){
   if (potongan > 0) bagian.push(`Anda hemat ${rp(potongan)} pada pesanan ini.`);
   bagian.push(GARIS);
 
-  // pembayaran
-  bagian.push(`*PEMBAYARAN*\n${cap(p.metode_bayar)}\n\n` +
-    `Tunai kepada terapis, atau transfer ke:\n*${REKENING.nama}*\n` +
-    REKENING.akun.map(([b, n]) => `${b} — ${n}`).join('\n'));
+  // pembayaran: rekening yang dipilih kasir
+  const rek = rekeningOrder(p);
+  if (rek && rek.jenis === 'bank') {
+    bagian.push(`*PEMBAYARAN*\nTransfer ke rekening berikut:\n\n` +
+      `*${rek.nama}*\n${rek.nomor || '-'}\na.n. ${rek.atas_nama || REKENING.nama}\n\n` +
+      `Mohon kirimkan bukti transfer setelah pembayaran.`);
+  } else {
+    const bank = daftarRekening().filter(r => r.jenis === 'bank');
+    bagian.push(`*PEMBAYARAN*\nTunai kepada terapis.` +
+      (bank.length ? `\n\nAtau bila lebih nyaman, transfer ke:\n*${bank[0].atas_nama || REKENING.nama}*\n` +
+        bank.map(r => `${r.nama} — ${r.nomor}`).join('\n') : ''));
+  }
   bagian.push(GARIS);
 
   bagian.push(`Terapis akan menghubungi sebelum berangkat.\n` +
@@ -3523,7 +3665,7 @@ function kartuOrder(r, urut){
       <dt>Pengerjaan</dt><dd>${hariTgl(r.tgl_kerja||r.tanggal)}<br>pukul ${esc(String(r.jam_kerja||r.jam||'-').slice(0,5))}</dd>
       <dt>Layanan</dt><dd>${r.lay?esc(r.lay):'<span class="tag bad">belum ada</span>'}</dd>
       <dt>Terapis</dt><dd>${r.ter?esc(r.ter):'<span class="tag warn">belum ditugaskan</span>'}</dd>
-      <dt>Bayar</dt><dd>${cap(r.metode_bayar||'-')}</dd>
+      <dt>Bayar ke</dt><dd>${esc(labelBayar(r))}</dd>
       <dt>Total</dt><dd><span class="rp">${rp(r.total)}</span></dd>
     </dl>
     <div class="kaki">
@@ -3549,6 +3691,7 @@ function tombolOrder(id){
 
 /* ===================== AUDIT FINANCE ===================== */
 let AUDIT_FIL={status:'siap',cabang:''};
+let KB_FIL={rekening:''};
 
 function kartuAudit(p){
   const item=DB.item.filter(i=>i.pesanan_id===p.id);
@@ -3566,7 +3709,7 @@ function kartuAudit(p){
           · kasir ${esc(nm('karyawan',p.kasir_id))}</div>
       </div>
       <div class="rp" style="font-size:18px;text-align:right">${rp(p.total)}
-        <div class="hint" style="font-size:11px;font-weight:400">${cap(p.metode_bayar||'-')}</div></div>
+        <div class="hint" style="font-size:11px;font-weight:400">${esc(labelBayar(p))}</div></div>
     </div>
 
     <div class="lencana-baris">${lencanaOrder(p)}</div>
@@ -3683,7 +3826,7 @@ function formBayar(pesananId){
         Kembalikan ke belum dibayar</button>`
     : sudah?`<div class="card" style="background:#E4F4EE;border:1px solid #C3E6D8;box-shadow:none;padding:13px">
         <strong style="color:var(--ok);font-size:14px">Sudah dibayar</strong>
-        <p class="hint" style="margin-top:5px">Dicatat ${p.tgl_bayar?tgl(String(p.tgl_bayar).slice(0,10)):'-'} · ${cap(p.metode_bayar)}</p></div>
+        <p class="hint" style="margin-top:5px">Dicatat ${p.tgl_bayar?tgl(String(p.tgl_bayar).slice(0,10)):'-'} · ${esc(labelBayar(p))}</p></div>
       ${p.bukti_bayar?`<img src="${p.bukti_bayar}" alt="Bukti transaksi"
           style="width:100%;border-radius:14px;border:1px solid var(--line);margin-top:12px">`
         :'<p class="hint" style="margin-top:10px">Tidak ada gambar bukti yang tersimpan.</p>'}
@@ -3694,9 +3837,8 @@ function formBayar(pesananId){
           <input type="file" accept="image/*" style="display:none" onchange="pilihBukti(this,'${p.id}')"></label>
         <button class="btn ghost" style="flex:1" onclick="batalBayar('${p.id}')">Batalkan pembayaran</button></div>`
 
-    :`<div class="field"><label for="b_metode">Metode pembayaran</label>
-        <select id="b_metode">${['tunai','transfer','qris','debit'].map(m=>
-          `<option ${p.metode_bayar===m?'selected':''}>${m}</option>`).join('')}</select></div>
+    :`<div class="field"><label for="b_metode">Diterima di</label>
+        <select id="b_metode">${opsiRekening(rekeningOrder(p)?.id)}</select></div>
 
       <label class="label" style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">
         Bukti transaksi</label>
@@ -3742,10 +3884,10 @@ function pilihBukti(input,pesananId){
 
 async function simpanBukti(pesananId,gambar){
   const p=get('pesanan',pesananId);
-  const metode=document.getElementById('b_metode')?.value||p.metode_bayar;
+  const rek=document.getElementById('b_metode')?.value||rekeningOrder(p)?.id;
   // bukti baru berarti finance perlu memeriksa lagi
   const hasil=await simpanSebagian('pesanan',pesananId,{
-    bukti_bayar:gambar, metode_bayar:metode,
+    bukti_bayar:gambar, rekening_id:rek, metode_bayar:metodeDari(rek),
     status_bayar:'lunas', tgl_bayar:new Date().toISOString(), alasan_batal:null,
     audit_status:'belum', audit_waktu:null,
     status: statusAkhir({...p,status_bayar:'lunas',audit_status:'belum'})});
@@ -3781,7 +3923,7 @@ function kirimBukti(pesananId){
   const pesan=`Halo *${pel.nama}*, pembayaran Anda sudah kami terima.\n\n`
     + `*No. order*\n${p.nomor}\n\n`
     + `*Jumlah*\n${rp(p.total)}\n\n`
-    + `*Metode*\n${cap(p.metode_bayar)}\n\n`
+    + `*Diterima di*\n${labelBayar(p)}\n\n`
     + `Terima kasih telah mempercayakan perawatan Anda kepada Mahyra Massage.`;
   window.open(tautanWa(pel.telepon,pesan),'_blank','noopener');
 }
@@ -3791,7 +3933,7 @@ async function catatKasDemo(p){
   if(DB.kas.some(k=>k.ref_id===p.id)) return;
   await simpan('kas',{id:uid(),tanggal:p.tgl_kerja||p.tanggal,cabang_id:p.cabang_id,jenis:'masuk',
     kategori:'Penjualan layanan',sumber:'pesanan',ref_id:p.id,nominal:p.total,
-    metode:p.metode_bayar,keterangan:'Pesanan '+p.nomor,dibuat_oleh:ME.id});
+    rekening_id:rekeningOrder(p)?.id,metode:p.metode_bayar,keterangan:'Pesanan '+p.nomor,dibuat_oleh:ME.id});
 }
 
 /* Beri bonus langsung dari sebuah order.
@@ -4201,9 +4343,8 @@ function ubahOrder(pesananId){
     <div class="grid g2">
       <div class="field"><label for="u_disk">Diskon</label>
         <input type="number" id="u_disk" value="${p.diskon||0}"></div>
-      <div class="field"><label for="u_bayar">Metode bayar</label>
-        <select id="u_bayar">${['tunai','qris','transfer','debit'].map(m=>
-          `<option ${p.metode_bayar===m?'selected':''}>${m}</option>`).join('')}</select></div>
+      <div class="field"><label for="u_bayar">Pembayaran ke</label>
+        <select id="u_bayar">${opsiRekening(rekeningOrder(p)?.id)}</select></div>
     </div>
     <div class="field"><label for="u_status">Status pengerjaan</label>
       <select id="u_status">${['dijadwalkan','dikerjakan','selesai','complete','batal'].map(s=>
@@ -4279,7 +4420,8 @@ async function simpanUbahOrder(pesananId){
     jam_kerja:document.getElementById('u_jam').value,
     jam:document.getElementById('u_jam').value,
     status:document.getElementById('u_status').value,
-    metode_bayar:document.getElementById('u_bayar').value,
+    rekening_id:document.getElementById('u_bayar').value,
+    metode_bayar:metodeDari(document.getElementById('u_bayar').value),
     diskon:disk, subtotal:kotor, total:Math.max(0,kotor-disk),
     catatan:document.getElementById('u_cat').value.trim()||null});
   if(!hasil) return;
@@ -4358,7 +4500,14 @@ function formKas(){
    <p class="hint" style="margin-bottom:14px">Untuk perpindahan uang yang bukan biaya usaha.</p>
    <div class="field"><label>Tanggal</label><input type="date" id="k_tgl" value="${today()}"></div>
    <div class="field"><label>Cabang</label><select id="k_cab" ${opsiRef('cabang').length<2?'disabled':''}>${opsiRef('cabang').map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select></div>
-   <div class="field"><label>Jenis</label><select id="k_jns"><option value="masuk">Kas masuk</option><option value="keluar">Kas keluar</option></select></div>
+   <div class="field"><label>Jenis</label>
+     <select id="k_jns" onchange="document.getElementById('k_tujuanBox').style.display=this.value==='pindah'?'block':'none'">
+       <option value="masuk">Kas masuk</option><option value="keluar">Kas keluar</option>
+       <option value="pindah">Pindah dana antar rekening</option></select></div>
+   <div class="field"><label for="k_rek">Rekening</label><select id="k_rek">${opsiRekening(rekeningKode('BCA')?.id)}</select></div>
+   <div class="field" id="k_tujuanBox" style="display:none"><label for="k_tujuan">Pindah ke</label>
+     <select id="k_tujuan">${opsiRekening(rekeningKode('TUNAI')?.id)}</select>
+     <p class="hint" style="margin-top:6px">Misalnya setoran tunai ke BCA: rekening Tunai, pindah ke BCA.</p></div>
    <div class="field"><label>Kategori</label>
      <select id="k_kat">
        <option>Modal awal</option><option>Setoran ke bank</option><option>Tarik tunai dari bank</option>
@@ -4368,14 +4517,30 @@ function formKas(){
      pakai menu <a href="#" onclick="closeModal();openForm('pengeluaran');return false">Pengeluaran</a>
      agar masuk laporan laba sesuai kategorinya.</p>
    <div class="field"><label>Nominal</label><input type="number" id="k_nom"></div>
-   <div class="field"><label>Metode</label><select id="k_met"><option>tunai</option><option>transfer</option><option>qris</option></select></div>
+
    <div class="field"><label>Keterangan</label><textarea id="k_ket" rows="2"></textarea></div>`, {kaki: `<button class="btn" onclick="simpanKas()">Simpan</button>
      <button class="btn ghost" onclick="closeModal()">Batal</button>`})
 }
 async function simpanKas(){
   const n=Number(k_nom.value); if(!n) return toast('Isi nominal');
-  await simpan('kas',{id:uid(),tanggal:k_tgl.value,cabang_id:k_cab.value||ME.cabang_id,jenis:k_jns.value,
-    kategori:k_kat.value||'Lain-lain',sumber:'manual',nominal:n,metode:k_met.value,keterangan:k_ket.value,dibuat_oleh:ME.id});
+  const rek=document.getElementById('k_rek').value, jenis=k_jns.value;
+  const dasar={tanggal:k_tgl.value,cabang_id:k_cab.value||ME.cabang_id,nominal:n,dibuat_oleh:ME.id};
+
+  if(jenis==='pindah'){
+    const tujuan=document.getElementById('k_tujuan').value;
+    if(tujuan===rek) return toast('Rekening asal dan tujuan tidak boleh sama');
+    const asalN=daftarRekening().find(r=>r.id===rek)?.nama, tujuanN=daftarRekening().find(r=>r.id===tujuan)?.nama;
+    const ket=k_ket.value||`Pindah dana ${asalN} ke ${tujuanN}`;
+    const a=await simpan('kas',{id:uid(),...dasar,jenis:'keluar',kategori:'Pindah dana',sumber:'pindah',
+      rekening_id:rek,metode:metodeDari(rek),keterangan:ket});
+    if(!a) return;
+    await simpan('kas',{id:uid(),...dasar,jenis:'masuk',kategori:'Pindah dana',sumber:'pindah',
+      rekening_id:tujuan,metode:metodeDari(tujuan),keterangan:ket});
+    closeModal(); render(); return toast(`Dana ${rp(n)} dipindah dari ${asalN} ke ${tujuanN}`);
+  }
+
+  await simpan('kas',{id:uid(),...dasar,jenis,kategori:k_kat.value||'Lain-lain',sumber:'manual',
+    rekening_id:rek,metode:metodeDari(rek),keterangan:k_ket.value});
   closeModal(); render(); toast('Kas tercatat');
 }
 </script>
