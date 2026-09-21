@@ -457,7 +457,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.19.1";
+const VERSI_APP = "2026.09.19.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1338,17 +1338,29 @@ const F={
   cols:[{k:'tanggal',t:'date'},{k:'kry',l:'Terapis',fn:r=>nm('karyawan',r.karyawan_id)},{k:'dasar',l:'Omzet',t:'rp'},
    {k:'ps',l:'Persen',fn:r=>r.persen+'%'},{k:'nominal',l:'Komisi',t:'rp'},
    {k:'db',l:'Status',fn:r=>r.dibayar?'<span class="tag ok">Dibayar</span>':'<span class="tag warn">Belum</span>'}]},
- pengeluaran:{title:'Pengeluaran',sub:'Kas keluar terbentuk begitu pengajuan disetujui.',
+ pengeluaran:{title:'Pengeluaran',sub:'Catat di sini semua biaya operasional: sewa, listrik, minyak pijat, laundry, iklan, perbaikan. Begitu disetujui, kas keluar tercatat otomatis.',
+  info:'<strong>Pengeluaran</strong> adalah tempat mencatat biaya usaha beserta kategorinya. Setelah disetujui, sistem otomatis membuat kas keluar di Buku Kas — tidak perlu dicatat dua kali.',
   fields:[{k:'tanggal',l:'Tanggal',t:'date'},{k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},
    {k:'kategori_id',l:'Kategori',t:'ref',ref:'kategori_pengeluaran'},{k:'deskripsi',l:'Keperluan'},
    {k:'nominal',l:'Nominal',t:'rp'},{k:'metode_bayar',l:'Metode bayar',t:'sel',o:['tunai','transfer','qris','debit']},
    {k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
-  cols:[{k:'tanggal',t:'date'},{k:'nomor'},{k:'kat',l:'Kategori',fn:r=>nm('kategori_pengeluaran',r.kategori_id)},
-   {k:'deskripsi'},{k:'nominal',t:'rp'},{k:'status',t:'tag'}],
-  after:async r=>{ if(r.status==='disetujui'&&!DB.kas.some(k=>k.ref_id===r.id))
-    await simpan('kas',{id:uid(),tanggal:r.tanggal,cabang_id:r.cabang_id,jenis:'keluar',
-      kategori:nm('kategori_pengeluaran',r.kategori_id),sumber:'pengeluaran',ref_id:r.id,
-      nominal:r.nominal,metode:r.metode_bayar,keterangan:r.deskripsi}); }},
+  cols:[{k:'tanggal',t:'date'},{k:'cab',l:'Cabang',fn:r=>esc(nm('cabang',r.cabang_id))},
+   {k:'kat',l:'Kategori',fn:r=>esc(nm('kategori_pengeluaran',r.kategori_id))},
+   {k:'deskripsi',l:'Keperluan'},{k:'nominal',t:'rp'},{k:'status',t:'tag'},
+   {k:'kas',l:'Buku kas',fn:r=>r.status==='disetujui'
+     ?(DB.kas.some(x=>x.sumber==='pengeluaran'&&x.ref_id===r.id)||LIVE?'<span class="tag ok">tercatat</span>':'<span class="tag warn">belum</span>')
+     :'<span class="hint">menunggu persetujuan</span>'}],
+  // Di database, kas keluar dibuat oleh trigger. Aplikasi hanya meniru di mode demo,
+  // supaya tidak tercatat dua kali.
+  after:async r=>{
+    if(LIVE){ await muatTabel(['kas']); return; }
+    const ada=DB.kas.find(k=>k.sumber==='pengeluaran'&&k.ref_id===r.id);
+    if(r.status==='disetujui'&&!ada)
+      await simpan('kas',{id:uid(),tanggal:r.tanggal,cabang_id:r.cabang_id,jenis:'keluar',
+        kategori:nm('kategori_pengeluaran',r.kategori_id),sumber:'pengeluaran',ref_id:r.id,
+        nominal:r.nominal,metode:r.metode_bayar,keterangan:r.deskripsi});
+    if(r.status!=='disetujui'&&ada) await hapus('kas',ada.id);
+  }},
  kategori_pengeluaran:{title:'Kategori Pengeluaran',sub:'Pos biaya untuk pengelompokan laporan.',
   fields:[{k:'nama',l:'Nama kategori'},{k:'tipe',l:'Tipe',t:'sel',o:['operasional','sdm','aset','lainnya']}],
   cols:[{k:'nama'},{k:'tipe',t:'tag'}]},
@@ -1521,6 +1533,7 @@ function openForm(key,id){
                 jabatan:{lingkup:'cabang',level:1},
                 libur:{jenis:'libur',tanggal:today(),cabang_id:null,karyawan_id:null},
                 layanan:{aktif:true,butuh_terapis:true,harga_manual:false,durasi_menit:60},
+                pengeluaran:{tanggal:today(),status:'menunggu',metode_bayar:'tunai',cabang_id:ME?.cabang_id},
                 skema_gaji:{tipe_gaji:'harian',hari_kerja:26,aktif:true,cabang_id:null,
                   bonus_target1_order:0,bonus_target2_order:0,bonus_service_motor:0,bonus_bpjs:0},
                 pengeluaran:{cabang_id:ME.cabang_id,status:'menunggu'},
@@ -2046,37 +2059,112 @@ kas(){
     return `<div class="card"><div class="hint">${esc(c.nama)}</div>
       <div style="font-family:Fraunces,serif;font-size:22px;margin-top:4px">${rp(m-l)}</div>
       <div class="hint">masuk ${rp(m)} · keluar ${rp(l)}</div></div>`}).join('')}</div>
+  <div class="card" style="margin-top:14px;background:var(--mist);box-shadow:none">
+    <div class="head"><h3>Kas atau Pengeluaran?</h3></div>
+    <div class="grid g2" style="gap:12px">
+      <div><strong style="font-size:13.5px">Buku Kas</strong>
+        <p class="hint" style="margin-top:4px">Catatan semua uang masuk dan keluar beserta saldonya.
+          Sebagian besar terisi <em>otomatis</em>: pembayaran order yang lunas, pengeluaran yang disetujui,
+          dan gaji yang dibayarkan. Catat manual hanya untuk perpindahan uang yang bukan biaya — modal awal,
+          setoran ke bank, penarikan pemilik, atau koreksi saldo.</p></div>
+      <div><strong style="font-size:13.5px">Pengeluaran</strong>
+        <p class="hint" style="margin-top:4px">Tempat mencatat <em>biaya operasional</em> — sewa, listrik, minyak pijat,
+          laundry, iklan, perbaikan — lengkap dengan kategorinya supaya muncul di laporan laba.
+          Begitu disetujui, kas keluar terbentuk sendiri.</p>
+        ${boleh('pengeluaran','tambah')?`<button class="btn sm" style="margin-top:8px" onclick="openForm('pengeluaran')">
+          Catat pengeluaran operasional</button>`:''}</div>
+    </div>
+  </div>
+
   <div class="card" style="margin-top:14px"><div class="head"><h3>Buku kas</h3>
-    <button class="btn" onclick="formKas()">Catat kas manual</button></div>
+    ${boleh('kas','tambah')?`<button class="btn ghost" onclick="formKas()">Catat kas manual</button>`:''}</div>
     ${tableHtml([...kasKu].reverse().map(k=>({...k,cab:nm('cabang',k.cabang_id)})),
       [{k:'tanggal',t:'date'},{k:'cab',l:'Cabang'},
        {k:'jns',l:'Jenis',fn:r=>r.jenis==='masuk'?'<span class="tag ok">Masuk</span>':'<span class="tag bad">Keluar</span>'},
-       {k:'kategori'},{k:'keterangan'},{k:'metode'},{k:'nominal',t:'rp'}])}</div>`;
+       {k:'kategori'},{k:'keterangan'},
+       {k:'sumber',l:'Sumber',fn:r=>({pesanan:'Order',pengeluaran:'Pengeluaran',gaji:'Gaji',manual:'Manual'})[r.sumber]
+         ?`<span class="tag ${r.sumber==='manual'?'':'info'}">${({pesanan:'Order',pengeluaran:'Pengeluaran',gaji:'Gaji',manual:'Manual'})[r.sumber]}</span>`
+         :'<span class="hint">—</span>'},
+       {k:'metode'},{k:'nominal',t:'rp'}])}</div>`;
 },
 gaji(){
-  const rows=DB.gaji.filter(g=>g.periode===periode());
-  return `<div class="card"><div class="head"><h3>Periode ${periode()}</h3>
-    <div class="row"><button class="btn" onclick="hitungGaji()">Hitung ulang gaji</button>
-      ${rows.length?'<button class="btn amber" onclick="bayarGaji()">Tandai dibayar</button>':''}</div></div>
-    <p class="hint">Aturan diambil dari menu <strong>Skema Gaji</strong> sesuai jabatan dan cabang tiap karyawan.
-      Rumusnya: gaji pokok + upah harian + tunjangan + uang makan + komisi + bonus − potongan.
-      Bila hasilnya di bawah <strong>gaji minimal</strong>, yang dibayarkan gaji minimal — selisihnya tampil di kolom Penyesuaian.
-      Hari efektif dihitung dari hari yang punya minimal satu orderan selesai atau satu check in.</p>
-    ${rows.length?`<div style="margin-top:14px">${tableHtml(rows.map(g=>({...g,kry:nm('karyawan',g.karyawan_id),
-      jab:nm('jabatan',get('karyawan',g.karyawan_id)?.jabatan_id)})),
-      [{k:'kry',l:'Karyawan'},{k:'jab',l:'Jabatan'},
-       {k:'tipe_gaji',l:'Skema',fn:r=>tagHtml(r.tipe_gaji||'bulanan')},
-       {k:'hari_efektif',l:'Hari efektif',fn:r=>(r.hari_efektif??r.hari_hadir??0)+' hari'},
-       {k:'jml_order',l:'Order',fn:r=>r.jml_order||0},
-       {k:'gaji_pokok',l:'Pokok',t:'rp'},{k:'upah_harian',l:'Upah harian',t:'rp'},
-       {k:'uang_makan',l:'U. makan',t:'rp'},{k:'total_komisi',l:'Komisi',t:'rp'},
-       {k:'total_bonus',l:'Bonus',t:'rp'},{k:'potongan_absen',l:'Potongan',t:'rp'},{k:'potongan_kasbon',l:'Kasbon',t:'rp'},
-       {k:'penyesuaian',l:'Penyesuaian',fn:r=>r.penyesuaian>0
-         ?`<span class="tag warn">+ ${rp(r.penyesuaian)}</span>`:'<span class="hint">—</span>'},
-       {k:'total_terima',l:'Diterima',t:'rp'},{k:'status',t:'tag'}])}
-      <div class="row" style="margin-top:12px;justify-content:flex-end"><strong>Total dibayarkan:
-        <span class="rp">${rp(sum(rows,'total_terima'))}</span></strong></div></div>`
-     :`<div class="empty"><div class="disp">Gaji belum dihitung</div><div>Tekan “Hitung ulang gaji” untuk menyusun slip periode ini.</div></div>`}</div>`;
+  const per=GAJI_FIL.periode, berjalan=per===periode();
+  const [y,m]=per.split('-').map(Number);
+  const namaBln=new Date(y,m-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+
+  const karyawan=DB.karyawan.filter(k=>k.status==='aktif'&&dalamLingkup(k,'karyawan')
+    &&(!GAJI_FIL.cabang||k.cabang_id===GAJI_FIL.cabang));
+  const baris=karyawan.map(k=>rincianGaji(k,per)).filter(g=>g.ada);
+  const tanpaSkema=karyawan.filter(k=>!skemaBerlaku(k));
+  const slip=Object.fromEntries(DB.gaji.filter(g=>g.periode===per).map(g=>[g.karyawan_id,g]));
+
+  const total=sum(baris,'total');
+  const terapis=baris.filter(g=>g.k.role==='terapis');
+  const staf=baris.filter(g=>g.k.role!=='terapis');
+  const dibayar=Object.values(slip).filter(g=>g.status==='dibayar');
+  const draft=Object.values(slip).filter(g=>g.status==='draft');
+  const contoh=baris[0];
+
+  // pilihan periode: enam bulan terakhir
+  const opsiPer=[...Array(6)].map((_,i)=>{const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-i);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');});
+
+  return `<div class="card omzet-utama">
+    <div class="head"><h3>${berjalan?'Gaji yang harus dibayar per hari ini':'Gaji '+namaBln}</h3>
+      <span class="tag ${berjalan?'warn':'info'}">${berjalan?'realtime · '+hariTgl(today()):'periode selesai'}</span></div>
+    <div class="filter" style="margin-top:2px">
+      <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="GAJI_FIL.periode=this.value;render()">
+        ${opsiPer.map(p=>`<option value="${p}" ${p===per?'selected':''}>${new Date(p+'-01T00:00')
+          .toLocaleDateString('id-ID',{month:'long',year:'numeric'})}</option>`).join('')}</select>
+      <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="GAJI_FIL.cabang=this.value;render()">
+        <option value="">Semua cabang</option>
+        ${DB.cabang.filter(c=>dalamLingkup(c,'cabang')).map(c=>
+          `<option value="${c.id}" ${GAJI_FIL.cabang===c.id?'selected':''}>${esc(c.nama)}</option>`).join('')}</select>
+    </div>
+    <div class="omzet-nilai">${rp(total)}</div>
+    <div class="omzet-rinci">
+      <div><span>Terapis · ${terapis.length} orang</span><b>${rp(sum(terapis,'total'))}</b></div>
+      <div><span>Staf kantor · ${staf.length} orang</span><b>${rp(sum(staf,'total'))}</b></div>
+      <div><span>Jatah hari kerja</span><b>${contoh?contoh.jatah+' dari '+contoh.HK+' hari':'—'}</b></div>
+    </div>
+    ${berjalan?`<p class="hint" style="margin-top:10px">Angka ini bergerak setiap hari mengikuti absensi,
+      order selesai, komisi, dan bonus. Gaji pokok, tunjangan, service motor, dan BPJS dihitung sebanding
+      hari kerja yang sudah lewat, sehingga penuh di akhir bulan.</p>`:''}
+  </div>
+
+  ${tanpaSkema.length?`<div class="peringatan warn" style="margin-top:12px">
+    ${tanpaSkema.length} karyawan belum punya skema gaji dan tidak ikut dihitung:
+    ${tanpaSkema.map(k=>esc(k.nama)).join(', ')}.
+    Atur di Keuangan → Skema Gaji.</div>`:''}
+
+  <div class="card" style="margin-top:14px">
+    <div class="head"><h3>Rincian per karyawan</h3>
+      <div class="row">
+        ${boleh('gaji','tambah')||boleh('gaji','ubah')?`<button class="btn ghost" onclick="hitungGaji()">Simpan sebagai slip</button>`:''}
+        ${draft.length&&boleh('gaji','ubah')?`<button class="btn amber" onclick="bayarGaji()">Tandai dibayar (${draft.length})</button>`:''}
+      </div></div>
+    ${tableHtml(baris.map(g=>({...g,id:g.k.id})),[
+      {k:'nama',l:'Karyawan',fn:r=>`<strong>${esc(r.k.nama)}</strong>
+        <div class="hint">${esc(nm('jabatan',r.k.jabatan_id))} · ${esc(nm('cabang',r.k.cabang_id))}</div>`},
+      {k:'skema',l:'Skema',fn:r=>`${tagHtml(r.s.tipe)}<div class="hint">${esc(r.s.nama)}</div>`},
+      {k:'hari',l:'Hari kerja',fn:r=>`${r.efektif} <span class="hint">/ ${r.jatah}</span>`},
+      {k:'nOrder',l:'Order',fn:r=>r.nOrder||'—'},
+      {k:'tetap',l:'Pokok & upah',fn:r=>rp(r.pokok+r.upah+r.tunj+r.um)},
+      {k:'kom',l:'Komisi',fn:r=>rp(r.kom)},
+      {k:'bonus',l:'Bonus',fn:r=>rp(r.bon+r.bonusTarget+r.bonusTetap)},
+      {k:'potong',l:'Potongan',fn:r=>(r.pot+r.ksb)?`<span style="color:var(--bad)">− ${rp(r.pot+r.ksb)}</span>`:'—'},
+      {k:'sesuai',l:'Penyesuaian',fn:r=>r.sesuai>0?`<span class="tag warn">+ ${rp(r.sesuai)}</span>`:'—'},
+      {k:'total',l:berjalan?'Per hari ini':'Total',fn:r=>`<strong class="rp">${rp(r.total)}</strong>`},
+      {k:'slip',l:'Slip',fn:r=>{const g=slip[r.k.id];
+        if(!g) return '<span class="hint">belum disimpan</span>';
+        const beda=g.status==='draft'&&Math.abs(Number(g.total_terima)-r.total)>=1;
+        return tagHtml(g.status)+(beda?`<div class="hint" style="color:var(--warn)">slip ${rp(g.total_terima)}, perlu disimpan ulang</div>`:'');}},
+      {k:'aksi',l:'',fn:r=>`<button class="btn ghost sm" onclick="rincianGajiPanel('${r.k.id}')">Rincian</button>`}
+    ])}
+    <div class="row" style="margin-top:12px;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span class="hint">${dibayar.length} slip sudah dibayar · ${draft.length} slip draft</span>
+      <strong>Total: <span class="rp">${rp(total)}</span></strong></div>
+  </div>`;
 },
 laporan(){
   const sel=DB.pesanan.filter(p=>p.status==='selesai'&&dalamLingkup(p,'pesanan'));
@@ -2826,56 +2914,154 @@ async function putusIzin(id,st){
   }
   render(); toast('Pengajuan '+st);
 }
-async function hitungGaji(){
-  if(LIVE){ const {error}=await sb.rpc('generate_gaji',{p_periode:periode()});
-    if(error) return toast('Gagal: '+error.message);
-    const {data}=await sb.from('gaji').select('*'); DB.gaji=data||[]; render(); return toast('Gaji dihitung'); }
-  const per=periode();
-  for(const k of DB.karyawan.filter(x=>x.status==='aktif')){
-    const s=skemaKaryawan(k);
-    const HK=s.hariKerja||26;
-    const efektif=hariEfektif(k.id,per);
-    const nOrder=DB.item.filter(i=>i.terapis_id===k.id&&i.status==='selesai'
-      &&String(i.jam_selesai||today()).startsWith(per)).length;
-    const kom=sum(DB.komisi.filter(c=>c.karyawan_id===k.id&&c.periode===per),'nominal');
-    const bon=sum(DB.bonus.filter(b=>b.karyawan_id===k.id&&b.periode===per&&b.status==='disetujui'),'nominal');
-    const ksb=sum(DB.kasbon.filter(x=>x.karyawan_id===k.id&&x.status==='disetujui'&&x.sisa>0),'cicilan');
-    const um=s.uangMakan*efektif;
-    let pokok=0, upah=0, pot=0;
-    if(s.tipe==='harian'){ upah=s.harian*efektif; }
-    else if(s.tipe==='training'){ pokok=s.pokok; upah=s.harian*efektif;
-      pot=Math.max(0,s.potongan*(HK-efektif)); }
-    else { pokok=s.pokok; pot=efektif<HK?Math.round(s.pokok/HK)*(HK-efektif):0; }
+/* ===================== PENGGAJIAN =====================
+   Satu rumus untuk tampilan realtime dan slip yang disimpan, sama dengan
+   fungsi generate_gaji di database.
 
-    let bonusSkema=0;
-    if(s.bonusT2Order>0&&nOrder>=s.bonusT2Order)      bonusSkema+=s.bonusT2Nominal;
-    else if(s.bonusT1Order>0&&nOrder>=s.bonusT1Order) bonusSkema+=s.bonusT1Nominal;
-    if(efektif>0) bonusSkema+=s.bonusMotor+s.bonusBpjs;
-    const hitung=pokok+upah+s.tunjangan+um+kom+bon+bonusSkema-pot;
-    // gaji minimal diprorata menurut hari kerja efektif
-    const minimal=s.minimal>0?Math.round(s.minimal*Math.min(efektif,HK)/HK):0;
-    const sesuai=Math.max(0,minimal-hitung);
-    const total=Math.max(hitung,minimal)-ksb;
+   Bulan berjalan: komponen bulanan (gaji pokok, tunjangan, service motor,
+   BPJS) dihitung sebanding jatah hari kerja yang sudah lewat. Akhir bulan
+   hasilnya penuh. */
 
-    const lama=DB.gaji.find(g=>g.periode===per&&g.karyawan_id===k.id);
-    if(lama&&lama.status!=='draft') continue;
-    await simpan('gaji',{id:lama?.id||uid(),periode:per,karyawan_id:k.id,tipe_gaji:s.tipe,
-      skema_nama:s.nama,hari_kerja:HK,hari_hadir:efektif,hari_efektif:efektif,jml_order:nOrder,
-      gaji_pokok:pokok,upah_harian:upah,tunjangan:s.tunjangan,uang_makan:um,
-      total_komisi:kom,total_bonus:bon+bonusSkema,potongan_absen:pot,potongan_kasbon:ksb,
-      gaji_minimal:minimal,penyesuaian:sesuai,total_terima:total,status:'draft'});
-  }
-  render(); toast('Gaji periode '+periode()+' dihitung');
+/* Jatah hari kerja yang sudah lewat pada periode itu */
+function jatahHariKerja(per, hk, tanggal){
+  const t=tanggal||today();
+  const [y,m]=per.split('-').map(Number);
+  const awalP=`${per}-01`;
+  const akhirP=tglLokal(new Date(y,m,0));
+  if(t>akhirP) return hk;
+  if(t<awalP) return 0;
+  const jmlHari=new Date(y,m,0).getDate();
+  const tgl_=Number(t.slice(8,10));
+  return Math.min(hk, Math.round(hk*tgl_/jmlHari));
 }
-async function bayarGaji(){
-  for(const g of DB.gaji.filter(x=>x.periode===periode())){
-    await simpan('gaji',{...g,status:'dibayar',tgl_bayar:today()});
-    await simpan('kas',{id:uid(),tanggal:today(),cabang_id:get('karyawan',g.karyawan_id)?.cabang_id,jenis:'keluar',
-      kategori:'Gaji & Tunjangan',sumber:'gaji',ref_id:g.id,nominal:g.total_terima,metode:'transfer',
-      keterangan:'Gaji '+g.periode+' — '+nm('karyawan',g.karyawan_id)});
+
+/* Periode sebuah pekerjaan: bulan saat selesai dikerjakan */
+function periodeItem(i){
+  const p=get('pesanan',i.pesanan_id)||{};
+  return String(i.jam_selesai?tglLokal(new Date(i.jam_selesai)):(p.tgl_kerja||p.tanggal||'')).slice(0,7);
+}
+
+function rincianGaji(k, per, tanggal){
+  const s=skemaKaryawan(k);
+  const HK=s.hariKerja||26;
+  const jatah=jatahHariKerja(per,HK,tanggal);
+  const rasio=HK?jatah/HK:0;
+  const efektif=Math.min(hariEfektif(k.id,per),HK);
+
+  const kerja=DB.item.filter(i=>i.terapis_id===k.id&&i.status==='selesai'&&periodeItem(i)===per);
+  const nOrder=kerja.length;
+  // komisi: catatan komisi bila ada, kalau belum dari pekerjaannya
+  const kom=kerja.reduce((a,i)=>{
+    const c=DB.komisi.find(x=>(x.pesanan_item_id||x.item_id)===i.id);
+    return a+Number(c?c.nominal:(i.komisi||0));
+  },0);
+  const bon=sum(DB.bonus.filter(b=>b.karyawan_id===k.id&&b.periode===per&&b.status==='disetujui'),'nominal');
+  const ksb=sum(DB.kasbon.filter(x=>x.karyawan_id===k.id&&x.status==='disetujui'&&Number(x.sisa)>0),'cicilan');
+
+  const tunj=Math.round(s.tunjangan*rasio);
+  const um=s.uangMakan*efektif;
+
+  let bonusTarget=0;
+  if(s.bonusT2Order>0&&nOrder>=s.bonusT2Order)      bonusTarget=s.bonusT2Nominal;
+  else if(s.bonusT1Order>0&&nOrder>=s.bonusT1Order) bonusTarget=s.bonusT1Nominal;
+  const bonusTetap=efektif>0?Math.round((s.bonusMotor+s.bonusBpjs)*rasio):0;
+
+  let pokok=0, upah=0, pot=0;
+  if(s.tipe==='harian'){ upah=s.harian*efektif; }
+  else if(s.tipe==='training'){
+    pokok=Math.round(s.pokok*rasio); upah=s.harian*efektif;
+    pot=Math.max(0,s.potongan*(jatah-efektif));
+  }else{
+    pokok=Math.round(s.pokok*rasio);
+    pot=HK?Math.round(s.pokok/HK)*Math.max(0,jatah-efektif):0;
   }
-  for(const c of DB.komisi.filter(x=>x.periode===periode()&&!x.dibayar)) await simpan('komisi',{...c,dibayar:true});
-  for(const b of DB.bonus.filter(x=>x.periode===periode()&&!x.dibayar)) await simpan('bonus',{...b,dibayar:true});
+
+  const hitung=pokok+upah+tunj+um+kom+bon+bonusTarget+bonusTetap-pot;
+  const minimal=s.minimal>0&&HK?Math.round(s.minimal*efektif/HK):0;
+  const sesuai=Math.max(0,minimal-hitung);
+  const total=Math.max(0,Math.max(hitung,minimal)-ksb);
+
+  return {k, s, ada:s.ada!==false, HK, jatah, efektif, nOrder,
+    pokok, upah, tunj, um, kom, bon, bonusTarget, bonusTetap,
+    pot, ksb, minimal, sesuai, total};
+}
+
+/* Simpan hitungan hari ini sebagai slip draft */
+async function hitungGaji(){
+  const per=GAJI_FIL.periode;
+  if(LIVE){
+    const {error}=await sb.rpc('generate_gaji',{p_periode:per});
+    if(error) return toast('Gagal: '+error.message);
+    await muatTabel(['gaji']); render();
+    return toast('Slip periode '+per+' disimpan');
+  }
+  for(const k of DB.karyawan.filter(x=>x.status==='aktif')){
+    const g=rincianGaji(k,per);
+    if(!g.ada) continue;
+    const lama=DB.gaji.find(x=>x.periode===per&&x.karyawan_id===k.id);
+    if(lama&&lama.status!=='draft') continue;
+    await simpan('gaji',{id:lama?.id||uid(),periode:per,karyawan_id:k.id,tipe_gaji:g.s.tipe,
+      skema_nama:g.s.nama,hari_kerja:g.HK,hari_hadir:g.efektif,hari_efektif:g.efektif,jml_order:g.nOrder,
+      gaji_pokok:g.pokok,upah_harian:g.upah,tunjangan:g.tunj,uang_makan:g.um,
+      total_komisi:g.kom,total_bonus:g.bon+g.bonusTarget+g.bonusTetap,potongan_absen:g.pot,
+      potongan_kasbon:g.ksb,gaji_minimal:g.minimal,penyesuaian:g.sesuai,total_terima:g.total,status:'draft'});
+  }
+  render(); toast('Slip periode '+per+' disimpan');
+}
+
+
+let GAJI_FIL={periode:periode(),cabang:''};
+
+function rincianGajiPanel(karyawanId){
+  const k=get('karyawan',karyawanId); if(!k) return;
+  const per=GAJI_FIL.periode, g=rincianGaji(k,per), s=g.s;
+  const b=(l,v,ket,neg)=>v?`<div class="row" style="justify-content:space-between;gap:12px;padding:6px 0;
+      border-bottom:1px solid var(--line);font-size:13px">
+      <span>${l}${ket?`<div class="hint">${ket}</div>`:''}</span>
+      <b class="rp" style="${neg?'color:var(--bad)':''}">${neg?'− ':''}${rp(v)}</b></div>`:'';
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">${esc(k.nama)}</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(nm('jabatan',k.jabatan_id))} · ${esc(nm('cabang',k.cabang_id))}
+      · skema ${esc(s.nama)} (${s.tipe})</p>
+    <div class="grid g3" style="margin-bottom:14px">
+      ${stat('Hari kerja',g.efektif,'dari jatah '+g.jatah)}
+      ${stat('Order selesai',g.nOrder,'periode '+per)}
+      ${stat('Diterima',rp(g.total),per===periode()?'per hari ini':'akhir periode','g')}
+    </div>
+    ${b('Gaji pokok',g.pokok,s.pokok?`${rp(s.pokok)} × ${g.jatah}/${g.HK} hari`:'')}
+    ${b('Upah harian',g.upah,s.harian?`${rp(s.harian)} × ${g.efektif} hari`:'')}
+    ${b('Tunjangan',g.tunj,s.tunjangan?`${rp(s.tunjangan)} × ${g.jatah}/${g.HK} hari`:'')}
+    ${b('Uang makan',g.um,s.uangMakan?`${rp(s.uangMakan)} × ${g.efektif} hari`:'')}
+    ${b('Komisi',g.kom,g.nOrder+' order selesai')}
+    ${b('Bonus order',g.bon,'tips, transport, lembur')}
+    ${b('Bonus target',g.bonusTarget,'target order tercapai')}
+    ${b('Service motor & BPJS',g.bonusTetap,`sebanding ${g.jatah}/${g.HK} hari`)}
+    ${b('Potongan hari tidak masuk',g.pot,`${Math.max(0,g.jatah-g.efektif)} hari`,true)}
+    ${b('Cicilan kasbon',g.ksb,'',true)}
+    ${b('Penyesuaian gaji minimal',g.sesuai,`jaminan ${rp(g.minimal)} untuk ${g.efektif} hari kerja`)}
+    <div class="row" style="justify-content:space-between;padding:12px 0 2px">
+      <strong>Diterima</strong><strong class="rp" style="font-size:18px">${rp(g.total)}</strong></div>`,
+    {kaki:`<button class="btn ghost" onclick="closeModal()">Tutup</button>`});
+}
+
+async function bayarGaji(){
+  const per=GAJI_FIL.periode;
+  const slip=DB.gaji.filter(x=>x.periode===per&&x.status==='draft'&&dalamLingkup(get('karyawan',x.karyawan_id)||{},'karyawan'));
+  if(!slip.length) return toast('Tidak ada slip draft. Simpan slip dulu.');
+  if(!confirm(`Tandai ${slip.length} slip periode ${per} sebagai dibayar senilai ${rp(sum(slip,'total_terima'))}?\n\nKas keluar akan tercatat otomatis.`)) return;
+
+  for(const g of slip){
+    const ok=await simpanSebagian('gaji',g.id,{status:'dibayar',tgl_bayar:today()});
+    if(!ok) continue;
+    if(!DB.kas.some(x=>x.sumber==='gaji'&&x.ref_id===g.id)){
+      await simpan('kas',{id:uid(),tanggal:today(),cabang_id:get('karyawan',g.karyawan_id)?.cabang_id,jenis:'keluar',
+        kategori:'Gaji & Tunjangan',sumber:'gaji',ref_id:g.id,nominal:g.total_terima,metode:'transfer',
+        keterangan:'Gaji '+g.periode+' — '+nm('karyawan',g.karyawan_id),dibuat_oleh:ME.id});
+    }
+    for(const c of DB.komisi.filter(x=>x.karyawan_id===g.karyawan_id&&x.periode===per&&!x.dibayar))
+      await simpanSebagian('komisi',c.id,{dibayar:true});
+    for(const b of DB.bonus.filter(x=>x.karyawan_id===g.karyawan_id&&x.periode===per&&!x.dibayar))
+      await simpanSebagian('bonus',b.id,{dibayar:true});
+  }
   render(); toast('Gaji ditandai dibayar dan tercatat di kas');
 }
 /* ===================== FORMULIR ORDER (versi 2) =====================
@@ -4131,11 +4317,19 @@ function kirimOrder(pesananId){
 }
 
 function formKas(){
-  bukaPanel(`<h3 style="font-size:20px;margin-bottom:16px">Catat kas manual</h3>
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">Catat kas manual</h3>
+   <p class="hint" style="margin-bottom:14px">Untuk perpindahan uang yang bukan biaya usaha.</p>
    <div class="field"><label>Tanggal</label><input type="date" id="k_tgl" value="${today()}"></div>
    <div class="field"><label>Cabang</label><select id="k_cab" ${opsiRef('cabang').length<2?'disabled':''}>${opsiRef('cabang').map(c=>`<option value="${c.id}">${esc(c.nama)}</option>`).join('')}</select></div>
    <div class="field"><label>Jenis</label><select id="k_jns"><option value="masuk">Kas masuk</option><option value="keluar">Kas keluar</option></select></div>
-   <div class="field"><label>Kategori</label><input id="k_kat" placeholder="Modal, setoran, penarikan…"></div>
+   <div class="field"><label>Kategori</label>
+     <select id="k_kat">
+       <option>Modal awal</option><option>Setoran ke bank</option><option>Tarik tunai dari bank</option>
+       <option>Penarikan pemilik</option><option>Pemasukan lain</option><option>Koreksi saldo</option>
+     </select></div>
+   <p class="hint" style="margin:-4px 0 12px">Untuk biaya operasional seperti sewa atau belanja bahan,
+     pakai menu <a href="#" onclick="closeModal();openForm('pengeluaran');return false">Pengeluaran</a>
+     agar masuk laporan laba sesuai kategorinya.</p>
    <div class="field"><label>Nominal</label><input type="number" id="k_nom"></div>
    <div class="field"><label>Metode</label><select id="k_met"><option>tunai</option><option>transfer</option><option>qris</option></select></div>
    <div class="field"><label>Keterangan</label><textarea id="k_ket" rows="2"></textarea></div>`, {kaki: `<button class="btn" onclick="simpanKas()">Simpan</button>
