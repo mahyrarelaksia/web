@@ -318,6 +318,31 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .unggah .ikon{color:var(--jade)}
 .unggah strong{font-size:14px}
 .btn.blok{width:100%}
+.kartu-audit{border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px;background:#fff;
+ border-left-width:5px}
+.kartu-audit.audit-belum{border-left-color:#E0A13A}
+.kartu-audit.audit-disetujui{border-left-color:#1E7A5A}
+.kartu-audit.audit-ditolak{border-left-color:#C0392B}
+.kartu-audit .atas{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.kartu-audit h4{font-size:16px;font-weight:600;margin:2px 0}
+.kartu-audit .lencana-baris{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0}
+.isi-audit{display:grid;grid-template-columns:1fr 200px;gap:14px;align-items:start;margin-top:4px}
+.rincian-audit{background:var(--mist);border-radius:12px;padding:11px 13px}
+.rincian-audit .baris{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:3px 0}
+.rincian-audit .baris em{display:block;font-style:normal;font-size:11.5px;color:var(--muted)}
+.rincian-audit .baris b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.rincian-audit .total{border-top:1px dashed var(--line);margin-top:6px;padding-top:7px;font-weight:600}
+.bukti-audit{display:flex;flex-direction:column;gap:5px;align-items:center}
+.bukti-audit img{width:100%;max-height:230px;object-fit:cover;border-radius:12px;border:1px solid var(--line);cursor:zoom-in}
+.tanpa-bukti{width:100%;min-height:120px;border:2px dashed var(--line);border-radius:12px;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+ color:var(--muted);font-size:12px;text-align:center;padding:10px}
+.catatan-audit{font-size:12.5px;border-radius:10px;padding:9px 12px;margin-top:11px;line-height:1.5}
+.catatan-audit.disetujui{background:#E4F4EE;border:1px solid #C3E6D8;color:#1E5E47}
+.catatan-audit.ditolak{background:#FAEAEC;border:1px solid #F0D4D8;color:#A03A46}
+.kartu-audit .kaki{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.kartu-audit .kaki .btn{flex:1;min-width:110px;padding:11px 14px}
+@media(max-width:640px){.isi-audit{grid-template-columns:1fr}.bukti-audit img{max-height:280px}}
 .peringatan{font-size:12.5px;line-height:1.5;border-radius:10px;padding:8px 11px;margin:8px 0;
  background:#FAEAEC;border:1px solid #F0D4D8;color:#A03A46}
 .peringatan.warn{background:#FFF8EC;border-color:#F0E0C4;color:#8A6520}
@@ -432,7 +457,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.18.4";
+const VERSI_APP = "2026.09.19.1";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -619,7 +644,7 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
 
 /* ------------------ MODUL & MESIN HAK AKSES ------------------ */
 const MODUL=[
- ['dash','Dashboard'],['order','Order'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
+ ['dash','Dashboard'],['order','Order'],['audit','Audit Order'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
  ['jadwal','Jadwal Kerja'],['shift','Shift Kerja'],['karyawan','Karyawan'],['jabatan','Jabatan'],
  ['cabang','Cabang'],['absensi','Absensi'],['izin','Izin & Cuti'],['kasbon','Kasbon'],
  ['kas','Kas'],['pengeluaran','Pengeluaran'],['komisi','Komisi'],['bonus','Bonus'],['gaji','Penggajian'],['skema_gaji','Skema Gaji'],['libur','Tanggal Libur'],
@@ -673,6 +698,7 @@ function opsiRef(ref){
 }
 
 const IKON = {
+  audit: '<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.6"/>',
   absen: '<path d="M9 11.5l2.5 2.5 5-5.5"/><rect x="3.5" y="4.5" width="17" height="16" rx="3"/>',
   absensi: '<rect x="4" y="4.5" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',
   akses: '<rect x="4.5" y="10" width="15" height="10.5" rx="2.5"/><path d="M8 10V7.5a4 4 0 018 0V10"/><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"/>',
@@ -1390,7 +1416,7 @@ const MENU=[
    ['m_jadwal','jadwal','Jadwal Kerja'],['m_libur','libur','Tanggal Libur'],['m_shift','shift','Shift Kerja']]],
  ['SDM',[['m_karyawan','karyawan','Karyawan'],['m_jabatan','jabatan','Jabatan'],['m_cabang','cabang','Cabang'],
    ['m_absensi','absensi','Absensi'],['izin','izin','Izin & Cuti'],['m_kasbon','kasbon','Kasbon']]],
- ['Keuangan',[['kas','kas','Kas'],['m_pengeluaran','pengeluaran','Pengeluaran'],['m_komisi','komisi','Komisi'],
+ ['Keuangan',[['audit','audit','Audit Order'],['kas','kas','Kas'],['m_pengeluaran','pengeluaran','Pengeluaran'],['m_komisi','komisi','Komisi'],
    ['m_bonus','bonus','Bonus'],['m_skema_gaji','skema_gaji','Skema Gaji'],['gaji','gaji','Penggajian']]],
  ['Analitik',[['laporan','laporan','Laporan'],['biaya','biaya','Struktur Biaya & Laba']]],
  ['Pengaturan',[['m_aturan_bonus','aturan_bonus','Aturan Bonus'],['m_target','target','Target'],
@@ -1424,10 +1450,15 @@ function halamanPertama(){
 /* ---- Tab bawah untuk layar kecil. Isinya menyesuaikan hak akses. ---- */
 /* Lima slot tetap: dua kiri, tombol Order di tengah, satu kanan, lalu Menu. */
 const TAB_PILIHAN=[
-  ['dash','dash','Beranda'], ['m_pelanggan','pelanggan','Pelanggan'], ['order','order','Daftar order'],
+  ['dash','dash','Beranda'], ['audit','audit','Audit'], ['m_pelanggan','pelanggan','Pelanggan'],
+  ['order','order','Daftar order'],
   ['m_absensi','absensi','Absensi'], ['kas','kas','Kas'], ['laporan','laporan','Laporan']];
 function daftarTab(){
-  const bisa=TAB_PILIHAN.filter(([id])=>boleh(id.startsWith('m_')?id.slice(2):id,'lihat'));
+  let bisa=TAB_PILIHAN.filter(([id])=>boleh(id.startsWith('m_')?id.slice(2):id,'lihat'));
+  // audit menempati tombol tengah bila pengguna tidak membuat order
+  if(!boleh('order','tambah')&&boleh('audit','lihat')) bisa=bisa.filter(([id])=>id!=='audit');
+  // kasir tidak mengaudit
+  if(boleh('order','tambah')&&!boleh('audit','ubah')) bisa=bisa.filter(([id])=>id!=='audit');
   return { kiri:bisa.slice(0,2), kanan:bisa.slice(2,3),
            buat:boleh('order','tambah'), lihatOrder:boleh('order','lihat') };
 }
@@ -1440,6 +1471,9 @@ function buildTab(){
   const tengah = buat
     ? `<div class="tab pusat" id="tb_order" onclick="formOrder()">
          <span class="ic">${ikon('tambah',26)}</span><span>Buat order</span></div>`
+    : boleh('audit','lihat')
+      ? `<div class="tab pusat" id="tb_audit" onclick="go('audit')">
+           <span class="ic">${ikon('audit',26)}</span><span>Audit</span></div>`
     : lihatOrder
       ? `<div class="tab" id="tb_order" onclick="go('order')"><span class="ic">${ikon('order',21)}</span><span>Order</span></div>`
       : kosong;
@@ -1595,12 +1629,29 @@ const STATUS_BAYAR={
   lunas:{teks:'Sudah dibayar', kelas:'ok'},
   batal:{teks:'Dibatalkan',    kelas:'bad'}
 };
+const STATUS_AUDIT={
+  belum    :{teks:'Belum dicek finance', kelas:'warn'},
+  disetujui:{teks:'Disetujui finance',   kelas:'ok'},
+  ditolak  :{teks:'Ditolak finance',     kelas:'bad'}
+};
+/* Tiga syarat menuju complete: selesai dikerjakan, sudah dibayar, disetujui finance */
 function lencanaOrder(p){
-  const s=STATUS_ORDER[p.status]||{teks:cap(p.status),kelas:'info'};
-  const b=STATUS_BAYAR[p.status_bayar]||{teks:cap(p.status_bayar||'belum'),kelas:'warn'};
   if(p.status==='complete') return `<span class="tag lunas">Complete</span>`;
   if(p.status==='batal')    return `<span class="tag bad">Batal</span>`;
-  return `<span class="tag ${s.kelas}">${s.teks}</span> <span class="tag ${b.kelas}">${b.teks}</span>`;
+  const s=STATUS_ORDER[p.status]||{teks:cap(p.status),kelas:'info'};
+  const b=STATUS_BAYAR[p.status_bayar]||{teks:'Belum dibayar',kelas:'warn'};
+  const a=STATUS_AUDIT[p.audit_status||'belum'];
+  return `<span class="tag ${s.kelas}">${s.teks}</span>
+    <span class="tag ${b.kelas}">${b.teks}</span>
+    <span class="tag ${a.kelas}">${a.teks}</span>`;
+}
+/* Status akhir order menurut tiga syarat, dipakai mode demo */
+function statusAkhir(p, statusKerja){
+  const s=statusKerja||p.status;
+  if(s==='batal') return 'batal';
+  if((s==='selesai'||s==='complete')&&p.status_bayar==='lunas'&&p.audit_status==='disetujui') return 'complete';
+  if(s==='complete') return 'selesai';
+  return s;
 }
 function tagHtml(v){
   const ok=['aktif','selesai','disetujui','hadir','lunas','dibayar','final','owner','admin'],
@@ -1759,6 +1810,7 @@ async function cabutAkun(karyawanId){
 /* ============================ HALAMAN ============================ */
 const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang.'],
  order:['Order','Buat order baru dan pantau yang sedang berjalan.'],
+ audit:['Audit Order','Periksa order dan bukti pembayaran seluruh cabang, lalu setujui atau kembalikan.'],
  izin:['Izin & Cuti','Pengajuan yang menunggu keputusan HRD.'],
  kas:['Kas','Arus kas masuk dan keluar per cabang.'],
  gaji:['Penggajian','Gaji pokok + komisi + bonus − potongan, per periode.'],
@@ -1883,6 +1935,53 @@ dash(){
        {k:'pel',l:'Pelanggan'},{k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},
        {k:'total',t:'rp'},{k:'status',l:'Status',fn:r=>lencanaOrder(r)}])}</div>
   ${kartuLiburTerapis()}`;
+},
+audit(){
+  const semua=DB.pesanan.filter(p=>dalamLingkup(p,'pesanan')&&dalamFilter(p.tgl_kerja||p.tanggal)&&p.status!=='batal');
+  const hitung=s=>semua.filter(p=>(p.audit_status||'belum')===s).length;
+  const lunasBelum=semua.filter(p=>p.status_bayar==='lunas'&&(p.audit_status||'belum')==='belum');
+
+  const saring=AUDIT_FIL.status, cab=AUDIT_FIL.cabang;
+  const rows=semua.filter(p=>{
+    const a=p.audit_status||'belum';
+    if(saring==='siap' && !(p.status_bayar==='lunas'&&a==='belum')) return false;
+    if(!['siap','semua'].includes(saring) && a!==saring) return false;
+    if(cab && p.cabang_id!==cab) return false;
+    return true;
+  }).sort((a,b)=>{
+    // yang siap diperiksa lebih dulu, lalu tanggal terbaru
+    const siap=x=>x.status_bayar==='lunas'&&(x.audit_status||'belum')==='belum'?0:1;
+    if(siap(a)!==siap(b)) return siap(a)-siap(b);
+    return String((b.tgl_kerja||b.tanggal)+(b.jam_kerja||'')).localeCompare(String((a.tgl_kerja||a.tanggal)+(a.jam_kerja||'')));
+  });
+
+  const pil=[['siap','Siap diperiksa',lunasBelum.length],['belum','Belum dicek',hitung('belum')],
+             ['disetujui','Disetujui',hitung('disetujui')],['ditolak','Ditolak',hitung('ditolak')],
+             ['semua','Semua',semua.length]];
+
+  return `<div class="grid g4">
+      ${stat('Siap diperiksa',lunasBelum.length,'sudah bayar, belum dicek','a')}
+      ${stat('Disetujui',hitung('disetujui'),rp(sum(semua.filter(p=>p.audit_status==='disetujui'),'total')),'g')}
+      ${stat('Ditolak',hitung('ditolak'),'dikembalikan ke kasir')}
+      ${stat('Nilai menunggu',rp(sum(lunasBelum,'total')),lunasBelum.length+' order')}
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      ${barisFilter()}
+      <div class="filter" style="margin-top:4px">
+        ${pil.map(([k,l,n])=>`<button class="btn ${saring===k?'':'ghost'} sm"
+          onclick="AUDIT_FIL.status='${k}';render()">${l} <span style="opacity:.7">${n}</span></button>`).join('')}
+        <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="AUDIT_FIL.cabang=this.value;render()">
+          <option value="">Semua cabang</option>
+          ${DB.cabang.map(c=>`<option value="${c.id}" ${cab===c.id?'selected':''}>${esc(c.nama)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:14px">
+      ${rows.length?rows.map(p=>kartuAudit(p)).join('')
+        :'<div class="card empty"><div class="disp">Tidak ada order</div><div>Tidak ada order yang cocok dengan penyaring ini.</div></div>'}
+    </div>`;
 },
 order(){
   const rows=DB.pesanan.filter(p=>dalamLingkup(p,'pesanan')&&dalamFilter(p.tgl_kerja||p.tanggal))
@@ -3158,7 +3257,7 @@ function tautanWa(nomor,pesan){
 function bobotOrder(p){
   if(p.status==='batal')      return 5;
   if(p.status==='complete')   return 4;
-  if(p.status_bayar!=='lunas' && p.status==='selesai') return 3;  // tinggal menagih
+  if(p.status==='selesai')    return 3;   // tinggal menagih atau menunggu finance
   if(p.status==='dikerjakan') return 2;
   if(p.status==='dijadwalkan')return 1;
   return 3;
@@ -3223,6 +3322,111 @@ function tombolOrder(id){
     <button class="btn amber sm" onclick="bonusOrder('${id}')">Bonus</button></div>`;
 }
 
+
+
+/* ===================== AUDIT FINANCE ===================== */
+let AUDIT_FIL={status:'siap',cabang:''};
+
+function kartuAudit(p){
+  const item=DB.item.filter(i=>i.pesanan_id===p.id);
+  const pel=get('pelanggan',p.pelanggan_id)||{};
+  const a=p.audit_status||'belum';
+  const bisaSetuju=p.status_bayar==='lunas'&&a!=='disetujui';
+  const boleh_=boleh('audit','ubah');
+
+  return `<div class="kartu-audit audit-${a}">
+    <div class="atas">
+      <div style="min-width:0">
+        <div class="hint">${esc(p.nomor)} · ${esc(nm('cabang',p.cabang_id))}</div>
+        <h4>${esc(pel.nama||'-')}</h4>
+        <div class="hint">${hariTgl(p.tgl_kerja||p.tanggal)} · pukul ${esc(String(p.jam_kerja||p.jam||'-').slice(0,5))}
+          · kasir ${esc(nm('karyawan',p.kasir_id))}</div>
+      </div>
+      <div class="rp" style="font-size:18px;text-align:right">${rp(p.total)}
+        <div class="hint" style="font-size:11px;font-weight:400">${cap(p.metode_bayar||'-')}</div></div>
+    </div>
+
+    <div class="lencana-baris">${lencanaOrder(p)}</div>
+
+    <div class="isi-audit">
+      <div class="rincian-audit">
+        ${item.map(i=>`<div class="baris">
+          <span>${esc(nm('layanan',i.layanan_id))}
+            ${i.terapis_id?`<em>${esc(nm('karyawan',i.terapis_id))}</em>`:''}</span>
+          <b>${rp(i.harga)}</b></div>`).join('')
+          ||'<p class="hint">Belum ada layanan.</p>'}
+        ${p.diskon>0?`<div class="baris"><span>Diskon</span><b style="color:var(--bad)">− ${rp(p.diskon)}</b></div>`:''}
+        <div class="baris total"><span>Total</span><b>${rp(p.total)}</b></div>
+        ${p.catatan?`<p class="hint" style="margin-top:8px">Catatan: ${esc(p.catatan)}</p>`:''}
+      </div>
+      <div class="bukti-audit">
+        ${p.bukti_bayar
+          ? `<img src="${p.bukti_bayar}" alt="Bukti pembayaran" onclick="lihatBukti('${p.id}')">
+             <span class="hint">Ketuk untuk memperbesar</span>`
+          : `<div class="tanpa-bukti">${ikon('kas',24)}<span>Belum ada bukti pembayaran</span></div>`}
+      </div>
+    </div>
+
+    ${a!=='belum'?`<div class="catatan-audit ${a}">
+      <strong>${a==='disetujui'?'Disetujui':'Ditolak'}</strong> oleh ${esc(nm('karyawan',p.audit_oleh)||'finance')}
+      ${p.audit_waktu?' · '+tgl(String(p.audit_waktu).slice(0,10)):''}
+      ${p.audit_catatan?`<div>${esc(p.audit_catatan)}</div>`:''}</div>`:''}
+
+    ${boleh_?`<div class="kaki">
+      ${bisaSetuju?`<button class="btn" onclick="putuskanAudit('${p.id}','disetujui')">Approve</button>`
+        : a==='disetujui'?'':`<button class="btn" disabled title="Order belum dibayar">Approve</button>`}
+      ${a!=='ditolak'?`<button class="btn rose" onclick="formTolak('${p.id}')">Tolak</button>`:''}
+      ${a!=='belum'?`<button class="btn ghost" onclick="putuskanAudit('${p.id}','belum')">Batalkan keputusan</button>`:''}
+    </div>`:''}
+  </div>`;
+}
+
+function lihatBukti(pesananId){
+  const p=get('pesanan',pesananId); if(!p||!p.bukti_bayar) return;
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Bukti pembayaran</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(p.nomor)} · ${esc(nm('pelanggan',p.pelanggan_id))} · ${rp(p.total)}</p>
+    <img src="${p.bukti_bayar}" alt="Bukti pembayaran" style="width:100%;border-radius:14px;border:1px solid var(--line)">`,
+    {kaki:`${p.status_bayar==='lunas'&&p.audit_status!=='disetujui'&&boleh('audit','ubah')
+        ?`<button class="btn" onclick="putuskanAudit('${p.id}','disetujui')">Approve</button>`:''}
+      <button class="btn ghost" onclick="closeModal()">Tutup</button>`});
+}
+
+function formTolak(pesananId){
+  const p=get('pesanan',pesananId);
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Tolak order</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(p.nomor)} · ${esc(nm('pelanggan',p.pelanggan_id))}</p>
+    <div class="field"><label for="au_alasan">Alasan penolakan</label>
+      <textarea id="au_alasan" rows="3" placeholder="Contoh: nominal transfer Rp 150.000, tidak sama dengan total Rp 175.000"></textarea></div>
+    <p class="hint">Alasan ini dikirim ke kasir pembuat order supaya bisa diperbaiki.</p>`,
+    {kaki:`<button class="btn rose" onclick="putuskanAudit('${pesananId}','ditolak')">Tolak order</button>
+      <button class="btn ghost" onclick="closeModal()">Batal</button>`});
+}
+
+async function putuskanAudit(pesananId, keputusan){
+  const p=get('pesanan',pesananId); if(!p) return;
+  const catatan=keputusan==='ditolak'?(document.getElementById('au_alasan')?.value||'').trim():'';
+  if(keputusan==='ditolak'&&!catatan) return toast('Tulis alasan penolakannya');
+  if(keputusan==='disetujui'&&p.status_bayar!=='lunas') return toast('Order belum dibayar');
+
+  if(LIVE){
+    const {data,error}=await sb.rpc('audit_order',{p_pesanan:pesananId,p_keputusan:keputusan,p_catatan:catatan||null});
+    if(error) return toast(error.message);
+    const i=DB.pesanan.findIndex(x=>x.id===pesananId);
+    if(i>=0&&data) DB.pesanan[i]=data;
+  }else{
+    const baru={...p,audit_status:keputusan,
+      audit_oleh:keputusan==='belum'?null:ME.id,
+      audit_waktu:keputusan==='belum'?null:new Date().toISOString(),
+      audit_catatan:catatan||null};
+    baru.status=statusAkhir(baru, p.status==='complete'?'selesai':p.status);
+    await simpanSebagian('pesanan',pesananId,baru);
+  }
+  closeModal(); render();
+  const q=get('pesanan',pesananId);
+  toast(keputusan==='disetujui'
+    ? (q.status==='complete'?'Disetujui. Order menjadi complete.':'Disetujui. Order menjadi complete setelah pengerjaan selesai.')
+    : keputusan==='ditolak'?'Order ditolak dan dikembalikan ke kasir':'Keputusan audit dibatalkan');
+}
 
 /* ===================== PEMBAYARAN ORDER =====================
    Bukti transaksi diunggah, dikecilkan, lalu disimpan. Begitu ada bukti,
@@ -3316,10 +3520,12 @@ function pilihBukti(input,pesananId){
 async function simpanBukti(pesananId,gambar){
   const p=get('pesanan',pesananId);
   const metode=document.getElementById('b_metode')?.value||p.metode_bayar;
+  // bukti baru berarti finance perlu memeriksa lagi
   const hasil=await simpanSebagian('pesanan',pesananId,{
     bukti_bayar:gambar, metode_bayar:metode,
     status_bayar:'lunas', tgl_bayar:new Date().toISOString(), alasan_batal:null,
-    status: p.status==='selesai' ? 'complete' : p.status});
+    audit_status:'belum', audit_waktu:null,
+    status: statusAkhir({...p,status_bayar:'lunas',audit_status:'belum'})});
   if(!hasil) return;
   if(!LIVE) await catatKasDemo(hasil);
   render();
@@ -3333,8 +3539,8 @@ async function batalBayar(pesananId){
   if(p.status_bayar!=='lunas' && !alasan) return toast('Tulis alasan pembatalannya dulu');
   const hasil=await simpanSebagian('pesanan',pesananId,{status_bayar:'batal',
     alasan_batal:alasan||'Dibatalkan dari rincian pembayaran',
-    dibatalkan_oleh:ME.id,
-    status: p.status==='complete' ? 'selesai' : p.status});
+    dibatalkan_oleh:ME.id, audit_status:'belum',
+    status: statusAkhir({...p,status_bayar:'batal'})});
   if(!hasil) return;
   closeModal(); render(); toast('Pembayaran dibatalkan');
 }
@@ -3684,7 +3890,7 @@ async function segarkanStatusOrder(pesananId){
   const item=DB.item.filter(i=>i.pesanan_id===pesananId&&i.status!=='batal');
   let baru='dijadwalkan';
   if(item.length){
-    if(item.every(i=>i.status==='selesai')) baru = p.status_bayar==='lunas'?'complete':'selesai';
+    if(item.every(i=>i.status==='selesai')) baru=statusAkhir(p,'selesai');
     else if(item.some(i=>i.status==='berjalan'||i.status==='selesai')) baru='dikerjakan';
   }
   if(baru!==p.status) await simpanSebagian('pesanan',pesananId,{status:baru});
