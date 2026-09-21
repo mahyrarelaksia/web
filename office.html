@@ -457,7 +457,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.19.2";
+const VERSI_APP = "2026.09.19.3";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -917,11 +917,30 @@ async function muatSemua(){
     if(error){ console.error('Gagal memuat '+TBL[k]+':',error); galat.push(TBL[k]+' ('+error.message+')'); }
     else DB[k]=data||[];
   }));
+  await muatNamaKaryawan();
   if(galat.length){
     console.error('Tabel yang gagal dibaca:',galat);
     toast('Sebagian tabel tidak bisa dibaca. Buka Pengaturan → Diagnosa koneksi.');
   }
   return galat;
+}
+
+/* Nama, jabatan, dan cabang semua karyawan — tanpa data pribadi.
+   Jabatan yang tidak memegang modul Karyawan (misalnya Finance) tetap perlu
+   tahu siapa penerima komisi, bonus, dan gaji. */
+async function muatNamaKaryawan(){
+  if(!LIVE) return;
+  const {data,error}=await sb.rpc('daftar_nama_karyawan');
+  if(error){ console.warn('Daftar nama karyawan belum tersedia. Jalankan skrip 37.',error.message); return; }
+  for(const r of data||[]){
+    if(!DB.karyawan.some(k=>k.id===r.id))
+      DB.karyawan.push({id:r.id,nama:r.nama,jabatan_id:r.jabatan_id,cabang_id:r.cabang_id,
+        role:r.role,status:r.status,_ringkas:true});
+    if(r.jabatan_id&&!DB.jabatan.some(j=>j.id===r.jabatan_id))
+      DB.jabatan.push({id:r.jabatan_id,nama:r.jabatan_nama,_ringkas:true});
+    if(r.cabang_id&&!DB.cabang.some(c=>c.id===r.cabang_id))
+      DB.cabang.push({id:r.cabang_id,nama:r.cabang_nama,kode:'',_ringkas:true});
+  }
 }
 const GENERATED={item:['subtotal'],izin:['jumlah_hari']};
 function bersihkan(key,row){
@@ -1321,7 +1340,10 @@ const F={
   fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'jenis',l:'Jenis bonus',t:'sel',o:['tips','transport','lembur','target','kehadiran','rating','referral','manual']},
    {k:'periode',l:'Periode (YYYY-MM)'},{k:'deskripsi',l:'Keterangan'},{k:'nominal',l:'Nominal',t:'rp'},
    {k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
-  cols:[{k:'periode'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'jenis',t:'tag'},{k:'deskripsi'},
+  cols:[{k:'periode'},
+   {k:'kry',l:'Karyawan',fn:r=>`<strong>${esc(nm('karyawan',r.karyawan_id))}</strong>
+     <div class="hint">${esc(nm('jabatan',get('karyawan',r.karyawan_id)?.jabatan_id))}</div>`},
+   {k:'jenis',t:'tag'},{k:'deskripsi'},
    {k:'jarak',l:'Jarak',fn:r=>r.jarak_km?r.jarak_km+' km':'<span class="hint">—</span>'},
    {k:'ord',l:'Dari order',fn:r=>{
      const p=r.pesanan_id?get('pesanan',r.pesanan_id):null;
@@ -1335,8 +1357,13 @@ const F={
  komisi:{title:'Komisi',sub:'Terbentuk otomatis saat terapis menyelesaikan order.',
   fields:[{k:'karyawan_id',l:'Terapis',t:'ref',ref:'karyawan'},{k:'tanggal',l:'Tanggal',t:'date'},{k:'periode',l:'Periode'},
    {k:'dasar',l:'Dasar hitung',t:'rp'},{k:'persen',l:'Persen',t:'num'},{k:'nominal',l:'Nominal',t:'rp'}],
-  cols:[{k:'tanggal',t:'date'},{k:'kry',l:'Terapis',fn:r=>nm('karyawan',r.karyawan_id)},{k:'dasar',l:'Omzet',t:'rp'},
-   {k:'ps',l:'Persen',fn:r=>r.persen+'%'},{k:'nominal',l:'Komisi',t:'rp'},
+  cols:[{k:'tanggal',t:'date'},
+   {k:'kry',l:'Terapis',fn:r=>`<strong>${esc(nm('karyawan',r.karyawan_id))}</strong>`},
+   {k:'pel',l:'Pelanggan',fn:r=>{const x=asalKomisi(r); return x.p?esc(nm('pelanggan',x.p.pelanggan_id)):'<span class="hint">—</span>';}},
+   {k:'lay',l:'Layanan',fn:r=>{const x=asalKomisi(r); return x.i?esc(nm('layanan',x.i.layanan_id)):'<span class="hint">—</span>';}},
+   {k:'kerja',l:'Pengerjaan',fn:r=>{const x=asalKomisi(r); return x.p?hariTgl(x.p.tgl_kerja||x.p.tanggal):'<span class="hint">—</span>';}},
+   {k:'dasar',l:'Dasar hitung',t:'rp'},
+   {k:'ps',l:'Persen',fn:r=>Number(r.persen)?r.persen+'%':'<span class="hint">tetap</span>'},{k:'nominal',l:'Komisi',t:'rp'},
    {k:'db',l:'Status',fn:r=>r.dibayar?'<span class="tag ok">Dibayar</span>':'<span class="tag warn">Belum</span>'}]},
  pengeluaran:{title:'Pengeluaran',sub:'Catat di sini semua biaya operasional: sewa, listrik, minyak pijat, laundry, iklan, perbaikan. Begitu disetujui, kas keluar tercatat otomatis.',
   info:'<strong>Pengeluaran</strong> adalah tempat mencatat biaya usaha beserta kategorinya. Setelah disetujui, sistem otomatis membuat kas keluar di Buku Kas — tidak perlu dicatat dua kali.',
@@ -1611,7 +1638,8 @@ new MutationObserver(()=>{
 addEventListener('popstate',()=>{ if(modal.classList.contains('on')) closeModal(); });
 
 function renderModule(key){
-  const m=F[key]; let rows=DB[key].filter(r=>dalamLingkup(r,key));
+  // baris ringkas (hanya nama) tidak ditampilkan sebagai data lengkap
+  const m=F[key]; let rows=DB[key].filter(r=>!r._ringkas&&dalamLingkup(r,key));
   if(SEARCH) rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(SEARCH.toLowerCase()));
   return `<div class="card"><div class="head"><h3>${m.title}</h3>
     <div class="row"><input placeholder="Cari…" style="width:180px" value="${esc(SEARCH)}" oninput="SEARCH=this.value;render()">
@@ -2732,6 +2760,12 @@ function skemaJabatan(jabatanId){
 }
 
 /* Jadwal libur terapis di cabang ini, dipakai kasir saat menyusun order */
+/* Order dan pekerjaan asal sebuah catatan komisi */
+function asalKomisi(c){
+  const i=get('item',c.pesanan_item_id||c.item_id);
+  return {i, p:i?get('pesanan',i.pesanan_id):null};
+}
+
 function kartuLiburTerapis(){
   const terapis=DB.karyawan.filter(k=>k.role==='terapis'&&k.status==='aktif'&&dalamLingkup(k,'karyawan'));
   const idTerapis=new Set(terapis.map(k=>k.id));
@@ -3052,6 +3086,8 @@ async function bayarGaji(){
   for(const g of slip){
     const ok=await simpanSebagian('gaji',g.id,{status:'dibayar',tgl_bayar:today()});
     if(!ok) continue;
+    // di database, kas keluar dan tanda dibayar komisi/bonus dibuat oleh trigger
+    if(LIVE) continue;
     if(!DB.kas.some(x=>x.sumber==='gaji'&&x.ref_id===g.id)){
       await simpan('kas',{id:uid(),tanggal:today(),cabang_id:get('karyawan',g.karyawan_id)?.cabang_id,jenis:'keluar',
         kategori:'Gaji & Tunjangan',sumber:'gaji',ref_id:g.id,nominal:g.total_terima,metode:'transfer',
@@ -3062,6 +3098,7 @@ async function bayarGaji(){
     for(const b of DB.bonus.filter(x=>x.karyawan_id===g.karyawan_id&&x.periode===per&&!x.dibayar))
       await simpanSebagian('bonus',b.id,{dibayar:true});
   }
+  if(LIVE) await muatTabel(['kas','komisi','bonus']);
   render(); toast('Gaji ditandai dibayar dan tercatat di kas');
 }
 /* ===================== FORMULIR ORDER (versi 2) =====================
