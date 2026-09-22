@@ -481,7 +481,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.20.2";
+const VERSI_APP = "2026.09.20.3";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -966,7 +966,7 @@ async function muatNamaKaryawan(){
   for(const r of data||[]){
     if(!DB.karyawan.some(k=>k.id===r.id))
       DB.karyawan.push({id:r.id,nama:r.nama,jabatan_id:r.jabatan_id,cabang_id:r.cabang_id,
-        role:r.role,status:r.status,_ringkas:true});
+        role:r.role,status:r.status,skema_gaji_id:r.skema_gaji_id||null,tanpa_gaji:!!r.tanpa_gaji,_ringkas:true});
     if(r.jabatan_id&&!DB.jabatan.some(j=>j.id===r.jabatan_id))
       DB.jabatan.push({id:r.jabatan_id,nama:r.jabatan_nama,_ringkas:true});
     if(r.cabang_id&&!DB.cabang.some(c=>c.id===r.cabang_id))
@@ -1310,16 +1310,19 @@ const F={
  karyawan:{title:'Karyawan',sub:'Data staf dan terapis, sekaligus tempat membuat akun login terapis.',
   fields:[{k:'nik',l:'NIK'},{k:'nama',l:'Nama lengkap'},{k:'jabatan_id',l:'Jabatan',t:'ref',ref:'jabatan'},
    {k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},{k:'role',l:'Hak akses',t:'sel',o:['owner','admin','manajer','kasir','terapis']},
+   {k:'skema_gaji_id',l:'Skema gaji',t:'skema'},
    {k:'jenis_kelamin',l:'Jenis kelamin',t:'sel',o:['L','P']},{k:'telepon',l:'Telepon'},{k:'email',l:'Email'},
    {k:'alamat',l:'Alamat',t:'area'},{k:'tgl_masuk',l:'Tanggal masuk',t:'date'},
    {k:'bank_nama',l:'Bank'},{k:'bank_rekening',l:'No. rekening'},
    {k:'status',l:'Status',t:'sel',o:['aktif','nonaktif','cuti_panjang']}],
-  info:'Gaji mengikuti Skema Gaji sesuai jabatan dan cabang orang ini. Ubah lewat menu Keuangan → Skema Gaji.',
+  info:'Pilih <b>skema gaji</b> tiap karyawan di sini. Bila dibiarkan "Ikuti jabatan", sistem memakai skema yang dipasang untuk jabatan dan cabangnya. Isi dan angka skemanya diatur di Keuangan → Skema Gaji.',
   cols:[{k:'nik'},{k:'nama'},{k:'jab',l:'Jabatan',fn:r=>nm('jabatan',r.jabatan_id)},
    {k:'cab',l:'Cabang',fn:r=>nm('cabang',r.cabang_id)},{k:'role',t:'tag'},
    {k:'akun',l:'Akun login',fn:r=>r.user_id?`<span class="tag ok">${esc(r.email||'aktif')}</span>`:'<span class="tag warn">Belum ada</span>'},
-   {k:'skema',l:'Skema gaji',fn:r=>{const s=skemaBerlaku(r);
-     return s?`<span class="tag ok">${esc(s.nama)}</span>`:'<span class="tag bad">Belum ada skema</span>'}},
+   {k:'skema',l:'Skema gaji',fn:r=>{const s=skemaBerlaku(r), a=asalSkema(r);
+     if(a==='tanpa') return '<span class="tag">Tanpa skema</span><div class="hint">tidak dihitung</div>';
+     if(!s) return '<span class="tag bad">Belum ada skema</span>';
+     return `<span class="tag ok">${esc(s.nama)}</span>${a==='jabatan'?'<div class="hint">otomatis dari jabatan</div>':''}`;}},
    {k:'status',t:'tag'}],
   extra:r=>`<button class="btn ${r.user_id?'ghost':'amber'} sm" onclick="formAkun('${r.id}')">${r.user_id?'Ubah akun':'Buat akun'}</button>`},
  layanan:{title:'Layanan & Tarif',sub:'Menu perawatan, durasi, harga, dan komisi terapis.',
@@ -1435,8 +1438,8 @@ const F={
        'Bonus target, service motor, dan BPJS hanya muncul di portal terapis bila diisi. Biarkan nol bila tidak diberikan.<br>'+
        'Hari kerja dihitung dari hari yang punya absen masuk sekaligus absen pulang.',
   fields:[{k:'nama',l:'Nama skema'},
-   {k:'jabatan_id',l:'Jabatan',t:'ref',ref:'jabatan'},
-   {k:'cabang_id',l:'Cabang (kosongkan bila berlaku semua)',t:'ref',ref:'cabang'},
+   {k:'jabatan_id',l:'Pasang otomatis untuk jabatan (boleh kosong)',t:'ref',ref:'jabatan'},
+   {k:'cabang_id',l:'… di cabang (kosongkan bila semua)',t:'ref',ref:'cabang'},
    {k:'tipe_gaji',l:'Tipe gaji',t:'sel',o:['harian','bulanan','training','cs']},
    {k:'gaji_pokok',l:'Gaji pokok bulanan',t:'rp'},
    {k:'gaji_harian',l:'Gaji harian (per hari kerja efektif)',t:'rp'},
@@ -1465,12 +1468,16 @@ const F={
    {k:'catatan',l:'Catatan',t:'area'},
    {k:'aktif',l:'Aktif',t:'bool'}],
   cols:[{k:'nama'},
-   {k:'jab',l:'Jabatan',fn:r=>esc(nm('jabatan',r.jabatan_id))},
-   {k:'cab',l:'Cabang',fn:r=>r.cabang_id?esc(nm('cabang',r.cabang_id)):'<span class="tag">Semua cabang</span>'},
+   {k:'jab',l:'Otomatis untuk',fn:r=>r.jabatan_id
+     ?`${esc(nm('jabatan',r.jabatan_id))}<div class="hint">${r.cabang_id?esc(nm('cabang',r.cabang_id)):'semua cabang'}</div>`
+     :'<span class="hint">dipilih per karyawan</span>'},
    {k:'tipe_gaji',l:'Tipe',t:'tag'},
    {k:'isi',l:'Komponen',fn:r=>ringkasSkemaGaji(r)},
    {k:'gaji_minimal',l:'Minimal',t:'rp'},
    {k:'bns',l:'Bonus',fn:r=>ringkasBonusSkema(r)},
+   {k:'pakai',l:'Dipakai oleh',fn:r=>{const o=DB.karyawan.filter(k=>k.status==='aktif'&&skemaBerlaku(k)?.id===r.id);
+     return o.length?`${o.length} orang<div class="hint">${o.slice(0,3).map(k=>esc(k.nama)).join(', ')}${o.length>3?'…':''}</div>`
+       :'<span class="hint">belum dipakai</span>';}},
    {k:'ak',l:'Status',fn:r=>r.aktif!==false?'<span class="tag ok">Aktif</span>':'<span class="tag">Nonaktif</span>'}]},
  rekening:{title:'Rekening',sub:'Daftar rekening dan saldo awalnya. Saldo berjalan dihitung dari buku kas sejak tanggal saldo awal.',
   fields:[{k:'kode',l:'Kode singkat'},{k:'nama',l:'Nama rekening'},
@@ -1636,6 +1643,20 @@ function fieldHtml(f,v){
   else if(t==='sel')inp=`<select id="${id}">${f.o.map(o=>`<option ${v===o?'selected':''}>${o}</option>`).join('')}</select>`;
   else if(t==='ref')inp=`<select id="${id}"><option value="">— pilih —</option>${opsiRef(f.ref).map(o=>`<option value="${o.id}" ${v===o.id?'selected':''}>${esc(o.nama)}</option>`).join('')}</select>`;
   else if(t==='bool')inp=`<select id="${id}"><option value="true" ${v?'selected':''}>Ya</option><option value="false" ${!v?'selected':''}>Tidak</option></select>`;
+  else if(t==='skema'){
+    // pilihan skema gaji pada data karyawan
+    const r=EDIT.id?get(EDIT.mod,EDIT.id)||{}:{};
+    const pilih=r.tanpa_gaji?'__tanpa':(v||'');
+    const daftar=(DB.skema_gaji||[]).filter(s=>s.aktif!==false)
+      .sort((a,b)=>String(a.nama).localeCompare(String(b.nama)));
+    inp=`<select id="${id}">
+      <option value="" ${pilih===''?'selected':''}>Ikuti jabatan (otomatis)</option>
+      ${daftar.map(s=>`<option value="${s.id}" ${pilih===s.id?'selected':''}>${esc(s.nama)} · ${s.tipe_gaji}</option>`).join('')}
+      <option value="__tanpa" ${pilih==='__tanpa'?'selected':''}>Tanpa skema — tidak digaji & tidak dihitung</option>
+    </select>
+    <p class="hint" style="margin-top:6px">Pilih <b>Tanpa skema</b> untuk owner, investor, atau mitra supaya
+      tidak masuk Penggajian, Laporan, dan Struktur Biaya.</p>`;
+  }
   else if(t==='date')inp=`<input id="${id}" type="date" value="${v?String(v).slice(0,10):today()}">`;
   else if(t==='time')inp=`<input id="${id}" type="time" value="${v||''}">`;
   else if(t==='num'||t==='rp')inp=`<input id="${id}" type="number" value="${v??''}">`;
@@ -1647,6 +1668,7 @@ async function saveForm(){
   m.fields.forEach(f=>{const el=document.getElementById('f_'+f.k);let v=el.value;
     if(f.t==='bool')v=v==='true'; else if(f.t==='num'||f.t==='rp')v=Number(v)||0;
     else if(f.t==='ref'&&v==='')v=null;
+    else if(f.t==='skema'){ obj.tanpa_gaji=(v==='__tanpa'); v=(v===''||v==='__tanpa')?null:v; }
     obj[f.k]=v;});
   if(!EDIT.id&&EDIT.mod==='pengeluaran') obj.nomor='PG-'+String(DB.pengeluaran.length+1).padStart(4,'0');
   const hasil=await simpan(EDIT.mod,obj);
@@ -2269,7 +2291,7 @@ gaji(){
   const karyawan=DB.karyawan.filter(k=>k.status==='aktif'&&dalamLingkup(k,'karyawan')
     &&(!GAJI_FIL.cabang||k.cabang_id===GAJI_FIL.cabang));
   const baris=karyawan.map(k=>rincianGaji(k,per)).filter(g=>g.ada);
-  const tanpaSkema=karyawan.filter(k=>!skemaBerlaku(k));
+  const tanpaSkema=karyawan.filter(k=>!k.tanpa_gaji&&!skemaBerlaku(k));
   const slip=Object.fromEntries(DB.gaji.filter(g=>g.periode===per).map(g=>[g.karyawan_id,g]));
 
   const total=sum(baris,'total');
@@ -2774,7 +2796,7 @@ function hitungRealisasi(cab,per,M){
     }else gajiStaf+=kotor(g);
   });
   const perJabatan=Object.values(peta).sort((a,b)=>b.total-a.total);
-  const tanpaSkema=aktif.filter(k=>!skemaBerlaku(k));
+  const tanpaSkema=aktif.filter(k=>!k.tanpa_gaji&&!skemaBerlaku(k));
 
   // --- pengeluaran yang sudah disetujui ---
   const keluar=DB.pengeluaran.filter(e=>e.status==='disetujui'&&String(e.tanggal).startsWith(per)&&diCabang(e));
@@ -3129,11 +3151,26 @@ function ringkasSkemaGaji(s){
   return b.join(' · ')||'<span class="hint">belum diisi</span>';
 }
 /* Skema yang berlaku: cabang+jabatan, lalu jabatan semua cabang */
+/* Skema yang berlaku untuk seorang karyawan:
+   1. tanpa skema    → tidak digaji lewat sistem, tidak ikut dihitung
+   2. dipilih langsung di data karyawan
+   3. otomatis dari jabatan + cabang, lalu jabatan semua cabang */
 function skemaBerlaku(k){
-  const aktif=DB.skema_gaji.filter(s=>s.aktif!==false&&s.jabatan_id===k.jabatan_id);
+  if(!k||k.tanpa_gaji) return null;
+  if(k.skema_gaji_id){
+    const s=DB.skema_gaji.find(x=>x.id===k.skema_gaji_id&&x.aktif!==false);
+    if(s) return s;
+  }
+  const aktif=DB.skema_gaji.filter(s=>s.aktif!==false&&s.jabatan_id&&s.jabatan_id===k.jabatan_id);
   return aktif.find(s=>s.cabang_id===k.cabang_id)
       || aktif.find(s=>!s.cabang_id)
       || null;
+}
+/* Asal skema, untuk keterangan di tabel */
+function asalSkema(k){
+  if(k.tanpa_gaji) return 'tanpa';
+  if(k.skema_gaji_id&&DB.skema_gaji.some(x=>x.id===k.skema_gaji_id&&x.aktif!==false)) return 'dipilih';
+  return skemaBerlaku(k)?'jabatan':'kosong';
 }
 
 /* Ringkasan skema gaji sebuah jabatan, untuk kolom tabel */
@@ -3333,13 +3370,13 @@ function panelSkemaCS(){
   const per=periode();
   return skema.map(s0=>{
     const s=skemaKaryawan({jabatan_id:s0.jabatan_id,cabang_id:s0.cabang_id});
-    const cs=DB.karyawan.filter(k=>k.status==='aktif'&&k.jabatan_id===s0.jabatan_id
-      &&(!s0.cabang_id||k.cabang_id===s0.cabang_id)&&dalamLingkup(k,'karyawan')&&skemaBerlaku(k)?.id===s0.id);
+    // semua karyawan yang skemanya ini, baik dipilih langsung maupun lewat jabatan
+    const cs=DB.karyawan.filter(k=>k.status==='aktif'&&dalamLingkup(k,'karyawan')&&skemaBerlaku(k)?.id===s0.id);
     const tgt=[[s0.bonus_target1_order,s0.bonus_target1_nominal],[s0.bonus_target2_order,s0.bonus_target2_nominal]]
       .filter(x=>Number(x[0])>0);
     return `<div class="card" style="margin-top:14px">
       <div class="head"><h3>${esc(s0.nama)}</h3>
-        <span class="tag info">${esc(nm('jabatan',s0.jabatan_id))} · ${s0.cabang_id?esc(nm('cabang',s0.cabang_id)):'semua cabang'}</span></div>
+        <span class="tag info">${s0.jabatan_id?esc(nm('jabatan',s0.jabatan_id))+' · '+(s0.cabang_id?esc(nm('cabang',s0.cabang_id)):'semua cabang'):'dipilih per karyawan'}</span></div>
 
       <div class="aturan-cs">
         <div><span>Gaji pokok</span><b>${rp(s0.gaji_pokok)}</b></div>
