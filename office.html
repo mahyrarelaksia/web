@@ -156,6 +156,14 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .hanya-mobil{display:none}
 /* ---- Tampilan aplikasi untuk layar kecil ---- */
 .tabbar{display:none}
+.tombol-segar{display:grid;place-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tombol-segar svg{display:block;transition:transform .2s}
+.tombol-segar.berputar svg{animation:putar .8s linear infinite}
+@keyframes putar{to{transform:rotate(360deg)}}
+.segar-login{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:10px;
+ background:none;border:1px solid var(--line);border-radius:12px;padding:10px;color:var(--muted);
+ font:inherit;font-size:13px;cursor:pointer}
+.segar-login:hover{border-color:var(--jade);color:var(--jade)}
 .lonceng{position:relative;width:36px;height:36px;border-radius:12px;flex:none;cursor:pointer;
  background:var(--mist);border:1px solid var(--line);color:var(--jade);
  display:grid;place-items:center;font-size:16px;-webkit-tap-highlight-color:transparent}
@@ -433,6 +441,8 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
     <div class="field"><label for="em">Email</label><input id="em" type="email" placeholder="admin@mahyra.id" autocomplete="username"></div>
     <div class="field"><label for="pw">Kata sandi</label><input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')masuk()"></div>
     <button class="btn" style="width:100%" id="btnLogin" onclick="masuk()">Masuk</button>
+    <button type="button" class="segar-login tombol-segar" onclick="muatUlangPenuh()">
+      <span id="icSegarLogin"></span>Muat ulang aplikasi</button>
     <p class="versi" id="versiApp"></p>
   </div>
 </div>
@@ -441,6 +451,8 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
   <div class="mobbar">
     <div class="mark" style="width:36px;height:36px"><img src="logo.png" alt="Mahyra"></div>
     <div class="judul"><b id="mobNama">Office</b><span id="mobPeran"></span></div>
+    <button class="lonceng tombol-segar" onclick="segarkan()" aria-label="Perbarui data" title="Perbarui data">
+      <span class="icSegar"></span></button>
     <button class="lonceng" onclick="bukaNotif()" aria-label="Notifikasi">
       <span id="icLonceng"></span><span class="titik" id="jmlNotif" style="display:none">0</span></button>
   </div>
@@ -450,6 +462,8 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
       <div class="topbar">
         <div><h1 id="pgTitle">Dashboard</h1><p id="pgSub"></p></div>
         <div class="who">
+          <button class="lonceng tombol-segar" onclick="segarkan()" aria-label="Perbarui data" title="Perbarui data">
+            <span class="icSegar"></span></button>
           <button class="lonceng" onclick="bukaNotif()" aria-label="Notifikasi">
             <span id="icLonceng2"></span><span class="titik" id="jmlNotif2" style="display:none">0</span></button>
           <div class="av" id="meAv">M</div>
@@ -481,7 +495,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.20.3";
+const VERSI_APP = "2026.09.22.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -725,6 +739,7 @@ function opsiRef(ref){
 }
 
 const IKON = {
+  segarkan: '<path d="M20 11a8 8 0 00-14.9-3.5M4 4.5v3.9h3.9"/><path d="M4 13a8 8 0 0014.9 3.5M20 19.5v-3.9h-3.9"/>',
   bank: '<path d="M3 9.5L12 4l9 5.5"/><path d="M4.5 10v8M9 10v8M15 10v8M19.5 10v8"/><path d="M3 20.5h18"/>',
   audit: '<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.6"/>',
   absen: '<path d="M9 11.5l2.5 2.5 5-5.5"/><rect x="3.5" y="4.5" width="17" height="16" rx="3"/>',
@@ -777,14 +792,17 @@ const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xx
    angka seperti 1.456.000,234 yang sekilas terbaca miliaran. */
 const rp=n=>{ const v=Math.round(Number(n)||0);
   return (v<0?'− Rp ':'Rp ')+Math.abs(v).toLocaleString('id-ID',{maximumFractionDigits:0}); };
-/* Tanggal menurut waktu perangkat, bukan UTC.
-   Memakai toISOString membuat jam 00.00–07.00 WIB terbaca sebagai hari kemarin. */
-const today=()=>{ const d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
-const tglLokal=d=>{ const x=new Date(d);
-  return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+/* ===================== WAKTU WIB =====================
+   Semua tanggal dan jam dibaca menurut Asia/Jakarta, apa pun setelan
+   zona waktu ponsel atau komputernya. Mahyra beroperasi di Malang dan
+   Surabaya — keduanya WIB — jadi tampilan harus selalu sama. */
+const ZONA='Asia/Jakarta';
+const _fmtTgl=new Intl.DateTimeFormat('en-CA',{timeZone:ZONA,year:'numeric',month:'2-digit',day:'2-digit'});
+const _fmtJam=new Intl.DateTimeFormat('en-GB',{timeZone:ZONA,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+const today=()=>_fmtTgl.format(new Date());
+const tglLokal=d=>_fmtTgl.format(new Date(d));
 const periode=()=>today().slice(0,7);
-const jam=()=>new Date().toTimeString().slice(0,5);
+const jam=()=>_fmtJam.format(new Date());
 const tgl=d=>d?new Date(String(d).slice(0,10)+'T00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400)};
@@ -797,7 +815,7 @@ const hariLengkap=d=>d?new Date(String(d).slice(0,10)+'T00:00')
 const jamDari=v=>{ if(!v) return '--.--';
   const s=String(v);
   if(/^\d{2}:\d{2}/.test(s)) return s.slice(0,5).replace(':','.');
-  const d=new Date(s); return isNaN(d)?'--.--':d.toTimeString().slice(0,5).replace(':','.'); };
+  const d=new Date(s); return isNaN(d)?'--.--':_fmtJam.format(d).replace(':','.'); };
 /* Foto dan titik lokasi dari catatan check in/out */
 function buktiAbsen(a){
   const log=DB.absen_log.filter(x=>x.karyawan_id===a.karyawan_id
@@ -1074,6 +1092,7 @@ function notifSaya(){
 }
 function belumDibaca(){ return NOTIF.filter(n=>!NOTIF_DILIHAT.has(n.id)); }
 function gambarLonceng(){
+  document.querySelectorAll('.icSegar').forEach(e=>{ if(!e.innerHTML) e.innerHTML=ikon('segarkan',17); });
   ['icLonceng','icLonceng2'].forEach(id=>{
     const e=document.getElementById(id); if(e&&!e.innerHTML) e.innerHTML=ikon('lonceng',18);
   });
@@ -1154,9 +1173,49 @@ async function periksaNotif(pertama){
   if(baru.length) tampilkanPop(baru[0]);
 }
 
+
+/* ===================== SEGARKAN =====================
+   Dua tingkat:
+   - segarkan()      : ambil ulang data dari server, tetap di halaman yang sama
+   - muatUlangPenuh(): buang cache aplikasi lalu buka ulang, untuk memuat versi terbaru */
+let SEDANG_SEGAR=false;
+async function segarkan(){
+  if(SEDANG_SEGAR) return;
+  SEDANG_SEGAR=true;
+  document.querySelectorAll('.tombol-segar').forEach(b=>b.classList.add('berputar'));
+  try{
+    if(LIVE){
+      await muatSemua();
+      if(typeof periksaNotif==='function') await periksaNotif(true);
+    }
+    render();
+    toast('Data diperbarui');
+  }catch(e){
+    console.error(e); toast('Gagal memperbarui: '+(e.message||e));
+  }finally{
+    SEDANG_SEGAR=false;
+    setTimeout(()=>document.querySelectorAll('.tombol-segar').forEach(b=>b.classList.remove('berputar')),400);
+  }
+}
+async function muatUlangPenuh(){
+  document.querySelectorAll('.tombol-segar').forEach(b=>b.classList.add('berputar'));
+  try{
+    if('caches' in window){
+      const kunci=await caches.keys();
+      await Promise.all(kunci.map(k=>caches.delete(k)));
+    }
+    if('serviceWorker' in navigator){
+      const reg=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(reg.map(r=>r.update().catch(()=>{})));
+    }
+  }catch(_){}
+  location.reload();
+}
+
 /* Versi aplikasi di halaman login, ikut berubah tiap pembaruan */
 (function(){
   const v=document.getElementById('versiApp');
+  const is=document.getElementById('icSegarLogin'); if(is) is.innerHTML=ikon('segarkan',15);
   if(v) v.innerHTML='Portal Office · versi <b>'+VERSI_APP+'</b>';
 })();
 
@@ -1596,6 +1655,8 @@ function bukaMenuOffice(){
     <p class="hint" style="margin-bottom:6px">${esc(ME.nama)} · ${esc(nm('jabatan',ME.jabatan_id))}</p>
     ${isi}
     <div class="menulist" style="margin-top:16px">
+      <button onclick="closeModal();muatUlangPenuh()">
+        <span class="ic">${ikon('segarkan',18)}</span>Muat ulang aplikasi</button>
       <button onclick="keluar()" style="color:var(--bad);border-color:#F3DDE1">
         <span class="ic" style="background:#FAEAEC;color:var(--bad)">${ikon('akses',18)}</span>Keluar dari akun</button></div>`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`})
 }
@@ -1780,7 +1841,8 @@ function tagHtml(v){
 }
 /* ---------------- Penyaring tanggal ---------------- */
 let FIL={mode:'semua',dari:today(),sampai:today()};
-const geser=n=>{const d=new Date();d.setDate(d.getDate()+n);return tglLokal(d)};
+// geser n hari dari hari ini menurut WIB
+const geser=n=>tglLokal(new Date(new Date(today()+'T12:00:00+07:00').getTime()+n*864e5));
 function setFilter(mode){
   FIL.mode=mode;
   if(mode==='hari')    { FIL.dari=today();   FIL.sampai=today(); }
@@ -1992,13 +2054,19 @@ function render(){
 
 const PAGES={
 dash(){
-  const o=DB.pesanan.filter(x=>String(x.tanggal).slice(0,10)===today()&&dalamLingkup(x,'pesanan'));
-  const sel=o.filter(x=>x.status==='selesai'), omzet=sum(sel,'total');
+  const o=DB.pesanan.filter(x=>tglOrder(x)===today()&&dalamLingkup(x,'pesanan'));
+  const sel=o.filter(sudahDikerjakan), omzet=sum(sel,'total');
   const masuk=sum(DB.kas.filter(k=>k.jenis==='masuk'),'nominal'), keluar=sum(DB.kas.filter(k=>k.jenis==='keluar'),'nominal');
   const tg=DB.target.find(t=>t.periode===periode()&&!t.karyawan_id);
-  const pct=tg&&tg.target_omzet?Math.min(100,Math.round(omzet/tg.target_omzet*100)):0;
+  const omzetBulan=sum(DB.pesanan.filter(x=>dalamLingkup(x,'pesanan')&&sudahDikerjakan(x)&&tglOrder(x).startsWith(periode())),'total');
+  const pct=tg&&tg.target_omzet?Math.min(100,Math.round(omzetBulan/tg.target_omzet*100)):0;
   const terapis=DB.karyawan.filter(k=>k.role==='terapis'&&dalamLingkup(k,'karyawan'));
-  const hadir=DB.absensi.filter(a=>String(a.tanggal).slice(0,10)===today()&&['hadir','telat'].includes(a.status)).length;
+  // hadir = terapis yang sudah absen masuk hari ini
+  const idTerapis=new Set(terapis.map(k=>k.id));
+  const hadir=new Set([
+    ...DB.absen_log.filter(a=>String(a.tanggal).slice(0,10)===today()&&a.tipe==='masuk'&&idTerapis.has(a.karyawan_id)).map(a=>a.karyawan_id),
+    ...DB.absensi.filter(a=>String(a.tanggal).slice(0,10)===today()&&['hadir','telat'].includes(a.status)&&idTerapis.has(a.karyawan_id)).map(a=>a.karyawan_id)
+  ]).size;
   const kinerja=terapis.map(k=>({nama:k.nama,cabang:nm('cabang',k.cabang_id),
     n:DB.item.filter(i=>i.terapis_id===k.id&&i.status==='selesai').length,
     komisi:sum(DB.komisi.filter(c=>c.karyawan_id===k.id),'nominal')})).sort((a,b)=>b.komisi-a.komisi);
@@ -2007,7 +2075,7 @@ dash(){
     ...DB.kasbon.filter(k=>k.status==='menunggu').map(k=>[`Kasbon ${rp(k.nominal)} — ${nm('karyawan',k.karyawan_id)}`,'m_kasbon']),
     ...DB.karyawan.filter(k=>k.role==='terapis'&&!k.user_id).map(k=>[`${k.nama} belum punya akun login`,'m_karyawan'])];
   // omzet pada rentang yang dipilih penyaring
-  const rentang=DB.pesanan.filter(x=>dalamLingkup(x,'pesanan')&&dalamFilter(x.tgl_kerja||x.tanggal)
+  const rentang=DB.pesanan.filter(x=>dalamLingkup(x,'pesanan')&&dalamFilter(tglOrder(x))
     &&['selesai','complete'].includes(x.status));
   const lunas=rentang.filter(x=>x.status_bayar==='lunas');
   const bulan=DB.pesanan.filter(x=>dalamLingkup(x,'pesanan')
@@ -2030,15 +2098,16 @@ dash(){
 
   <div class="grid g4" style="margin-top:14px">
     ${stat('Omzet hari ini',rp(omzet),sel.length+' order selesai')}
-    ${stat('Order berjalan',o.filter(x=>x.status==='berjalan').length,'sedang dikerjakan','a')}
+    ${stat('Order berjalan',o.filter(masihBerjalan).length,
+      o.filter(x=>x.status==='dikerjakan').length+' sedang dikerjakan','a')}
     ${stat('Saldo kas',rp(masuk-keluar),'masuk '+rp(masuk)+' · keluar '+rp(keluar),'g')}
     ${stat('Terapis hadir',hadir+' / '+terapis.length,'absensi hari ini','r')}</div>
   <div class="grid g2" style="margin-top:14px">
     <div class="card"><div class="head"><h3>Capaian target</h3><span class="tag info">${periode()}</span></div>
       <div style="font-family:Fraunces,serif;font-size:30px">${pct}%</div><div class="bar"><i style="width:${pct}%"></i></div>
-      <p class="hint" style="margin-top:8px">${rp(omzet)} dari target ${rp(tg?.target_omzet||0)}</p>
+      <p class="hint" style="margin-top:8px">${rp(omzetBulan)} dari target ${rp(tg?.target_omzet||0)} bulan ini</p>
       <div style="margin-top:14px">${DB.cabang.filter(c=>dalamLingkup(c,'cabang')).map(c=>{
-        const om=sum(DB.pesanan.filter(p=>p.cabang_id===c.id&&p.status==='selesai'),'total');
+        const om=sum(DB.pesanan.filter(p=>p.cabang_id===c.id&&sudahDikerjakan(p)&&tglOrder(p).startsWith(periode())),'total');
         return `<div class="list-item"><span class="dot"></span><div style="flex:1"><strong>${esc(c.nama)}</strong>
           <div class="hint">${esc(c.kota||'')}</div></div><span class="rp">${rp(om)}</span></div>`}).join('')}</div></div>
     <div class="card"><div class="head"><h3>Kinerja terapis</h3></div>
@@ -2197,11 +2266,11 @@ order(){
     return {...p,pel:nm('pelanggan',p.pelanggan_id),cab:nm('cabang',p.cabang_id),
       lay:it.map(i=>nm('layanan',i.layanan_id)).join(', '),ter:it.map(i=>nm('karyawan',i.terapis_id)).join(', ')}})
     .sort(urutanOrder);
-  const hi=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()&&dalamLingkup(p,'pesanan'));
+  const hi=DB.pesanan.filter(p=>tglOrder(p)===today()&&dalamLingkup(p,'pesanan'));
   return `<div class="grid g4">
-    ${stat('Order hari ini',hi.length,'semua status')}
-    ${stat('Omzet hari ini',rp(sum(hi.filter(p=>p.status==='selesai'),'total')),'order selesai','g')}
-    ${stat('Sedang berjalan',hi.filter(p=>p.status==='berjalan').length,'terapis bekerja','a')}
+    ${stat('Order hari ini',hi.length,'dijadwalkan hari ini')}
+    ${stat('Omzet hari ini',rp(sum(hi.filter(sudahDikerjakan),'total')),hi.filter(sudahDikerjakan).length+' order selesai','g')}
+    ${stat('Sedang berjalan',hi.filter(p=>p.status==='dikerjakan').length,'terapis bekerja','a')}
     ${stat('Rata-rata transaksi',rp(hi.length?sum(hi,'total')/hi.length:0),'per order','r')}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Daftar order</h3>
     <button class="btn" onclick="formOrder()">Buat order</button></div>
@@ -2867,30 +2936,62 @@ function izinBaris(jabatanId,modul){
   return DB.hak_akses.find(x=>x.jabatan_id===jabatanId&&x.modul===modul)
       || {jabatan_id:jabatanId,modul,lihat:false,tambah:false,ubah:false,hapus:false};
 }
+/* Izin disimpan dengan mencocokkan jabatan + modul, bukan pengenal baris.
+   Menyimpan lewat pengenal bentrok bila baris izin modul itu sudah ada
+   dengan pengenal lain, dan itulah penyebab "gagal simpan akses". */
+async function simpanIzin(jabatanId,modul,nilai){
+  const n={lihat:!!nilai.lihat,tambah:!!nilai.tambah,ubah:!!nilai.ubah,hapus:!!nilai.hapus};
+  if(n.tambah||n.ubah||n.hapus) n.lihat=true;             // tidak bisa mengubah tanpa melihat
+
+  let baris=null, pesan='';
+  if(LIVE){
+    const {data,error}=await sb.rpc('atur_izin',{p_jabatan:jabatanId,p_modul:modul,
+      p_lihat:n.lihat,p_tambah:n.tambah,p_ubah:n.ubah,p_hapus:n.hapus});
+    if(!error) baris=data;
+    else if(/atur_izin|function|PGRST202/i.test(error.message+(error.code||''))){
+      // skrip 39 belum dijalankan: simpan langsung dengan pencocokan jabatan + modul
+      const r=await sb.from('hak_akses').upsert({jabatan_id:jabatanId,modul,...n},
+        {onConflict:'jabatan_id,modul'}).select().single();
+      if(r.error) pesan=r.error.message; else baris=r.data;
+    } else pesan=error.message;
+    if(!baris){ toast('Gagal menyimpan izin '+modul+': '+pesan); return null; }
+  } else {
+    baris={...izinBaris(jabatanId,modul),jabatan_id:jabatanId,modul,...n};
+    if(!baris.id) baris.id=uid();
+  }
+  const i=DB.hak_akses.findIndex(x=>x.jabatan_id===jabatanId&&x.modul===modul);
+  if(i>=0) DB.hak_akses[i]=baris; else DB.hak_akses.push(baris);
+  return baris;
+}
+
 async function setIzin(modul,aksi,nilai){
   const lama=izinBaris(AKSES_JBT,modul);
-  const baru={...lama,id:lama.id||uid(),[aksi]:nilai};
-  if(nilai&&aksi!=='lihat') baru.lihat=true;              // tidak bisa mengubah tanpa melihat
+  const baru={lihat:lama.lihat,tambah:lama.tambah,ubah:lama.ubah,hapus:lama.hapus,[aksi]:nilai};
   if(!nilai&&aksi==='lihat'){ baru.tambah=false; baru.ubah=false; baru.hapus=false; }
-  const hasil=await simpan('hak_akses',baru);
-  if(!hasil) return;
-  render(); toast('Izin '+modul+' diperbarui');
+  const hasil=await simpanIzin(AKSES_JBT,modul,baru);
+  render();
+  if(hasil) toast('Izin '+(MODUL.find(m=>m[0]===modul)?.[1]||modul)+' diperbarui');
 }
 async function terapkanPreset(jenis){
-  for(const [m] of MODUL){
-    const lama=izinBaris(AKSES_JBT,m);
-    const nilai = jenis==='penuh' ? {lihat:true,tambah:true,ubah:true,hapus:true}
-                : jenis==='baca'  ? {lihat:true,tambah:false,ubah:false,hapus:false}
-                :                   {lihat:false,tambah:false,ubah:false,hapus:false};
-    await simpan('hak_akses',{...lama,id:lama.id||uid(),jabatan_id:AKSES_JBT,modul:m,...nilai});
-  }
-  render(); toast('Izin jabatan diperbarui');
+  const nilai = jenis==='penuh' ? {lihat:true,tambah:true,ubah:true,hapus:true}
+              : jenis==='baca'  ? {lihat:true,tambah:false,ubah:false,hapus:false}
+              :                   {lihat:false,tambah:false,ubah:false,hapus:false};
+  let gagal=0;
+  for(const [m] of MODUL){ if(!await simpanIzin(AKSES_JBT,m,nilai)) gagal++; }
+  render();
+  toast(gagal?`${gagal} modul gagal disimpan`:'Izin jabatan diperbarui');
 }
 async function setLingkup(jabatanId,nilai){
   const j=get('jabatan',jabatanId);
-  const hasil=await simpan('jabatan',{...j,lingkup:nilai});
-  if(!hasil) return;
-  render(); toast('Lingkup '+j.nama+' menjadi '+nilai);
+  let ok=null;
+  if(LIVE){
+    const {data,error}=await sb.rpc('atur_lingkup',{p_jabatan:jabatanId,p_lingkup:nilai});
+    if(!error) ok=data;
+    else ok=await simpanSebagian('jabatan',jabatanId,{lingkup:nilai});
+    if(ok){ const i=DB.jabatan.findIndex(x=>x.id===jabatanId); if(i>=0) DB.jabatan[i]={...DB.jabatan[i],...ok}; }
+  } else ok=await simpanSebagian('jabatan',jabatanId,{lingkup:nilai});
+  render();
+  if(ok) toast('Lingkup '+j.nama+' menjadi '+nilai);
 }
 
 /* Buka panel diagnosa dari mana saja, termasuk saat menu kosong */
@@ -3014,6 +3115,16 @@ function rekeningKas(k){
   if(k.rekening_id) return daftarRekening().find(r=>r.id===k.rekening_id)||get('rekening',k.rekening_id);
   return rekeningKode(k.metode==='tunai'?'TUNAI':'BCA');
 }
+
+/* ===================== ATURAN OMZET =====================
+   Satu aturan untuk semua halaman:
+   - order dihitung pada TANGGAL PENGERJAAN, bukan tanggal dipesan
+   - omzet = order yang sudah selesai dikerjakan, termasuk yang sudah complete
+     (selesai + dibayar + disetujui finance)
+   - order berjalan = dijadwalkan atau sedang dikerjakan */
+const tglOrder=p=>String(p.tgl_kerja||p.tanggal||'').slice(0,10);
+const sudahDikerjakan=p=>['selesai','complete'].includes(p.status);
+const masihBerjalan=p=>['dijadwalkan','dikerjakan','berjalan','draft'].includes(p.status);
 
 /* Order dan pekerjaan asal sebuah catatan komisi */
 function asalKomisi(c){
