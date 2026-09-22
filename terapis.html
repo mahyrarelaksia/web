@@ -723,7 +723,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.18.3';
+const VERSI_APP='2026.09.20.3';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -1233,8 +1233,13 @@ function absenHariIni(){
            pulang:log.find(a=>a.tipe==='pulang')||null };
 }
 function skemaGaji(){
-  const aktif=(DB.skema_gaji||[]).filter(s=>s.aktif!==false&&s.jabatan_id===ME.jabatan_id);
-  const s=aktif.find(x=>x.cabang_id===ME.cabang_id)||aktif.find(x=>!x.cabang_id)||{};
+  // urutan sama dengan portal office: tanpa skema → dipilih langsung → jabatan + cabang → jabatan
+  let s={};
+  if(!ME.tanpa_gaji){
+    const langsung=ME.skema_gaji_id&&(DB.skema_gaji||[]).find(x=>x.id===ME.skema_gaji_id&&x.aktif!==false);
+    const aktif=(DB.skema_gaji||[]).filter(x=>x.aktif!==false&&x.jabatan_id&&x.jabatan_id===ME.jabatan_id);
+    s=langsung||aktif.find(x=>x.cabang_id===ME.cabang_id)||aktif.find(x=>!x.cabang_id)||{};
+  }
   const j=get('jabatan',ME.jabatan_id)||{};
   const N=v=>Number(v||0);
   // Seluruh angka diambil dari skema. Tidak ada penimpa di data karyawan,
