@@ -318,6 +318,23 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .unggah .ikon{color:var(--jade)}
 .unggah strong{font-size:14px}
 .btn.blok{width:100%}
+.aturan-cs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.aturan-cs>div{background:var(--mist);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.aturan-cs span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.aturan-cs b{font-size:13.5px;line-height:1.5}
+.aturan-cs em{font-style:normal;font-size:11.5px;color:var(--muted)}
+.kartu-gaji-cs{border:1px solid var(--line);border-radius:15px;padding:14px;background:#fff}
+.kartu-gaji-cs .atas{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px}
+.kartu-gaji-cs .total{font-family:Fraunces,serif;font-size:20px;color:var(--laut,#1B4A82)}
+.kartu-gaji-cs .progres{height:7px;border-radius:7px;background:var(--mist);overflow:hidden;margin-bottom:8px}
+.kartu-gaji-cs .progres i{display:block;height:100%;background:linear-gradient(90deg,#4C8FD6,#1E7A5A)}
+.baris-gaji{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.baris-gaji em{display:block;font-style:normal;font-size:11.5px;color:var(--muted);margin-top:1px}
+.baris-gaji b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.baris-gaji b.neg{color:var(--bad)}
+.baris-gaji.total{border-bottom:0;padding-top:10px;font-weight:600;font-size:14px}
+.kartu-gaji-cs .saran{margin-top:10px;background:#FFF8EC;border:1px solid #F0E0C4;border-radius:10px;
+ padding:9px 11px;font-size:12.5px;line-height:1.6;color:#6F5317}
 .kartu-rekening{cursor:pointer;transition:.16s;border:1px solid var(--line)}
 .kartu-rekening:hover{border-color:var(--jade-2);transform:translateY(-1px)}
 .kartu-rekening.dipilih{border-color:var(--jade);box-shadow:0 0 0 2px rgba(47,111,191,.18)}
@@ -464,7 +481,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.19.4";
+const VERSI_APP = "2026.09.20.1";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1276,6 +1293,7 @@ const F={
    {k:'status',l:'Status',t:'sel',o:['aktif','nonaktif']}],
   cols:[{k:'kode'},{k:'nama'},{k:'kota'},{k:'telepon'},{k:'jam',l:'Jam',fn:r=>r.jam_buka+'–'+r.jam_tutup},{k:'status',t:'tag'}]},
  jabatan:{title:'Jabatan',sub:'Struktur jabatan, gaji acuan, dan komisi bawaan.',
+  bawah:()=>panelSkemaCS(),
   fields:[{k:'kode',l:'Kode'},{k:'nama',l:'Nama jabatan'},{k:'level',l:'Level',t:'num'},
    {k:'is_terapis',l:'Terhitung terapis',t:'bool'},
    {k:'lingkup',l:'Lingkup data',t:'sel',o:['semua','cabang','sendiri']},
@@ -1347,7 +1365,7 @@ const F={
   cols:[{k:'tanggal',t:'date'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'nominal',t:'rp'},
    {k:'cicilan',t:'rp'},{k:'sisa',t:'rp'},{k:'status',t:'tag'}]},
  bonus:{title:'Bonus',sub:'Pemberian bonus per periode; otomatis masuk slip gaji.',
-  fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'jenis',l:'Jenis bonus',t:'sel',o:['tips','transport','lembur','target','kehadiran','rating','referral','manual']},
+  fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'jenis',l:'Jenis bonus',t:'sel',o:['tips','transport','lembur','kinerja','target','kehadiran','rating','referral','manual']},
    {k:'periode',l:'Periode (YYYY-MM)'},{k:'deskripsi',l:'Keterangan'},{k:'nominal',l:'Nominal',t:'rp'},
    {k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
   cols:[{k:'periode'},
@@ -1406,7 +1424,8 @@ const F={
  hak_akses:{title:'Hak Akses & Peran',sub:'Atur apa yang boleh dilihat dan diubah tiap jabatan, serta seberapa luas datanya.',
   fields:[],cols:[]},
  skema_gaji:{title:'Skema Gaji',sub:'Aturan penggajian per jabatan dan cabang. Satu jabatan boleh punya aturan berbeda di tiap cabang.',
-  info:'<strong>Bulanan</strong> — gaji pokok tetap sebulan, dipotong bila hari kerjanya kurang. Untuk admin, kasir, kepala cabang.<br>'+
+  info:'<strong>CS</strong> — gaji pokok + bonus per order + bonus target order + persen omzet bertingkat. Untuk Customer Service. Hanya bagian omzet di tingkat itu yang kena persen lebih tinggi.<br>'+
+       '<strong>Bulanan</strong> — gaji pokok tetap sebulan, dipotong bila hari kerjanya kurang. Untuk admin dan kepala cabang.<br>'+
        '<strong>Harian</strong> — dibayar per hari kerja efektif, tanpa gaji pokok. Untuk terapis tetap.<br>'+
        '<strong>Training</strong> — gaji pokok dikurangi potongan untuk tiap hari yang tidak bekerja. Untuk terapis masa percobaan.<br><br>'+
        'Bonus target, service motor, dan BPJS hanya muncul di portal terapis bila diisi. Biarkan nol bila tidak diberikan.<br>'+
@@ -1414,7 +1433,7 @@ const F={
   fields:[{k:'nama',l:'Nama skema'},
    {k:'jabatan_id',l:'Jabatan',t:'ref',ref:'jabatan'},
    {k:'cabang_id',l:'Cabang (kosongkan bila berlaku semua)',t:'ref',ref:'cabang'},
-   {k:'tipe_gaji',l:'Tipe gaji',t:'sel',o:['harian','bulanan','training']},
+   {k:'tipe_gaji',l:'Tipe gaji',t:'sel',o:['harian','bulanan','training','cs']},
    {k:'gaji_pokok',l:'Gaji pokok bulanan',t:'rp'},
    {k:'gaji_harian',l:'Gaji harian (per hari kerja efektif)',t:'rp'},
    {k:'tunjangan',l:'Tunjangan tetap per bulan',t:'rp'},
@@ -1430,6 +1449,15 @@ const F={
    {k:'bonus_target2_nominal',l:'Bonus target 2 — nominal',t:'rp'},
    {k:'bonus_service_motor',l:'Bonus service motor per bulan',t:'rp'},
    {k:'bonus_bpjs',l:'BPJS ditanggung per bulan',t:'rp'},
+   {k:'target_bertingkat',l:'Bonus target bertingkat (target 2 ditambahkan di atas target 1)',t:'bool'},
+   {k:'fee_order_cs',l:'Khusus CS — bonus per order yang dibuat',t:'rp'},
+   {k:'dasar_cs',l:'Khusus CS — order yang dihitung',t:'sel',o:['sendiri','cabang']},
+   {k:'omzet_t1_batas',l:'Khusus CS — omzet tingkat 1 sampai',t:'rp'},
+   {k:'omzet_t1_persen',l:'Khusus CS — persen tingkat 1 (%)',t:'num'},
+   {k:'omzet_t2_batas',l:'Khusus CS — omzet tingkat 2 sampai',t:'rp'},
+   {k:'omzet_t2_persen',l:'Khusus CS — persen tingkat 2 (%)',t:'num'},
+   {k:'omzet_t3_persen',l:'Khusus CS — persen di atas tingkat 2 (%)',t:'num'},
+   {k:'bonus_kinerja',l:'Khusus CS — bonus kinerja bila dinilai tercapai',t:'rp'},
    {k:'catatan',l:'Catatan',t:'area'},
    {k:'aktif',l:'Aktif',t:'bool'}],
   cols:[{k:'nama'},
@@ -1661,10 +1689,11 @@ function renderModule(key){
   // baris ringkas (hanya nama) tidak ditampilkan sebagai data lengkap
   const m=F[key]; let rows=DB[key].filter(r=>!r._ringkas&&dalamLingkup(r,key));
   if(SEARCH) rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(SEARCH.toLowerCase()));
+  const bawah=m.bawah?m.bawah():'';
   return `<div class="card"><div class="head"><h3>${m.title}</h3>
     <div class="row"><input placeholder="Cari…" style="width:180px" value="${esc(SEARCH)}" oninput="SEARCH=this.value;render()">
       ${boleh(key,'tambah')?`<button class="btn" onclick="openForm('${key}')">Tambah</button>`:''}</div></div>
-    ${tableHtml(rows,m.cols,boleh(key,'ubah')?key:null,boleh(key,'ubah')?m.extra:null)}</div>`;
+    ${tableHtml(rows,m.cols,boleh(key,'ubah')?key:null,boleh(key,'ubah')?m.extra:null)}</div>${bawah}`;
 }
 function tableHtml(rows,cols,key,extra){
   if(!rows.length) return `<div class="empty"><div class="disp">Belum ada data</div><div>Tambahkan entri pertama lewat tombol di atas.</div></div>`;
@@ -1996,6 +2025,9 @@ dash(){
       [{k:'kerja',l:'Pengerjaan',fn:r=>hariTgl(r.tgl_kerja||r.tanggal)+' · '+String(r.jam_kerja||r.jam||'-').slice(0,5)},
        {k:'pel',l:'Pelanggan'},{k:'lay',l:'Layanan'},{k:'ter',l:'Terapis'},
        {k:'total',t:'rp'},{k:'status',l:'Status',fn:r=>lencanaOrder(r)}])}</div>
+  ${skemaKaryawan(ME).tipe==='cs'?`<div class="card" style="margin-top:14px">
+      <div class="head"><h3>Gaji & target saya bulan ini</h3><span class="hint">per hari ini</span></div>
+      ${kartuGajiCS(ME,periode())}</div>`:''}
   ${kartuLiburTerapis()}`;
 },
 kasbank(){
@@ -3001,6 +3033,12 @@ function komisiUntuk(karyawanId, layanan, diskon){
 /* Ringkasan komponen sebuah skema gaji */
 function ringkasSkemaGaji(s){
   const b=[];
+  if(s.tipe_gaji==='cs'){
+    if(s.gaji_pokok>0) b.push(rp(s.gaji_pokok)+'/bln');
+    if(s.fee_order_cs>0) b.push(rp(s.fee_order_cs)+'/order');
+    if(s.omzet_t1_persen>0) b.push(`omzet ${s.omzet_t1_persen}/${s.omzet_t2_persen||0}/${s.omzet_t3_persen||0}%`);
+    return b.join(' · ')||'<span class="hint">belum diisi</span>';
+  }
   if(s.gaji_pokok>0)    b.push(rp(s.gaji_pokok)+'/bln');
   if(s.gaji_harian>0)   b.push(rp(s.gaji_harian)+'/hari');
   if(s.tunjangan>0)     b.push('tunjangan '+rp(s.tunjangan));
@@ -3041,7 +3079,12 @@ function skemaKaryawan(k){
     hariKerja:N(s.hari_kerja)||26,
     bonusT1Order:N(s.bonus_target1_order), bonusT1Nominal:N(s.bonus_target1_nominal),
     bonusT2Order:N(s.bonus_target2_order), bonusT2Nominal:N(s.bonus_target2_nominal),
-    bonusMotor:N(s.bonus_service_motor), bonusBpjs:N(s.bonus_bpjs) };
+    bonusMotor:N(s.bonus_service_motor), bonusBpjs:N(s.bonus_bpjs),
+    // khusus tipe cs
+    feeOrderCs:N(s.fee_order_cs), dasarCs:s.dasar_cs||'sendiri', bertingkat:!!s.target_bertingkat,
+    t1Batas:N(s.omzet_t1_batas), t1Persen:N(s.omzet_t1_persen),
+    t2Batas:N(s.omzet_t2_batas), t2Persen:N(s.omzet_t2_persen), t3Persen:N(s.omzet_t3_persen),
+    bonusKinerja:N(s.bonus_kinerja) };
 }
 /* Hari kerja efektif: hari dengan minimal satu orderan selesai atau check in */
 /* Hari kerja efektif: hari yang punya absen masuk sekaligus absen pulang */
@@ -3097,6 +3140,13 @@ function periodeItem(i){
 
 function rincianGaji(k, per, tanggal){
   const s=skemaKaryawan(k);
+  if(s.tipe==='cs'){
+    const c=hitungCS(k,per,tanggal);
+    return {k, s, ada:s.ada!==false, HK:c.HK, jatah:c.jatah, efektif:c.jatah, nOrder:c.n,
+      pokok:c.pokok, upah:c.bonusOrder, tunj:c.tunj, um:0, kom:0,
+      bon:c.bonusKinerja+c.bonLain, bonusTarget:c.bonusTarget+c.om.nilai, bonusTetap:c.tetap,
+      pot:0, ksb:c.ksb, minimal:0, sesuai:0, total:c.total, cs:c};
+  }
   const HK=s.hariKerja||26;
   const jatah=jatahHariKerja(per,HK,tanggal);
   const rasio=HK?jatah/HK:0;
@@ -3138,6 +3188,141 @@ function rincianGaji(k, per, tanggal){
   return {k, s, ada:s.ada!==false, HK, jatah, efektif, nOrder,
     pokok, upah, tunj, um, kom, bon, bonusTarget, bonusTetap,
     pot, ksb, minimal, sesuai, total};
+}
+
+/* ===================== GAJI CUSTOMER SERVICE =====================
+   Pokok + bonus per order + bonus target (bertingkat) + persen omzet
+   progresif. Hanya bagian omzet di tingkat itu yang kena persen lebih tinggi. */
+function bonusOmzet(omzet, s){
+  if(omzet<=0) return {nilai:0,rinci:[]};
+  const r=[];
+  if(!s.t1Batas){ const v=Math.round(omzet*s.t1Persen/100); return {nilai:v,rinci:[[s.t1Persen,omzet,v]]}; }
+  const t1=Math.min(omzet,s.t1Batas); r.push([s.t1Persen,t1,t1*s.t1Persen/100]);
+  if(omzet>s.t1Batas){
+    if(s.t2Batas>s.t1Batas){
+      const t2=Math.min(omzet,s.t2Batas)-s.t1Batas; r.push([s.t2Persen,t2,t2*s.t2Persen/100]);
+      if(omzet>s.t2Batas){ const t3=omzet-s.t2Batas; r.push([s.t3Persen,t3,t3*s.t3Persen/100]); }
+    }else{ const t2=omzet-s.t1Batas; r.push([s.t2Persen,t2,t2*s.t2Persen/100]); }
+  }
+  return {nilai:Math.round(r.reduce((a,x)=>a+x[2],0)), rinci:r.filter(x=>x[1]>0)};
+}
+const jt=n=>{ const v=n/1e6; return (Number.isInteger(v)?String(v):v.toFixed(1).replace('.',','))+' jt'; };
+
+function hitungCS(k, per, tanggal){
+  const s=skemaKaryawan(k), HK=s.hariKerja||26;
+  const jatah=jatahHariKerja(per,HK,tanggal), rasio=HK?jatah/HK:0;
+  const order=DB.pesanan.filter(p=>['selesai','complete'].includes(p.status)
+    &&String(p.tgl_kerja||p.tanggal).slice(0,7)===per
+    &&(s.dasarCs==='cabang'?p.cabang_id===k.cabang_id:p.kasir_id===k.id));
+  const n=order.length, omzet=sum(order,'total');
+
+  const pokok=Math.round(s.pokok*rasio);
+  const bonusOrder=s.feeOrderCs*n;
+
+  // target: bertingkat berarti ditambahkan, bukan menggantikan
+  const tgt=[[s.bonusT1Order,s.bonusT1Nominal],[s.bonusT2Order,s.bonusT2Nominal]].filter(x=>x[0]>0);
+  let bonusTarget=0;
+  if(s.bertingkat) tgt.forEach(([o,v])=>{ if(n>=o) bonusTarget+=v; });
+  else { const capai=tgt.filter(([o])=>n>=o).pop(); bonusTarget=capai?capai[1]:0; }
+  const berikut=tgt.find(([o])=>n<o);
+
+  const om=bonusOmzet(omzet,s);
+  // tingkat omzet berikutnya
+  let tingkatBerikut=null;
+  if(s.t1Batas&&omzet<s.t1Batas&&s.t2Persen) tingkatBerikut=[s.t1Batas-omzet,s.t2Persen];
+  else if(s.t2Batas&&omzet<s.t2Batas&&s.t3Persen) tingkatBerikut=[s.t2Batas-omzet,s.t3Persen];
+
+  const bonusKinerja=sum(DB.bonus.filter(b=>b.karyawan_id===k.id&&b.periode===per
+    &&b.status==='disetujui'&&b.jenis==='kinerja'),'nominal');
+  const bonLain=sum(DB.bonus.filter(b=>b.karyawan_id===k.id&&b.periode===per
+    &&b.status==='disetujui'&&b.jenis!=='kinerja'),'nominal');
+  const tunj=Math.round(s.tunjangan*rasio);
+  const tetap=Math.round((s.bonusMotor+s.bonusBpjs)*rasio);
+  const ksb=sum(DB.kasbon.filter(x=>x.karyawan_id===k.id&&x.status==='disetujui'&&Number(x.sisa)>0),'cicilan');
+
+  const total=Math.max(0,pokok+bonusOrder+bonusTarget+om.nilai+bonusKinerja+bonLain+tunj+tetap-ksb);
+  return {k,s,HK,jatah,n,omzet,pokok,bonusOrder,bonusTarget,berikut,om,tingkatBerikut,
+    bonusKinerja,bonLain,tunj,tetap,ksb,total,persenOmzet:omzet?total/omzet*100:0};
+}
+
+/* Di menu Jabatan: aturan skema CS dan simulasi gaji tiap CS bulan ini */
+function panelSkemaCS(){
+  const skema=(DB.skema_gaji||[]).filter(s=>s.tipe_gaji==='cs'&&s.aktif!==false);
+  if(!skema.length) return '';
+  const per=periode();
+  return skema.map(s0=>{
+    const s=skemaKaryawan({jabatan_id:s0.jabatan_id,cabang_id:s0.cabang_id});
+    const cs=DB.karyawan.filter(k=>k.status==='aktif'&&k.jabatan_id===s0.jabatan_id
+      &&(!s0.cabang_id||k.cabang_id===s0.cabang_id)&&dalamLingkup(k,'karyawan')&&skemaBerlaku(k)?.id===s0.id);
+    const tgt=[[s0.bonus_target1_order,s0.bonus_target1_nominal],[s0.bonus_target2_order,s0.bonus_target2_nominal]]
+      .filter(x=>Number(x[0])>0);
+    return `<div class="card" style="margin-top:14px">
+      <div class="head"><h3>${esc(s0.nama)}</h3>
+        <span class="tag info">${esc(nm('jabatan',s0.jabatan_id))} · ${s0.cabang_id?esc(nm('cabang',s0.cabang_id)):'semua cabang'}</span></div>
+
+      <div class="aturan-cs">
+        <div><span>Gaji pokok</span><b>${rp(s0.gaji_pokok)}</b></div>
+        <div><span>Bonus per order</span><b>${rp(s0.fee_order_cs)}</b>
+          <em>order ${s0.dasar_cs==='cabang'?'seluruh cabang':'yang dibuat sendiri'}</em></div>
+        <div><span>Target order</span><b>${tgt.map(([o,v],i)=>`${o} → ${i&&s0.target_bertingkat?'tambah ':''}${rp(v)}`).join('<br>')||'—'}</b></div>
+        <div><span>Persen omzet</span><b>${s0.omzet_t1_persen}% sampai ${jt(Number(s0.omzet_t1_batas))}<br>
+          ${s0.omzet_t2_persen}% sampai ${jt(Number(s0.omzet_t2_batas))}<br>
+          ${s0.omzet_t3_persen}% di atasnya</b><em>hanya bagian di tingkat itu</em></div>
+        <div><span>Bonus kinerja</span><b>${rp(s0.bonus_kinerja)}</b><em>jika dinilai tercapai</em></div>
+      </div>
+
+      <div class="head" style="margin-top:18px"><h3 style="font-size:15px">Simulasi gaji ${new Date(per+'-01T00:00')
+        .toLocaleDateString('id-ID',{month:'long',year:'numeric'})}</h3>
+        <span class="hint">${cs.length} orang · per hari ini</span></div>
+      <div class="grid g2" style="gap:12px">
+        ${cs.map(k=>kartuGajiCS(k,per)).join('')||'<p class="hint">Belum ada karyawan aktif dengan skema ini.</p>'}
+      </div>
+      ${boleh('skema_gaji','ubah')?`<button class="btn ghost sm" style="margin-top:12px"
+        onclick="openForm('skema_gaji','${s0.id}')">Ubah skema ini</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+/* Kartu rincian gaji CS, dipakai di menu Jabatan dan beranda CS */
+function kartuGajiCS(k, per){
+  const c=hitungCS(k,per), s=c.s;
+  const baris=(l,v,ket,neg)=>`<div class="baris-gaji"><div><span>${l}</span>${ket?`<em>${ket}</em>`:''}</div>
+    <b class="${neg?'neg':''}">${neg?'− ':''}${rp(v)}</b></div>`;
+  const ketTarget=c.bonusTarget?`target ${[s.bonusT1Order,s.bonusT2Order].filter(o=>o&&c.n>=o).join(' & ')} order tercapai`
+    :(c.berikut?`belum capai target ${c.berikut[0]} order`:'');
+  const saran=[];
+  if(c.berikut) saran.push(`Kurang <b>${c.berikut[0]-c.n} order</b> lagi untuk bonus target ${rp(c.berikut[1])}.`);
+  if(c.tingkatBerikut) saran.push(`Kurang <b>${rp(c.tingkatBerikut[0])}</b> omzet lagi untuk naik ke tingkat ${c.tingkatBerikut[1]}%.`);
+  const progres=c.berikut?Math.min(100,Math.round(c.n/c.berikut[0]*100)):100;
+
+  return `<div class="kartu-gaji-cs">
+    <div class="atas"><div><strong>${esc(k.nama)}</strong>
+      <div class="hint">${esc(nm('cabang',k.cabang_id))} · ${c.n} order · omzet ${rp(c.omzet)}</div></div>
+      <div style="text-align:right"><div class="total">${rp(c.total)}</div>
+        <div class="hint">${c.persenOmzet?c.persenOmzet.toFixed(1)+'% dari omzet':'belum ada omzet'}</div></div></div>
+    <div class="progres"><i style="width:${progres}%"></i></div>
+    <div class="hint" style="margin:-4px 0 8px">${c.berikut?`${c.n} dari ${c.berikut[0]} order menuju target berikutnya`:'semua target order tercapai'}</div>
+    ${baris('Gaji pokok',c.pokok,c.jatah<c.HK?`${c.jatah}/${c.HK} hari kerja berjalan`:'')}
+    ${baris(`Bonus order (${c.n} × ${rp(s.feeOrderCs)})`,c.bonusOrder)}
+    ${baris('Bonus target order',c.bonusTarget,ketTarget)}
+    ${baris(`Bonus omzet (${jt(c.omzet)})`,c.om.nilai,c.om.rinci.map(([p,v])=>`${p}%×${jt(v)}`).join(' + '))}
+    ${baris('Bonus kinerja',c.bonusKinerja,c.bonusKinerja?'diberikan':`jika capai · ${rp(s.bonusKinerja)}`)}
+    ${c.bonLain?baris('Bonus lain',c.bonLain):''}
+    ${c.tunj?baris('Tunjangan',c.tunj):''}
+    ${c.ksb?baris('Cicilan kasbon',c.ksb,'',true):''}
+    <div class="baris-gaji total"><span>Total gaji CS</span><b>${rp(c.total)}</b></div>
+    ${saran.length?`<div class="saran">${saran.join('<br>')}</div>`:''}
+    ${!c.bonusKinerja&&s.bonusKinerja&&boleh('bonus','tambah')
+      ?`<button class="btn ghost sm" style="margin-top:10px" onclick="beriBonusKinerja('${k.id}','${per}')">
+          Beri bonus kinerja ${rp(s.bonusKinerja)}</button>`:''}
+  </div>`;
+}
+
+async function beriBonusKinerja(karyawanId, per){
+  const k=get('karyawan',karyawanId), s=skemaKaryawan(k);
+  const ok=await simpan('bonus',{id:uid(),karyawan_id:karyawanId,jenis:'kinerja',periode:per,
+    deskripsi:'Bonus kinerja '+per,nominal:s.bonusKinerja,status:'disetujui',dibayar:false,dibuat_oleh:ME.id});
+  if(ok){ render(); toast('Bonus kinerja '+rp(s.bonusKinerja)+' diberikan ke '+k.nama); }
 }
 
 /* Simpan hitungan hari ini sebagai slip draft */
