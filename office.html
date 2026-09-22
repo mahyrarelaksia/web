@@ -164,6 +164,23 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
  background:none;border:1px solid var(--line);border-radius:12px;padding:10px;color:var(--muted);
  font:inherit;font-size:13px;cursor:pointer}
 .segar-login:hover{border-color:var(--jade);color:var(--jade)}
+.notif-item{display:flex;gap:10px;align-items:flex-start;padding:11px 10px;margin:0 -10px;border-radius:12px;
+ cursor:pointer;border-bottom:1px solid var(--line);transition:background .15s;-webkit-tap-highlight-color:transparent}
+.notif-item:last-of-type{border-bottom:0}
+.notif-item:hover,.notif-item:focus{background:var(--mist);outline:none}
+.notif-item h5{font-size:13.5px;font-weight:600;line-height:1.35}
+.notif-item .isi{font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.45}
+.notif-item .wkt{font-size:11px;color:var(--muted);margin-top:4px}
+.notif-item .dot-notif{width:8px;height:8px;border-radius:50%;flex:none;margin-top:6px;background:transparent}
+.notif-item .ikon-notif{width:30px;height:30px;border-radius:10px;flex:none;display:grid;place-items:center;
+ background:#E8F1FC;color:var(--jade)}
+.notif-item .panah{color:var(--muted);font-size:20px;line-height:1;align-self:center;opacity:.5}
+.notif-item.baru{background:linear-gradient(90deg,rgba(47,111,191,.07),transparent 70%)}
+.notif-item.baru .dot-notif{background:#D9534F}
+.notif-item.baru h5{color:var(--ink)}
+.notif-item.dibaca h5{font-weight:500;color:var(--muted)}
+.notif-item.dibaca .ikon-notif{background:var(--mist);color:var(--muted)}
+.tanda-baca{color:var(--ok);font-weight:600}
 .lonceng{position:relative;width:36px;height:36px;border-radius:12px;flex:none;cursor:pointer;
  background:var(--mist);border:1px solid var(--line);color:var(--jade);
  display:grid;place-items:center;font-size:16px;-webkit-tap-highlight-color:transparent}
@@ -172,11 +189,6 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .lonceng .titik{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;
  background:#C0707E;color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;
  padding:0 5px;border:2px solid #fff}
-.notif-item{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start}
-.notif-item:last-child{border-bottom:0}
-.notif-item.baru{background:linear-gradient(90deg,rgba(47,111,191,.08),transparent);
- margin:0 -8px;padding:12px 8px;border-radius:10px}
-.notif-item h5{font-size:13.5px;font-weight:600;line-height:1.35}
 @media(max-width:760px){
   aside{display:none}
   /* Semua kotak selebar layar, tidak ada yang meluber ke samping */
@@ -495,7 +507,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.22.2";
+const VERSI_APP = "2026.09.22.3";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1085,12 +1097,42 @@ function muatDilihat(){
 function simpanDilihat(){
   try{ localStorage.setItem('mahyra_notif_office',JSON.stringify([...NOTIF_DILIHAT].slice(-200))); }catch(_){}
 }
+const IKON_NOTIF={order:'order',checkin:'absensi',izin:'izin',bonus:'bonus',libur:'libur',info:'lonceng'};
+const KOSONG_NOTIF='Check in terapis, keputusan izin, dan penolakan finance akan muncul di sini.';
+
 function notifSaya(){
   return (DB.notifikasi||[]).filter(n=>n.karyawan_id===ME.id)
-    .map(n=>({id:n.id,judul:n.judul,pesan:n.pesan,waktu:n.created_at,tipe:n.tipe}))
-    .sort((a,b)=>new Date(b.waktu)-new Date(a.waktu)).slice(0,40);
+    .map(n=>({id:n.id,judul:n.judul,pesan:n.pesan,waktu:n.created_at,tipe:n.tipe,
+              tautan:n.tautan,ref_id:n.ref_id,dibaca:n.dibaca}))
+    .sort((a,b)=>new Date(b.waktu)-new Date(a.waktu));
 }
-function belumDibaca(){ return NOTIF.filter(n=>!NOTIF_DILIHAT.has(n.id)); }
+function tampilkanPanelNotif(isi){
+  bukaPanel(isi,{kaki:`<button class="btn ghost" onclick="closeModal()">Tutup</button>`});
+}
+
+/* Ke mana sebuah notifikasi membawa pengguna */
+function tujuanNotif(n){
+  const ref=n.ref_id||n.tautan;
+  const pesanan=get('pesanan',ref) || (get('item',ref)?get('pesanan',get('item',ref).pesanan_id):null);
+  if(pesanan){
+    if(/finance/i.test(n.judul)&&boleh('audit','lihat')&&!boleh('order','ubah')){ AUDIT_FIL.status='semua'; return go('audit'); }
+    if(boleh('order','ubah')){ go('order'); return ubahOrder(pesanan.id); }
+    return go('order');
+  }
+  if(n.tipe==='izin'||get('izin',ref)) return go('izin');
+  if(n.tipe==='bonus') return go('m_bonus');
+  if(n.tipe==='libur') return go('m_libur');
+  go('notif');
+}
+
+const NOTIF_PANEL=10;               // yang tampil di panel lonceng
+let NOTIF_BATAS=20;                  // yang tampil di halaman semua notifikasi
+let NOTIF_SARING='semua';
+
+function sudahDibaca(n){ return !!n.dibaca || NOTIF_DILIHAT.has(n.id); }
+function belumDibaca(){ return NOTIF.filter(n=>!sudahDibaca(n)); }
+
+/* Angka pada lonceng = jumlah notifikasi yang belum dibaca */
 function gambarLonceng(){
   document.querySelectorAll('.icSegar').forEach(e=>{ if(!e.innerHTML) e.innerHTML=ikon('segarkan',17); });
   ['icLonceng','icLonceng2'].forEach(id=>{
@@ -1102,30 +1144,98 @@ function gambarLonceng(){
     t.textContent=n>9?'9+':n; t.style.display=n?'grid':'none';
   });
 }
-function bukaNotif(){
-  const baru=new Set(belumDibaca().map(n=>n.id));
-  const jenisIkon={order:'order',checkin:'absensi',izin:'izin',bonus:'bonus',libur:'libur'};
-  bukaPanel(`<h3 style="font-size:19px;margin-bottom:3px">Notifikasi</h3>
-    <p class="hint" style="margin-bottom:14px">${NOTIF.length?NOTIF.length+' catatan terbaru':'Belum ada notifikasi'}</p>
-    ${NOTIF.map(n=>`<div class="notif-item ${baru.has(n.id)?'baru':''}">
-      <span class="dot" style="background:${baru.has(n.id)?'var(--jade)':'var(--line)'};margin-top:6px"></span>
-      <div style="flex:1;min-width:0"><h5 style="display:flex;gap:7px;align-items:center">
-        <span style="color:var(--jade);flex:none">${ikon(jenisIkon[n.tipe]||'menu',16)}</span>${esc(n.judul)}</h5>
-        <div class="hint">${esc(n.pesan||'')}</div>
-        <div class="hint" style="font-size:11px;margin-top:3px">${n.waktu?tgl(String(n.waktu).slice(0,10)):''}</div>
-      </div></div>`).join('')
-     ||'<div class="empty"><div class="disp">Belum ada notifikasi</div><div>Check in terapis dan keputusan izin akan muncul di sini.</div></div>'}`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:14px" onclick="closeModal()">Tutup</button>`})
-  tandaiDibaca();
+
+/* "baru saja", "12 menit lalu", "kemarin 14.05", "20 Sep 2026 · 09.30" */
+function waktuNotif(w){
+  if(!w) return '';
+  const d=new Date(w); if(isNaN(d)) return tgl(String(w).slice(0,10));
+  const menit=Math.floor((Date.now()-d.getTime())/6e4);
+  const jamnya=_fmtJam.format(d).replace(':','.');
+  if(menit<1) return 'baru saja';
+  if(menit<60) return menit+' menit lalu';
+  if(tglLokal(d)===today()) return 'hari ini '+jamnya;
+  if(tglLokal(d)===geser(-1)) return 'kemarin '+jamnya;
+  return tgl(tglLokal(d))+' · '+jamnya;
 }
-async function tandaiDibaca(){
-  NOTIF.forEach(n=>NOTIF_DILIHAT.add(n.id));
+
+function kartuNotif(n){
+  const baca=sudahDibaca(n);
+  return `<div class="notif-item ${baca?'dibaca':'baru'}" role="button" tabindex="0"
+      onclick="klikNotif('${n.id}')">
+    <span class="dot-notif"></span>
+    <span class="ikon-notif">${ikon(IKON_NOTIF[n.tipe]||'lonceng',16)}</span>
+    <div style="flex:1;min-width:0">
+      <h5>${esc(n.judul)}</h5>
+      ${n.pesan?`<div class="isi">${esc(n.pesan)}</div>`:''}
+      <div class="wkt">${waktuNotif(n.waktu)}${baca?' · <span class="tanda-baca">✓ dibaca</span>':''}</div>
+    </div>
+    <span class="panah">›</span>
+  </div>`;
+}
+
+function bukaNotif(){
+  const belum=belumDibaca().length, tampil=NOTIF.slice(0,NOTIF_PANEL);
+  const isi=`<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div><h3 style="font-size:19px">Notifikasi</h3>
+        <p class="hint" style="margin-top:2px">${belum?belum+' belum dibaca':'Semua sudah dibaca'}</p></div>
+      ${belum?`<button class="btn ghost sm" onclick="bacaSemua('panel')">Baca semua</button>`:''}
+    </div>
+    ${tampil.map(kartuNotif).join('')
+      ||`<div class="empty"><div class="disp">Belum ada notifikasi</div><div>${KOSONG_NOTIF}</div></div>`}
+    ${NOTIF.length>NOTIF_PANEL?`<button class="btn ghost" style="width:100%;margin-top:10px"
+        onclick="closeModal();NOTIF_BATAS=20;go('notif')">Lihat semua notifikasi (${NOTIF.length})</button>`:''}`;
+  tampilkanPanelNotif(isi);
+}
+
+/* Tandai beberapa notifikasi sebagai dibaca, di perangkat dan di server */
+async function tandaiNotif(ids){
+  ids=ids.filter(Boolean); if(!ids.length) return;
+  ids.forEach(id=>NOTIF_DILIHAT.add(id));
+  NOTIF.forEach(n=>{ if(ids.includes(n.id)) n.dibaca=true; });
+  (DB.notifikasi||[]).forEach(n=>{ if(ids.includes(n.id)) n.dibaca=true; });
   simpanDilihat(); gambarLonceng();
-  if(LIVE){
-    const perlu=(DB.notifikasi||[]).filter(n=>n.karyawan_id===ME.id&&!n.dibaca).map(n=>n.id);
-    if(perlu.length){ await sb.from('notifikasi').update({dibaca:true}).in('id',perlu);
-      DB.notifikasi.forEach(n=>{ if(perlu.includes(n.id)) n.dibaca=true; }); }
+  const diServer=ids.filter(id=>!String(id).startsWith('it-'));
+  if(LIVE&&diServer.length){
+    const {error}=await sb.from('notifikasi').update({dibaca:true}).in('id',diServer);
+    if(error) console.warn('Tanda dibaca belum tersimpan di server:',error.message);
   }
 }
+
+async function bacaSemua(dari){
+  await tandaiNotif(belumDibaca().map(n=>n.id));
+  if(dari==='panel') bukaNotif(); else render();
+  toast('Semua notifikasi ditandai dibaca');
+}
+
+async function klikNotif(id){
+  const n=NOTIF.find(x=>x.id===id); if(!n) return;
+  await tandaiNotif([id]);
+  closeModal();
+  tujuanNotif(n);
+}
+
+/* Halaman semua notifikasi */
+function halamanNotif(){
+  const daftar=NOTIF_SARING==='belum'?belumDibaca():NOTIF;
+  const tampil=daftar.slice(0,NOTIF_BATAS), belum=belumDibaca().length;
+  return `<div class="card">
+    <div class="head"><h3>Semua notifikasi</h3>
+      ${belum?`<button class="btn ghost sm" onclick="bacaSemua('halaman')">Baca semua</button>`:''}</div>
+    <div class="filter" style="margin-bottom:12px">
+      <button class="btn ${NOTIF_SARING==='semua'?'':'ghost'} sm" onclick="NOTIF_SARING='semua';NOTIF_BATAS=20;render()">
+        Semua <span style="opacity:.7">${NOTIF.length}</span></button>
+      <button class="btn ${NOTIF_SARING==='belum'?'':'ghost'} sm" onclick="NOTIF_SARING='belum';NOTIF_BATAS=20;render()">
+        Belum dibaca <span style="opacity:.7">${belum}</span></button>
+    </div>
+    ${tampil.map(kartuNotif).join('')
+      ||`<div class="empty"><div class="disp">${NOTIF_SARING==='belum'?'Tidak ada yang belum dibaca':'Belum ada notifikasi'}</div></div>`}
+    ${daftar.length>NOTIF_BATAS?`<button class="btn ghost" style="width:100%;margin-top:12px"
+        onclick="NOTIF_BATAS+=20;render()">Muat lainnya · ${daftar.length-NOTIF_BATAS} tersisa</button>`:''}
+    ${tampil.length?`<p class="hint" style="margin-top:12px;text-align:center">
+      Menampilkan ${tampil.length} dari ${daftar.length}</p>`:''}
+  </div>`;
+}
+
 /* ---------- Nada dering notifikasi ---------- */
 let AUDIO=null;
 function siapkanAudio(){
@@ -1163,7 +1273,7 @@ function tampilkanPop(n){
   deringNotif();
   notifSistem(n.judul, n.pesan, '/office');
 }
-function dariPop(){ document.getElementById('popNotif').classList.remove('on'); if(POP_ANTRE) bukaNotif(); }
+function dariPop(){ document.getElementById('popNotif').classList.remove('on'); if(POP_ANTRE) klikNotif(POP_ANTRE.id); }
 async function periksaNotif(pertama){
   if(LIVE) await muatTabel(['notifikasi']);
   const sebelum=new Set(NOTIF.map(n=>n.id));
@@ -1665,6 +1775,9 @@ function go(p){
   // pengaman: pastikan tidak ada sisa keadaan panel yang menyembunyikan menu
   document.body.classList.remove('panel-buka');
   document.body.style.overflow='';
+  // halaman hak akses selalu memakai izin terbaru dari database, supaya
+  // kotak centang mencerminkan isi sebenarnya sebelum diubah
+  if(p==='akses'&&LIVE) muatTabel(['hak_akses','jabatan']).then(()=>{ if(PAGE==='akses') render(); });
   PAGE=p; SEARCH='';
   document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
   document.getElementById('nv_'+p)?.classList.add('on');
@@ -1989,6 +2102,7 @@ async function cabutAkun(karyawanId){
 
 /* ============================ HALAMAN ============================ */
 const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang.'],
+ notif:['Notifikasi','Semua pemberitahuan untuk akun Anda.'],
  order:['Order','Buat order baru dan pantau yang sedang berjalan.'],
  targetsaya:['Gaji & Target Saya','Skema gaji, target order, dan perkiraan gaji bulan ini.'],
  kasbank:['Kas Bank','Saldo dan mutasi tiap rekening: BCA, Mandiri, dan kas tunai.'],
@@ -2053,6 +2167,7 @@ function render(){
 }
 
 const PAGES={
+notif(){ return halamanNotif(); },
 dash(){
   const o=DB.pesanan.filter(x=>tglOrder(x)===today()&&dalamLingkup(x,'pesanan'));
   const sel=o.filter(sudahDikerjakan), omzet=sum(sel,'total');
@@ -2965,6 +3080,10 @@ async function simpanIzin(jabatanId,modul,nilai){
 }
 
 async function setIzin(modul,aksi,nilai){
+  if(LIVE&&!DB.hak_akses.some(x=>x.jabatan_id===AKSES_JBT&&x.modul===modul)){
+    const {data}=await sb.from('hak_akses').select('*').eq('jabatan_id',AKSES_JBT).eq('modul',modul).maybeSingle();
+    if(data) DB.hak_akses.push(data);
+  }
   const lama=izinBaris(AKSES_JBT,modul);
   const baru={lihat:lama.lihat,tambah:lama.tambah,ubah:lama.ubah,hapus:lama.hapus,[aksi]:nilai};
   if(!nilai&&aksi==='lihat'){ baru.tambah=false; baru.ubah=false; baru.hapus=false; }
