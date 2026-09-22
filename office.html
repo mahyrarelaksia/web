@@ -481,7 +481,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.20.1";
+const VERSI_APP = "2026.09.20.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -680,6 +680,7 @@ const LINGKUP=[['semua','Semua cabang'],['cabang','Cabang sendiri'],['sendiri','
 /* Owner dan admin selalu penuh; sisanya mengikuti tabel hak_akses. */
 function boleh(modul,aksi='lihat'){
   if(!ME) return false;
+  if(modul==='targetsaya') return aksi==='lihat'&&skemaKaryawan(ME).tipe==='cs';   // gaji & target sendiri
   if(modul==='rekening') modul='kasbank';                  // rekening dikelola lewat izin Kas Bank
   if(ME.role==='owner') return true;                       // pemilik selalu penuh
   const baris=(DB.hak_akses||[]).filter(x=>x.jabatan_id===ME.jabatan_id);
@@ -772,7 +773,10 @@ function ikon(nama, ukuran){
 
 /* --------------------------- utilitas --------------------------- */
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
-const rp=n=>'Rp '+(Number(n)||0).toLocaleString('id-ID');
+/* Rupiah selalu dibulatkan: rata-rata dan persen tidak boleh menghasilkan
+   angka seperti 1.456.000,234 yang sekilas terbaca miliaran. */
+const rp=n=>{ const v=Math.round(Number(n)||0);
+  return (v<0?'− Rp ':'Rp ')+Math.abs(v).toLocaleString('id-ID',{maximumFractionDigits:0}); };
 /* Tanggal menurut waktu perangkat, bukan UTC.
    Memakai toISOString membuat jam 00.00–07.00 WIB terbaca sebagai hari kemarin. */
 const today=()=>{ const d=new Date();
@@ -1497,7 +1501,7 @@ const F={
 };
 
 const MENU=[
- ['Ringkasan',[['dash','dash','Dashboard'],['order','order','Order']]],
+ ['Ringkasan',[['dash','dash','Dashboard'],['targetsaya','target','Gaji & Target Saya'],['order','order','Order']]],
  ['Operasional',[['m_pelanggan','pelanggan','Pelanggan'],['m_layanan','layanan','Layanan & Tarif'],
    ['m_jadwal','jadwal','Jadwal Kerja'],['m_libur','libur','Tanggal Libur'],['m_shift','shift','Shift Kerja']]],
  ['SDM',[['m_karyawan','karyawan','Karyawan'],['m_jabatan','jabatan','Jabatan'],['m_cabang','cabang','Cabang'],
@@ -1536,7 +1540,7 @@ function halamanPertama(){
 /* ---- Tab bawah untuk layar kecil. Isinya menyesuaikan hak akses. ---- */
 /* Lima slot tetap: dua kiri, tombol Order di tengah, satu kanan, lalu Menu. */
 const TAB_PILIHAN=[
-  ['dash','dash','Beranda'], ['audit','audit','Audit'], ['m_pelanggan','pelanggan','Pelanggan'],
+  ['dash','dash','Beranda'], ['audit','audit','Audit'], ['targetsaya','target','Target'], ['m_pelanggan','pelanggan','Pelanggan'],
   ['order','order','Daftar order'],
   ['m_absensi','absensi','Absensi'], ['kas','kas','Kas'], ['laporan','laporan','Laporan']];
 function daftarTab(){
@@ -1545,6 +1549,8 @@ function daftarTab(){
   if(!boleh('order','tambah')&&boleh('audit','lihat')) bisa=bisa.filter(([id])=>id!=='audit');
   // kasir tidak mengaudit
   if(boleh('order','tambah')&&!boleh('audit','ubah')) bisa=bisa.filter(([id])=>id!=='audit');
+  // CS: menu Target menggantikan Pelanggan; Pelanggan tetap ada di Lainnya
+  if(boleh('targetsaya')) bisa=bisa.filter(([id])=>id!=='m_pelanggan');
   return { kiri:bisa.slice(0,2), kanan:bisa.slice(2,3),
            buat:boleh('order','tambah'), lihatOrder:boleh('order','lihat') };
 }
@@ -1900,6 +1906,7 @@ async function cabutAkun(karyawanId){
 /* ============================ HALAMAN ============================ */
 const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang.'],
  order:['Order','Buat order baru dan pantau yang sedang berjalan.'],
+ targetsaya:['Gaji & Target Saya','Skema gaji, target order, dan perkiraan gaji bulan ini.'],
  kasbank:['Kas Bank','Saldo dan mutasi tiap rekening: BCA, Mandiri, dan kas tunai.'],
  audit:['Audit Order','Periksa order dan bukti pembayaran seluruh cabang, lalu setujui atau kembalikan.'],
  izin:['Izin & Cuti','Pengajuan yang menunggu keputusan HRD.'],
@@ -2029,6 +2036,35 @@ dash(){
       <div class="head"><h3>Gaji & target saya bulan ini</h3><span class="hint">per hari ini</span></div>
       ${kartuGajiCS(ME,periode())}</div>`:''}
   ${kartuLiburTerapis()}`;
+},
+targetsaya(){
+  const s=skemaKaryawan(ME);
+  if(s.tipe!=='cs') return `<div class="card empty"><div class="disp">Belum ada skema target</div>
+    <div>Skema gaji Anda tidak memakai target order dan omzet.</div></div>`;
+  const s0=skemaBerlaku(ME)||{};
+  const opsiPer=[...Array(6)].map((_,i)=>{const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-i);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');});
+  const per=TS_PER||periode();
+  const tgt=[[s0.bonus_target1_order,s0.bonus_target1_nominal],[s0.bonus_target2_order,s0.bonus_target2_nominal]]
+    .filter(x=>Number(x[0])>0);
+  return `<div class="filter">
+      <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="TS_PER=this.value;render()">
+        ${opsiPer.map(p=>`<option value="${p}" ${p===per?'selected':''}>${new Date(p+'-01T00:00')
+          .toLocaleDateString('id-ID',{month:'long',year:'numeric'})}</option>`).join('')}</select></div>
+    <div class="card">${kartuGajiCS(ME,per)}</div>
+    <div class="card" style="margin-top:14px"><div class="head"><h3>${esc(s0.nama||'Skema gaji')}</h3></div>
+      <div class="aturan-cs">
+        <div><span>Gaji pokok</span><b>${rp(s0.gaji_pokok)}</b></div>
+        <div><span>Bonus per order</span><b>${rp(s0.fee_order_cs)}</b>
+          <em>order ${s0.dasar_cs==='cabang'?'seluruh cabang':'yang Anda buat'}</em></div>
+        <div><span>Target order</span><b>${tgt.map(([o,v],i)=>`${o} → ${i&&s0.target_bertingkat?'tambah ':''}${rp(v)}`).join('<br>')||'—'}</b></div>
+        <div><span>Persen omzet</span><b>${s0.omzet_t1_persen}% sampai ${jt(Number(s0.omzet_t1_batas))}<br>
+          ${s0.omzet_t2_persen}% sampai ${jt(Number(s0.omzet_t2_batas))}<br>${s0.omzet_t3_persen}% di atasnya</b>
+          <em>hanya bagian di tingkat itu</em></div>
+        <div><span>Bonus kinerja</span><b>${rp(s0.bonus_kinerja)}</b><em>jika dinilai tercapai</em></div>
+      </div>
+      <p class="hint" style="margin-top:12px">Yang dihitung adalah order berstatus selesai atau complete
+        pada bulan pengerjaannya. Selama bulan berjalan, gaji pokok dihitung sampai hari ini.</p></div>`;
 },
 kasbank(){
   const rek=daftarRekening();
@@ -2305,27 +2341,78 @@ gaji(){
   </div>`;
 },
 laporan(){
-  const sel=DB.pesanan.filter(p=>p.status==='selesai'&&dalamLingkup(p,'pesanan'));
-  const omzet=sum(sel,'total'), komisi=sum(DB.komisi,'nominal'),
-    biaya=sum(DB.pengeluaran.filter(e=>e.status==='disetujui'),'nominal'), gj=sum(DB.gaji,'total_terima');
-  const perLayanan=DB.layanan.map(l=>{const it=DB.item.filter(i=>i.layanan_id===l.id&&i.status==='selesai');
-    return {nama:l.nama,n:it.length,omzet:sum(it,'subtotal')}}).filter(x=>x.n).sort((a,b)=>b.omzet-a.omzet);
-  const perMetode=['tunai','transfer','qris','debit'].map(m=>({metode:cap(m),n:sel.filter(p=>p.metode_bayar===m).length,
-    total:sum(sel.filter(p=>p.metode_bayar===m),'total')}));
-  return `<div class="grid g4">
-    ${stat('Pendapatan',rp(omzet),sel.length+' order selesai','g')}
-    ${stat('Beban komisi',rp(komisi),'ke terapis','a')}
-    ${stat('Beban operasional',rp(biaya),'pengeluaran disetujui','r')}
-    ${stat('Laba berjalan',rp(omzet-komisi-biaya-gj),'setelah komisi, biaya & gaji')}</div>
-  <div class="grid g2" style="margin-top:14px">
-    <div class="card"><div class="head"><h3>Layanan terlaris</h3></div>
-      ${tableHtml(perLayanan,[{k:'nama',l:'Layanan'},{k:'n',l:'Terjual'},{k:'omzet',t:'rp'}])}</div>
-    <div class="card"><div class="head"><h3>Metode pembayaran</h3></div>
-      ${tableHtml(perMetode,[{k:'metode'},{k:'n',l:'Transaksi'},{k:'total',t:'rp'}])}</div></div>
-  <div class="card" style="margin-top:14px"><div class="head"><h3>Laba rugi berjalan</h3></div>
-    ${tableHtml([{pos:'Pendapatan layanan',n:omzet},{pos:'Komisi terapis',n:-komisi},{pos:'Gaji & tunjangan',n:-gj},
-      {pos:'Biaya operasional',n:-biaya},{pos:'Laba bersih',n:omzet-komisi-gj-biaya}],
-      [{k:'pos',l:'Pos'},{k:'n',l:'Nominal',fn:r=>`<span class="rp" style="color:${r.n<0?'var(--bad)':'var(--ok)'}">${rp(r.n)}</span>`}])}</div>`;
+  const per=LAP_FIL.periode, cab=LAP_FIL.cabang||'semua';
+  const simpanCab=CAB_BIAYA; CAB_BIAYA=cab;           // model biaya mengikuti cabang laporan
+  const R=hitungRealisasi(cab,per,modelAktif());
+  CAB_BIAYA=simpanCab;
+  const pesanan=DB.pesanan.filter(p=>['selesai','complete'].includes(p.status)
+    &&String(p.tgl_kerja||p.tanggal).startsWith(per)&&(cab==='semua'?dalamLingkup(p,'pesanan'):p.cabang_id===cab));
+  const idP=new Set(pesanan.map(p=>p.id));
+  const item=DB.item.filter(i=>idP.has(i.pesanan_id)&&i.status==='selesai');
+  const diskon=sum(pesanan,'diskon');
+
+  const perLayanan=DB.layanan.map(l=>{const it=item.filter(i=>i.layanan_id===l.id);
+    return {nama:l.nama,n:it.length,omzet:it.reduce((a,i)=>a+Number(i.subtotal??i.harga??0),0)}})
+    .filter(x=>x.n).sort((a,b)=>b.omzet-a.omzet);
+  const perRekening=daftarRekening().map(r=>{const d=pesanan.filter(p=>rekeningOrder(p)?.id===r.id);
+    return {nama:r.nama,n:d.length,total:sum(d,'total')}}).filter(x=>x.n);
+  const perCabang=DB.cabang.filter(c=>dalamLingkup(c,'cabang')).map(c=>{const d=pesanan.filter(p=>p.cabang_id===c.id);
+    return {nama:c.nama,n:d.length,total:sum(d,'total'),rata:d.length?sum(d,'total')/d.length:0}}).filter(x=>x.n);
+  const perTerapis=DB.karyawan.filter(k=>k.role==='terapis').map(k=>{const it=item.filter(i=>i.terapis_id===k.id);
+    return {nama:k.nama,n:it.length,omzet:it.reduce((a,i)=>a+Number(i.subtotal??i.harga??0),0),
+      komisi:it.reduce((a,i)=>a+Number(i.komisi||0),0)}}).filter(x=>x.n).sort((a,b)=>b.n-a.n);
+
+  const sdm=R.komisi+R.bonus+R.upah+R.gajiStaf;
+  const opsiPer=[...Array(6)].map((_,i)=>{const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-i);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');});
+  const persen=(a,b)=>b?Math.round(a/b*1000)/10+'%':'—';
+
+  return `<div class="filter">
+      <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="LAP_FIL.periode=this.value;render()">
+        ${opsiPer.map(p=>`<option value="${p}" ${p===per?'selected':''}>${new Date(p+'-01T00:00')
+          .toLocaleDateString('id-ID',{month:'long',year:'numeric'})}</option>`).join('')}</select>
+      <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="LAP_FIL.cabang=this.value;render()">
+        <option value="">Semua cabang</option>
+        ${DB.cabang.filter(c=>dalamLingkup(c,'cabang')).map(c=>
+          `<option value="${c.id}" ${LAP_FIL.cabang===c.id?'selected':''}>${esc(c.nama)}</option>`).join('')}</select>
+    </div>
+
+    <div class="grid g4">
+      ${stat('Pendapatan',rp(R.omzet),R.jmlOrder+' order selesai','g')}
+      ${stat('Rata-rata per order',rp(R.harga),diskon?'diskon '+rp(diskon):'setelah diskon')}
+      ${stat('Biaya karyawan',rp(sdm),persen(sdm,R.omzet)+' dari pendapatan','a')}
+      ${stat('Laba bersih',rp(R.laba),persen(R.laba,R.omzet)+' dari pendapatan',R.laba>=0?'g':'r')}
+    </div>
+
+    <div class="card" style="margin-top:14px"><div class="head"><h3>Laba rugi</h3>
+      <button class="btn ghost sm" onclick="go('biaya')">Rincian struktur biaya</button></div>
+      ${tableHtml([
+        {pos:'Pendapatan layanan',n:R.omzet,ket:R.jmlOrder+' order, sudah dikurangi diskon'},
+        {pos:'Komisi terapis',n:-R.komisi,ket:'sesuai skema gaji'},
+        {pos:'Upah, gaji pokok & jaminan minimal terapis',n:-R.upah},
+        {pos:'Bonus terapis',n:-R.bonus,ket:'order, target, service motor, BPJS'},
+        {pos:'Gaji Customer Service & staf kantor',n:-R.gajiStaf,ket:R.gajiCS?'termasuk CS '+rp(R.gajiCS):''},
+        {pos:'Biaya operasional',n:-R.pengeluaran,ket:'pengeluaran disetujui'},
+        {pos:'Penyusutan & perkiraan biaya lain',n:-R.manual,ket:'diisi di Struktur Biaya'},
+        {pos:'Laba bersih',n:R.laba,ket:persen(R.laba,R.omzet)+' dari pendapatan',tebal:true}
+      ].filter(r=>r.n||r.tebal),
+      [{k:'pos',l:'Pos',fn:r=>r.tebal?`<strong>${r.pos}</strong>`:`${r.pos}${r.ket?`<div class="hint">${esc(r.ket)}</div>`:''}`},
+       {k:'n',l:'Nominal',fn:r=>`<span class="rp" style="color:${r.n<0?'var(--bad)':'var(--ok)'};${r.tebal?'font-weight:700':''}">${rp(r.n)}</span>`},
+       {k:'p',l:'% pendapatan',fn:r=>`<span class="hint">${persen(Math.abs(r.n),R.omzet)}</span>`}])}
+    </div>
+
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card"><div class="head"><h3>Layanan terlaris</h3></div>
+        ${tableHtml(perLayanan,[{k:'nama',l:'Layanan'},{k:'n',l:'Terjual'},{k:'omzet',l:'Omzet',t:'rp'}])}</div>
+      <div class="card"><div class="head"><h3>Pembayaran per rekening</h3></div>
+        ${tableHtml(perRekening,[{k:'nama',l:'Rekening'},{k:'n',l:'Order'},{k:'total',l:'Total',t:'rp'}])}</div>
+    </div>
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card"><div class="head"><h3>Per cabang</h3></div>
+        ${tableHtml(perCabang,[{k:'nama',l:'Cabang'},{k:'n',l:'Order'},{k:'total',l:'Omzet',t:'rp'},{k:'rata',l:'Rata-rata',t:'rp'}])}</div>
+      <div class="card"><div class="head"><h3>Kinerja terapis</h3></div>
+        ${tableHtml(perTerapis,[{k:'nama',l:'Terapis'},{k:'n',l:'Order'},{k:'omzet',l:'Omzet',t:'rp'},{k:'komisi',l:'Komisi',t:'rp'}])}</div>
+    </div>`;
 },
 pengaturan(){
   return `<div class="grid g2">
@@ -2455,8 +2542,10 @@ biaya(){
     </tbody></table></div>
   </div>
 
-  <div class="card" style="margin-top:14px"><div class="head"><h3>Biaya terapis per jabatan</h3>
-    <span class="tag info">${rp(R.komisi+R.bonus+R.upah)}</span></div>
+  <div class="card" style="margin-top:14px"><div class="head"><h3>Biaya karyawan per jabatan</h3>
+    <span class="tag info">${rp(sum(R.perJabatan,'total'))}</span></div>
+    ${R.tanpaSkema.length?`<div class="peringatan warn">${R.tanpaSkema.length} karyawan belum punya skema gaji
+      sehingga tidak ikut dihitung: ${R.tanpaSkema.map(k=>esc(k.nama)).join(', ')}.</div>`:''}
     ${R.perJabatan.length?`<div class="tw"><table><thead><tr>
       <th>Jabatan</th><th>Orang</th><th>Skema</th><th style="text-align:right">Order</th>
       <th style="text-align:right">Hari kerja</th><th style="text-align:right">Komisi</th>
@@ -2471,9 +2560,10 @@ biaya(){
         <td style="text-align:right" class="rp">${rp(g.bonus)}</td>
         <td style="text-align:right" class="rp">${rp(g.total)}</td>
         <td style="text-align:right" class="rp">${rp(g.jumlah?g.total/g.jumlah:0)}</td></tr>`).join('')}
-    </tbody></table></div>`:'<div class="empty">Belum ada terapis aktif di cabang ini.</div>'}
-    <p class="hint" style="margin-top:10px">Komisi dan bonus diambil dari catatan nyata tiap terapis.
-      Upah harian dihitung dari hari kerja efektif — hari yang punya minimal satu orderan selesai atau check in.</p>
+    </tbody></table></div>`:'<div class="empty">Belum ada karyawan aktif dengan skema gaji di cabang ini.</div>'}
+    <p class="hint" style="margin-top:10px">Dihitung dengan rumus yang sama seperti menu Penggajian, sesuai skema gaji
+      tiap jabatan: harian, bulanan, training, dan Customer Service. Hari kerja dari absen masuk dan pulang.
+      Bulan berjalan dihitung sampai hari ini. Cicilan kasbon tidak dianggap biaya.</p>
   </div>
 
   <div class="biaya-grid" style="margin-top:14px">
@@ -2646,56 +2736,45 @@ function hitungRealisasi(cab,per,M){
   const diCabang=r=>cab==='semua'?dalamLingkup(r,'pesanan'):r.cabang_id===cab;
   const orang  =k=>cab==='semua'?dalamLingkup(k,'karyawan'):k.cabang_id===cab;
 
-  // --- omzet ---
-  const pesanan=DB.pesanan.filter(p=>p.status==='selesai'&&String(p.tanggal).startsWith(per)&&diCabang(p));
+  // --- omzet: order selesai & complete, menurut bulan pengerjaan ---
+  const pesanan=DB.pesanan.filter(p=>['selesai','complete'].includes(p.status)
+    &&String(p.tgl_kerja||p.tanggal).startsWith(per)&&diCabang(p));
   const idPesanan=new Set(pesanan.map(p=>p.id));
   const omzet=sum(pesanan,'total'), jmlOrder=pesanan.length;
   const harga=jmlOrder?omzet/jmlOrder:0;
-
-  // --- pekerjaan & komisi nyata ---
   const item=DB.item.filter(i=>idPesanan.has(i.pesanan_id)&&i.status==='selesai');
-  const komisi=sum(item,'komisi');
 
-  // --- bonus nyata ---
-  const terapis=DB.karyawan.filter(k=>k.role==='terapis'&&k.status==='aktif'&&orang(k));
-  const idTerapis=new Set(terapis.map(k=>k.id));
-  const bonusRow=DB.bonus.filter(b=>b.periode===per&&b.status!=='ditolak'&&idTerapis.has(b.karyawan_id));
-  const bonus=sum(bonusRow,'nominal');
-
-  // --- upah terapis dari hari kerja efektif ---
+  // --- biaya SDM: rumus penggajian yang sama, dipecah per komponen ---
   const hariKerja=M.hari_kerja||26;
+  const aktif=DB.karyawan.filter(k=>k.status==='aktif'&&orang(k));
+  const terapis=aktif.filter(k=>k.role==='terapis');
+  const staf=aktif.filter(k=>k.role!=='terapis');
+  const rinci=aktif.map(k=>({k,g:rincianGaji(k,per)})).filter(x=>x.g.ada);
+  // biaya perusahaan = sebelum dipotong cicilan kasbon (kasbon bukan biaya)
+  const kotor=g=>g.total+g.ksb;
+
+  let komisi=0, bonus=0, upah=0, gajiStaf=0, gajiCS=0, penyesuaian=0;
   const peta={};
-  terapis.forEach(k=>{
+  rinci.forEach(({k,g})=>{
     const j=get('jabatan',k.jabatan_id)||{};
     const kunci=k.jabatan_id||'tanpa';
     if(!peta[kunci]) peta[kunci]={nama:j.nama||'Tanpa jabatan',jumlah:0,order:0,hari:0,
-      komisi:0,upah:0,bonus:0,tipe:k.tipe_gaji||j.tipe_gaji||'bulanan',
-      fee:Number(k.fee_per_order??j.fee_per_order??0),
-      persen:Number(k.persen_komisi??j.persen_komisi??0)};
-    const g=peta[kunci];
-    const hariOrang=hariEfektif(k.id,per);
-    const itemOrang=item.filter(i=>i.terapis_id===k.id);
-    const harian  =Number(k.gaji_harian??j.gaji_harian??0);
-    const pokok   =Number(k.gaji_pokok??j.gaji_pokok_default??0);
-    const potongan=Number(k.potongan_harian??j.potongan_harian??0);
-    const tipe=k.tipe_gaji||j.tipe_gaji||'bulanan';
-    let upah=harian*hariOrang;
-    if(tipe==='training'&&pokok>0) upah+=Math.max(0,pokok-potongan*Math.max(0,hariKerja-hariOrang));
-    else if(tipe!=='harian'&&pokok>0) upah+=pokok;
-    g.jumlah++; g.order+=itemOrang.length; g.hari+=hariOrang;
-    g.komisi+=sum(itemOrang,'komisi');
-    g.upah+=Math.round(upah);
-    g.bonus+=sum(bonusRow.filter(b=>b.karyawan_id===k.id),'nominal');
-  });
-  const perJabatan=Object.values(peta).map(g=>({...g,
-    total:g.komisi+g.upah+g.bonus,
-    skema:(g.fee>0?rp(g.fee)+' / order':(g.persen?g.persen+'% komisi':'tanpa komisi'))
-      +(g.tipe==='training'?' · training':g.tipe==='harian'?' · harian':'')}));
-  const upah=perJabatan.reduce((a,g)=>a+g.upah,0);
+      komisi:0,upah:0,bonus:0,total:0,skema:g.s.nama+' · '+g.s.tipe,terapis:k.role==='terapis'};
+    const p=peta[kunci];
+    p.jumlah++; p.order+=g.nOrder; p.hari+=g.efektif;
+    p.komisi+=g.kom;
+    p.upah+=g.pokok+g.upah+g.tunj+g.um;
+    p.bonus+=g.bon+g.bonusTarget+g.bonusTetap+g.sesuai;
+    p.total+=kotor(g);
 
-  // --- gaji staf non-terapis ---
-  const staf=DB.karyawan.filter(k=>k.role!=='terapis'&&k.status==='aktif'&&orang(k));
-  const gajiStaf=staf.reduce((a,k)=>a+Number(k.gaji_pokok||0)+Number(k.tunjangan||0),0);
+    if(g.s.tipe==='cs') gajiCS+=kotor(g);
+    else if(k.role==='terapis'){
+      komisi+=g.kom; bonus+=g.bon+g.bonusTarget+g.bonusTetap;
+      upah+=g.pokok+g.upah+g.tunj+g.um-g.pot; penyesuaian+=g.sesuai;
+    }else gajiStaf+=kotor(g);
+  });
+  const perJabatan=Object.values(peta).sort((a,b)=>b.total-a.total);
+  const tanpaSkema=aktif.filter(k=>!skemaBerlaku(k));
 
   // --- pengeluaran yang sudah disetujui ---
   const keluar=DB.pengeluaran.filter(e=>e.status==='disetujui'&&String(e.tanggal).startsWith(per)&&diCabang(e));
@@ -2703,57 +2782,59 @@ function hitungRealisasi(cab,per,M){
   const perKategori={};
   keluar.forEach(e=>{ const n=nm('kategori_pengeluaran',e.kategori_id)||'Lain-lain';
     perKategori[n]=(perKategori[n]||0)+Number(e.nominal||0); });
+  const adaKategori=kata=>Object.keys(perKategori).some(n=>n.toLowerCase().includes(kata));
 
-  // --- biaya yang diisi admin ---
+  // --- perkiraan yang diisi admin, hanya bila belum tercatat di Pengeluaran ---
   const jmlTerapis=Math.max(1,terapis.length);
   const alat=Math.round((M.alat||[]).reduce((a,x)=>a+((x.harga||0)/Math.max(1,x.umur||1))*(x.set||1),0)*jmlTerapis);
   const bahanPerOrder=(M.bahan||[]).reduce((a,x)=>a+((x.harga||0)/Math.max(1,x.cukup||1)),0);
-  const bahan=Math.round(bahanPerOrder*jmlOrder);
-  const lainManual=(M.iklan||0)+(M.lain||0);
+  const bahanTercatat=adaKategori('bahan')||adaKategori('minyak')||adaKategori('perlengkapan');
+  const bahan=bahanTercatat?0:Math.round(bahanPerOrder*jmlOrder);
+  const iklanTercatat=adaKategori('iklan')||adaKategori('promosi')||adaKategori('marketing');
+  const lainManual=(iklanTercatat?0:(M.iklan||0))+(M.lain||0);
 
-  const otomatis=komisi+bonus+upah+gajiStaf+pengeluaran;
+  const sdm=komisi+bonus+upah+penyesuaian+gajiCS+gajiStaf;
+  const otomatis=sdm+pengeluaran;
   const manual=alat+bahan+lainManual;
   const total=otomatis+manual;
   const laba=omzet-total;
 
   const otomatisRinci=[
-    {nama:'Komisi terapis',nilai:komisi,sumber:'catatan komisi tiap pekerjaan',
-     catatan:item.length+' pekerjaan selesai'},
-    {nama:'Bonus terapis',nilai:bonus,sumber:'menu Bonus',
-     catatan:bonusRow.length+' pemberian: tips, transport, lembur'},
-    {nama:'Upah & gaji terapis',nilai:upah,sumber:'skema jabatan × hari kerja efektif'},
-    {nama:'Gaji staf kantor',nilai:gajiStaf,sumber:'data karyawan non-terapis',
-     catatan:staf.length+' orang'},
+    {nama:'Komisi terapis',nilai:komisi,sumber:'skema gaji × order selesai',catatan:item.length+' pekerjaan selesai'},
+    {nama:'Upah & gaji pokok terapis',nilai:upah,sumber:'skema gaji × hari kerja'},
+    {nama:'Bonus terapis',nilai:bonus,sumber:'bonus order, target, service motor, BPJS'},
+    {nama:'Jaminan gaji minimal',nilai:penyesuaian,sumber:'selisih ke gaji minimal'},
+    {nama:'Gaji Customer Service',nilai:gajiCS,sumber:'pokok + order + target + omzet'},
+    {nama:'Gaji staf kantor',nilai:gajiStaf,sumber:'skema gaji',catatan:staf.filter(k=>skemaKaryawan(k).tipe!=='cs').length+' orang'},
     ...Object.entries(perKategori).map(([n,v])=>({nama:n,nilai:v,sumber:'menu Pengeluaran'}))
   ].filter(b=>b.nilai>0);
 
   const semua=[...otomatisRinci,
-    {nama:'Penyusutan alat',nilai:alat},{nama:'Bahan habis pakai',nilai:bahan},
-    {nama:'Iklan & lain-lain',nilai:lainManual}].filter(b=>b.nilai>0);
+    {nama:'Penyusutan alat',nilai:alat},{nama:'Bahan habis pakai (perkiraan)',nilai:bahan},
+    {nama:'Iklan & lain-lain (perkiraan)',nilai:lainManual}].filter(b=>b.nilai>0);
 
   const anggaran=[
-    ...perJabatan.map(g=>({nama:'Terapis · '+g.nama,nilai:g.total,
-      catatan:g.jumlah+' orang · '+g.skema})),
-    {nama:'Gaji staf kantor',nilai:gajiStaf,catatan:staf.length+' orang'},
+    ...perJabatan.map(g=>({nama:g.nama,nilai:g.total,catatan:g.jumlah+' orang · '+g.skema})),
     ...(M.alat||[]).map(x=>({nama:x.nama||'Alat',
       nilai:Math.round(((x.harga||0)/Math.max(1,x.umur||1))*(x.set||1)*jmlTerapis),
       catatan:rp(x.harga)+' · '+(x.set||1)+' set/terapis · umur '+(x.umur||1)+' bulan'})),
-    ...(M.bahan||[]).map(x=>({nama:x.nama||'Bahan',
+    ...(bahanTercatat?[]:(M.bahan||[]).map(x=>({nama:x.nama||'Bahan',
       nilai:Math.round(((x.harga||0)/Math.max(1,x.cukup||1))*jmlOrder),
-      catatan:rp(x.harga)+' cukup untuk '+(x.cukup||1)+' order'})),
+      catatan:rp(x.harga)+' cukup untuk '+(x.cukup||1)+' order'}))),
     ...Object.entries(perKategori).map(([n,v])=>({nama:n,nilai:v,catatan:'pengeluaran tercatat'})),
-    {nama:'Iklan & lain-lain',nilai:lainManual,catatan:'belum tercatat di pembukuan'}
+    {nama:'Iklan & lain-lain',nilai:lainManual,catatan:'perkiraan, belum tercatat di pengeluaran'}
   ].filter(a=>a.nilai>0);
 
-  // titik impas
+  // titik impas: biaya variabel mengikuti order, sisanya tetap
   const komisiPerOrder=jmlOrder?komisi/jmlOrder:0;
-  const marjin=harga-(komisiPerOrder+bahanPerOrder);
-  const tetap=upah+gajiStaf+alat+lainManual+bonus+pengeluaran;
+  const feeCsPerOrder=rinci.filter(x=>x.g.s.tipe==='cs').reduce((a,x)=>a+x.g.upah,0)/Math.max(1,jmlOrder);
+  const marjin=harga-(komisiPerOrder+feeCsPerOrder+bahanPerOrder);
+  const tetap=total-komisi-rinci.filter(x=>x.g.s.tipe==='cs').reduce((a,x)=>a+x.g.upah,0)-bahan;
   const bep=marjin>0?tetap/marjin:0;
 
-  return {omzet,jmlOrder,harga,komisi,bonus,upah,gajiStaf,pengeluaran,alat,bahan,lainManual,
-    otomatis,manual,total,laba,perJabatan,otomatisRinci,semua,anggaran,
-    jmlTerapis:terapis.length,jmlStaf:staf.length,
+  return {omzet,jmlOrder,harga,komisi,bonus,upah:upah+penyesuaian,gajiStaf:gajiStaf+gajiCS,gajiCS,
+    pengeluaran,alat,bahan,lainManual,otomatis,manual,total,laba,perJabatan,otomatisRinci,semua,anggaran,
+    jmlTerapis:terapis.length,jmlStaf:staf.length,tanpaSkema,bahanTercatat,iklanTercatat,
     perHari:jmlOrder/Math.max(1,terapis.length*hariKerja),
     bep,bepHari:bep/Math.max(1,terapis.length*hariKerja),tetap,marjin:Math.round(marjin)};
 }
@@ -3877,6 +3958,8 @@ function tombolOrder(id){
 /* ===================== AUDIT FINANCE ===================== */
 let AUDIT_FIL={status:'siap',cabang:''};
 let KB_FIL={rekening:''};
+let LAP_FIL={periode:periode(),cabang:''};
+let TS_PER=null;
 
 function kartuAudit(p){
   const item=DB.item.filter(i=>i.pesanan_id===p.id);
