@@ -86,6 +86,14 @@ body.panel-buka .tabbar{transform:translateX(-50%) translateY(110%)}
 .jejak{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start}
 .jejak:last-child{border-bottom:0}
 .jejak img{width:52px;height:52px;border-radius:14px;object-fit:cover;flex:none;border:1px solid var(--line)}
+.tombol-segar{display:grid;place-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tombol-segar svg{display:block;transition:transform .2s}
+.tombol-segar.berputar svg{animation:putar .8s linear infinite}
+@keyframes putar{to{transform:rotate(360deg)}}
+.segar-login{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:10px;
+ background:none;border:1px solid var(--line);border-radius:12px;padding:10px;color:var(--muted);
+ font:inherit;font-size:13px;cursor:pointer}
+.segar-login:hover{border-color:var(--jade);color:var(--jade)}
 .lonceng{position:relative;width:38px;height:38px;border-radius:13px;flex:none;cursor:pointer;
  background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.32);color:#fff;
  display:grid;place-items:center;font-size:17px;-webkit-tap-highlight-color:transparent}
@@ -269,6 +277,8 @@ tr:last-child td{border-bottom:0}.tw{overflow-x:auto}
     <div class="field"><label for="em">Email</label><input id="em" type="email" placeholder="nama@mahyra.id" autocomplete="username"></div>
     <div class="field"><label for="pw">Kata sandi</label><input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')masuk()"></div>
     <button class="btn" style="width:100%" id="btnLogin" onclick="masuk()">Masuk</button>
+    <button type="button" class="segar-login tombol-segar" onclick="muatUlangPenuh()">
+      <span id="icSegarLogin"></span>Muat ulang aplikasi</button>
     <p class="versi" id="versiApp"></p>
   </div>
 </div>
@@ -278,6 +288,8 @@ tr:last-child td{border-bottom:0}.tw{overflow-x:auto}
     <div class="mark"><img src="logo.png" alt="Mahyra Relaksia"></div>
     <div style="flex:1;min-width:0">
       <div class="nama" id="meName"></div><div class="sub" id="meRole"></div></div>
+    <button class="lonceng tombol-segar" onclick="segarkan()" aria-label="Perbarui data" title="Perbarui data">
+      <span class="icSegar"></span></button>
     <button class="lonceng" id="lonceng" onclick="bukaNotif()" aria-label="Notifikasi">
       <span id="icLonceng"></span><span class="titik" id="jmlNotif" style="display:none">0</span></button>
     <div class="av" id="meAv">M</div>
@@ -489,6 +501,7 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
  absen_log:'absen_log',skema_gaji:'skema_gaji',notifikasi:'notifikasi',libur:'libur'};
 
 const IKON = {
+  segarkan: '<path d="M20 11a8 8 0 00-14.9-3.5M4 4.5v3.9h3.9"/><path d="M4 13a8 8 0 0014.9 3.5M20 19.5v-3.9h-3.9"/>',
   absen: '<path d="M9 11.5l2.5 2.5 5-5.5"/><rect x="3.5" y="4.5" width="17" height="16" rx="3"/>',
   absensi: '<rect x="4" y="4.5" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',
   akses: '<rect x="4.5" y="10" width="15" height="10.5" rx="2.5"/><path d="M8 10V7.5a4 4 0 018 0V10"/><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"/>',
@@ -534,19 +547,22 @@ function ikon(nama, ukuran){
 
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
 const rp=n=>'Rp '+(Number(n)||0).toLocaleString('id-ID');
-/* Tanggal menurut waktu perangkat, bukan UTC.
-   Memakai toISOString membuat jam 00.00–07.00 WIB terbaca sebagai hari kemarin. */
-const today=()=>{ const d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
-const tglLokal=d=>{ const x=new Date(d);
-  return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+/* ===================== WAKTU WIB =====================
+   Semua tanggal dan jam dibaca menurut Asia/Jakarta, apa pun setelan
+   zona waktu ponsel atau komputernya. Mahyra beroperasi di Malang dan
+   Surabaya — keduanya WIB — jadi tampilan harus selalu sama. */
+const ZONA='Asia/Jakarta';
+const _fmtTgl=new Intl.DateTimeFormat('en-CA',{timeZone:ZONA,year:'numeric',month:'2-digit',day:'2-digit'});
+const _fmtJam=new Intl.DateTimeFormat('en-GB',{timeZone:ZONA,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+const today=()=>_fmtTgl.format(new Date());
+const tglLokal=d=>_fmtTgl.format(new Date(d));
 const periode=()=>today().slice(0,7);
-const jam=()=>new Date().toTimeString().slice(0,5);
+const jam=()=>_fmtJam.format(new Date());
 /* Menerima '09:15', '09:15:00', atau cap waktu penuh -> selalu 'HH.MM' */
 const jamDari=v=>{ if(!v) return '--.--';
   const s=String(v);
   if(/^\d{2}:\d{2}/.test(s)) return s.slice(0,5).replace(':','.');
-  const d=new Date(s); return isNaN(d)?'--.--':d.toTimeString().slice(0,5).replace(':','.'); };
+  const d=new Date(s); return isNaN(d)?'--.--':_fmtJam.format(d).replace(':','.'); };
 const tgl=d=>d?new Date(String(d).slice(0,10)+'T00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400)};
@@ -723,7 +739,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.20.3';
+const VERSI_APP='2026.09.22.2';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -808,6 +824,9 @@ function bukaMenu(){
     <div class="menulist">${MENU_LAIN.map(([id,ic,l,s])=>
       `<button onclick="closeModal();go('${id}')"><span class="ic">${ikon(ic,18)}</span>
         <span>${l}<br><span class="hint" style="font-weight:400">${s}</span></span></button>`).join('')}
+      <button onclick="closeModal();muatUlangPenuh()">
+        <span class="ic">${ikon('segarkan',18)}</span>
+        <span>Muat ulang aplikasi<br><span class="hint" style="font-weight:400">Memuat versi terbaru</span></span></button>
       <button onclick="keluar()" style="color:var(--bad);border-color:#F3DDE1">
         <span class="ic" style="background:#FAEAEC;color:var(--bad)">${ikon('akses',18)}</span>Keluar dari akun</button></div>
     <button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`;
@@ -848,7 +867,8 @@ const hariTgl=d=>d?new Date(String(d).slice(0,10)+'T00:00')
 
 /* ---------------- Penyaring tanggal ---------------- */
 let FIL={mode:'semua',dari:today(),sampai:today()};
-const geser=n=>{const d=new Date();d.setDate(d.getDate()+n);return tglLokal(d)};
+// geser n hari dari hari ini menurut WIB
+const geser=n=>tglLokal(new Date(new Date(today()+'T12:00:00+07:00').getTime()+n*864e5));
 function setFilter(mode){
   FIL.mode=mode;
   if(mode==='hari')    { FIL.dari=today();   FIL.sampai=today(); }
@@ -1541,8 +1561,8 @@ async function kirimAbsen(){
     const log=DB.absen_log.filter(x=>x.karyawan_id===ME.id&&x.tanggal===today());
     const masuk=log.find(x=>x.tipe==='masuk'), pulang=[...log].reverse().find(x=>x.tipe==='pulang');
     await simpan('absensi',{...(a||{id:uid(),karyawan_id:ME.id,cabang_id:ME.cabang_id,tanggal:today(),menit_telat:0}),
-      jam_masuk:masuk?new Date(masuk.waktu).toTimeString().slice(0,5):'',
-      jam_pulang:pulang?new Date(pulang.waktu).toTimeString().slice(0,5):'',status:'hadir'});
+      jam_masuk:masuk?_fmtJam.format(new Date(masuk.waktu)):'',
+      jam_pulang:pulang?_fmtJam.format(new Date(pulang.waktu)):'',status:'hadir'});
   }
   const adaItem=!!KAM.item;
   tutupAbsen(); render();
@@ -1729,6 +1749,7 @@ function notifSaya(){
 function belumDibaca(){ return NOTIF.filter(n=>!NOTIF_DILIHAT.has(n.id)); }
 
 function gambarLonceng(){
+  document.querySelectorAll('.icSegar').forEach(x=>{ if(!x.innerHTML) x.innerHTML=ikon('segarkan',17); });
   const e=document.getElementById('icLonceng');
   if(e&&!e.innerHTML) e.innerHTML=ikon('lonceng',18);
   const n=belumDibaca().length, t=document.getElementById('jmlNotif');
@@ -1888,9 +1909,49 @@ async function gantiSandi(){
   else { AKUN_DEMO[ME.email].pw=a; }
   s_baru.value=''; s_ulang.value=''; toast('Kata sandi diperbarui');
 }
+
+/* ===================== SEGARKAN =====================
+   Dua tingkat:
+   - segarkan()      : ambil ulang data dari server, tetap di halaman yang sama
+   - muatUlangPenuh(): buang cache aplikasi lalu buka ulang, untuk memuat versi terbaru */
+let SEDANG_SEGAR=false;
+async function segarkan(){
+  if(SEDANG_SEGAR) return;
+  SEDANG_SEGAR=true;
+  document.querySelectorAll('.tombol-segar').forEach(b=>b.classList.add('berputar'));
+  try{
+    if(LIVE){
+      await muatSemua();
+      if(typeof periksaNotif==='function') await periksaNotif(true);
+    }
+    render();
+    toast('Data diperbarui');
+  }catch(e){
+    console.error(e); toast('Gagal memperbarui: '+(e.message||e));
+  }finally{
+    SEDANG_SEGAR=false;
+    setTimeout(()=>document.querySelectorAll('.tombol-segar').forEach(b=>b.classList.remove('berputar')),400);
+  }
+}
+async function muatUlangPenuh(){
+  document.querySelectorAll('.tombol-segar').forEach(b=>b.classList.add('berputar'));
+  try{
+    if('caches' in window){
+      const kunci=await caches.keys();
+      await Promise.all(kunci.map(k=>caches.delete(k)));
+    }
+    if('serviceWorker' in navigator){
+      const reg=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(reg.map(r=>r.update().catch(()=>{})));
+    }
+  }catch(_){}
+  location.reload();
+}
+
 /* Versi aplikasi di halaman login, ikut berubah tiap pembaruan */
 (function(){
   const v=document.getElementById('versiApp');
+  const is=document.getElementById('icSegarLogin'); if(is) is.innerHTML=ikon('segarkan',15);
   if(v) v.innerHTML='Portal Terapis · versi <b>'+VERSI_APP+'</b>';
 })();
 
