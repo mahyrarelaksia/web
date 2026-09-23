@@ -387,6 +387,13 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
   .kal2-hari .tgl{font-size:11.5px}
   .pil{font-size:8.5px;padding:1px 4px}
 }
+.jadwal-hariini{display:flex;justify-content:space-between;align-items:center;gap:12px;
+ border-radius:14px;padding:14px;border:1px solid var(--line);background:var(--mist)}
+.jadwal-hariini strong{font-size:16px;display:block;margin-top:2px}
+.jadwal-hariini.j-libur{background:linear-gradient(160deg,#FFF8EC,#FDF2E0);border-color:#E7CFA5}
+.jadwal-hariini.j-cuti,.jadwal-hariini.j-izin,.jadwal-hariini.j-sakit{
+ background:linear-gradient(160deg,#EEF4FA,#DCE9F6);border-color:#C6DAF0}
+.jadwal-hariini.j-shift{background:linear-gradient(160deg,#F2FAF7,#E4F4EE);border-color:#B6DFCD}
 .pilih-gaji{display:flex;flex-direction:column;gap:8px}
 .pilih-gaji .opsi{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);
  border-radius:13px;padding:12px;cursor:pointer;transition:.15s}
@@ -546,7 +553,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.22.5";
+const VERSI_APP = "2026.09.22.6";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -2282,6 +2289,7 @@ dash(){
   ${skemaKaryawan(ME).tipe==='cs'?`<div class="card" style="margin-top:14px">
       <div class="head"><h3>Gaji & target saya bulan ini</h3><span class="hint">per hari ini</span></div>
       ${kartuGajiCS(ME,periode())}</div>`:''}
+  ${kartuJadwalSaya()}
   ${kartuLiburTerapis()}`;
 },
 targetsaya(){
@@ -3290,7 +3298,7 @@ function rekeningKas(k){
    - Jadwal Kerja  : tentukan shift siapa pada tanggal yang tidak libur
    Izin dan cuti yang sudah disetujui muncul sendiri di kedua kalender,
    karena dibaca langsung dari pengajuan, bukan disalin. */
-let KAL={periode:periode(), cabang:'', hari:null};
+let KAL={periode:periode(), cabang:'', jabatan:'', hari:null};
 
 function geserKal(n){
   const [y,m]=KAL.periode.split('-').map(Number);
@@ -3298,10 +3306,16 @@ function geserKal(n){
   KAL.periode=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   KAL.hari=null; render();
 }
+/* Semua karyawan aktif, bukan hanya terapis: CS, finance, dan staf lain
+   juga punya jadwal kerja dan tanggal libur. */
 function terapisKal(){
-  return DB.karyawan.filter(k=>k.role==='terapis'&&k.status==='aktif'&&dalamLingkup(k,'karyawan')
-    &&(!KAL.cabang||k.cabang_id===KAL.cabang))
-    .sort((a,b)=>String(a.nama).localeCompare(String(b.nama)));
+  return DB.karyawan.filter(k=>k.status==='aktif'&&!k._ringkas&&dalamLingkup(k,'karyawan')
+    &&(!KAL.cabang||k.cabang_id===KAL.cabang)
+    &&(!KAL.jabatan||k.jabatan_id===KAL.jabatan))
+    .sort((a,b)=>{
+      const ja=String(nm('jabatan',a.jabatan_id)), jb=String(nm('jabatan',b.jabatan_id));
+      return ja===jb?String(a.nama).localeCompare(String(b.nama)):ja.localeCompare(jb);
+    });
 }
 const antara=(t,a,b)=>t>=String(a).slice(0,10)&&t<=String(b||a).slice(0,10);
 
@@ -3372,11 +3386,18 @@ function halamanKalender(mode){
         <button class="btn ghost sm" onclick="geserKal(1)">›</button>
         <button class="btn ghost sm" onclick="KAL.periode=periode();KAL.hari=today();render()">Hari ini</button>
       </div>
-      <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="KAL.cabang=this.value;render()">
-        <option value="">Semua cabang</option>
-        ${DB.cabang.filter(c=>dalamLingkup(c,'cabang')).map(c=>
-          `<option value="${c.id}" ${KAL.cabang===c.id?'selected':''}>${esc(c.nama)}</option>`).join('')}
-      </select>
+      <div class="row" style="flex-wrap:nowrap;gap:6px">
+        <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="KAL.cabang=this.value;render()">
+          <option value="">Semua cabang</option>
+          ${DB.cabang.filter(c=>dalamLingkup(c,'cabang')).map(c=>
+            `<option value="${c.id}" ${KAL.cabang===c.id?'selected':''}>${esc(c.nama)}</option>`).join('')}
+        </select>
+        <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="KAL.jabatan=this.value;render()">
+          <option value="">Semua jabatan</option>
+          ${DB.jabatan.filter(j=>!j._ringkas).map(j=>
+            `<option value="${j.id}" ${KAL.jabatan===j.id?'selected':''}>${esc(j.nama)}</option>`).join('')}
+        </select>
+      </div>
     </div>
     <div class="kal2-kepala">${['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map(h=>`<span>${h}</span>`).join('')}</div>
     <div class="kal2-isi">${sel.join('')}</div>
@@ -3387,8 +3408,8 @@ function halamanKalender(mode){
       <span><i class="kotak kini"></i> hari ini</span>
     </div>
     <p class="hint" style="margin-top:10px">${mode==='libur'
-      ? 'Ketuk sebuah tanggal, lalu pilih terapis yang libur pada tanggal itu. Isi libur dulu, baru susun shift di Jadwal Kerja.'
-      : 'Ketuk sebuah tanggal, lalu tentukan shift tiap terapis. Yang sedang libur atau cuti tidak perlu diberi shift.'}</p>
+      ? 'Ketuk sebuah tanggal, lalu pilih siapa saja yang libur — terapis maupun staf kantor. Isi libur dulu, baru susun shift di Jadwal Kerja.'
+      : 'Ketuk sebuah tanggal, lalu tentukan shift tiap karyawan. Yang sedang libur atau cuti tidak perlu diberi shift.'}</p>
   </div>
   ${KAL.hari?panelHariKalender(mode,bisaUbah):''}`;
 }
@@ -3427,7 +3448,7 @@ function panelHariKalender(mode,bisaUbah){
     return `<div class="list-item">
       <span class="dot" style="background:${izn?'var(--jade)':lib?'var(--amber)':(jdw&&jdw.shift_id?'var(--ok)':'var(--line)')}"></span>
       <div style="flex:1;min-width:0"><strong>${esc(k.nama)}</strong>
-        <div class="hint">${esc(nm('cabang',k.cabang_id))}${
+        <div class="hint">${esc(nm('jabatan',k.jabatan_id))} · ${esc(nm('cabang',k.cabang_id))}${
           izn?' · '+esc(izn.alasan||''):lib&&lib.keterangan?' · '+esc(lib.keterangan):''}</div></div>
       ${kanan}</div>`;
   }).join('');
@@ -3437,7 +3458,7 @@ function panelHariKalender(mode,bisaUbah){
     <div class="head"><h3>${hari}</h3>
       <button class="btn ghost sm" onclick="KAL.hari=null;render()">Tutup</button></div>
     <div class="grid g3" style="margin-bottom:12px">
-      ${stat('Terapis',r.orang.length,KAL.cabang?nm('cabang',KAL.cabang):'semua cabang')}
+      ${stat('Karyawan',r.orang.length,KAL.jabatan?nm('jabatan',KAL.jabatan):(KAL.cabang?nm('cabang',KAL.cabang):'semua cabang'))}
       ${stat('Libur',r.libur.length,'termasuk libur cabang','a')}
       ${stat(mode==='libur'?'Izin & cuti':'Sudah dijadwalkan',mode==='libur'?r.izin.length:r.jadwal.length,
         mode==='libur'?'disetujui':'shift terisi','g')}
@@ -3505,6 +3526,99 @@ async function massalShift(paksa){
     await setShiftHari(k.id,shiftId); n++;
   }
   render(); toast(shiftId?n+' terapis dijadwalkan':'Jadwal hari itu dikosongkan');
+}
+
+
+/* ===================== JADWAL SAYA =====================
+   Setiap karyawan kantor — CS, finance, admin — melihat jadwal libur,
+   shift, dan izinnya sendiri di dashboard, tanpa perlu hak akses SDM. */
+function jadwalSaya(hari){
+  const n=hari||30, hasil=[];
+  for(let i=0;i<n;i++){
+    const t=geser(i);
+    const iz=izinKaryawan(ME.id,t), lb=liburKaryawan(ME.id,t);
+    const jd=jadwalKaryawan(ME.id,t);
+    if(iz)      hasil.push({tanggal:t,jenis:iz.jenis,ket:(iz.alasan||'')+(iz.dibayar?' · dibayar':' · tanpa gaji harian')});
+    else if(lb) hasil.push({tanggal:t,jenis:'libur',ket:lb.keterangan||(lb.karyawan_id?'Libur terjadwal':'Libur '+(lb.cabang_id?nm('cabang',lb.cabang_id):'semua cabang'))});
+    else if(jd&&jd.shift_id) hasil.push({tanggal:t,jenis:'shift',ket:nm('shift',jd.shift_id)});
+  }
+  return hasil;
+}
+
+function kartuJadwalSaya(){
+  const daftar=jadwalSaya(30);
+  const hariIni=daftar.find(x=>x.tanggal===today());
+  const depan=daftar.filter(x=>x.tanggal>today()).slice(0,6);
+  const izinSaya=(DB.izin||[]).filter(i=>i.karyawan_id===ME.id)
+    .sort((a,b)=>String(b.tgl_mulai).localeCompare(String(a.tgl_mulai))).slice(0,4);
+  const warna={libur:'a',cuti:'',sakit:'',izin:'',shift:'g'};
+  const label={libur:'Libur',cuti:'Cuti',sakit:'Sakit',izin:'Izin',shift:'Masuk'};
+
+  return `<div class="card" style="margin-top:14px">
+    <div class="head"><h3>Jadwal saya</h3>
+      <button class="btn ghost sm" onclick="formIzinSaya()">Ajukan izin atau cuti</button></div>
+
+    <div class="jadwal-hariini ${hariIni?('j-'+hariIni.jenis):'j-kerja'}">
+      <div>
+        <div class="hint">${hariTgl(today())}</div>
+        <strong>${hariIni?label[hariIni.jenis]||cap(hariIni.jenis):'Hari kerja biasa'}</strong>
+        ${hariIni?`<div class="hint">${esc(hariIni.ket||'')}</div>`:''}
+      </div>
+      <span class="tag ${hariIni&&hariIni.jenis!=='shift'?'warn':'ok'}">
+        ${hariIni&&hariIni.jenis!=='shift'?'Tidak bekerja':'Bekerja'}</span>
+    </div>
+
+    <div class="hint" style="margin:14px 0 6px">Tiga puluh hari ke depan</div>
+    ${depan.length?depan.map(x=>`<div class="list-item">
+        <span class="dot" style="background:${x.jenis==='shift'?'var(--ok)':x.jenis==='libur'?'var(--amber)':'var(--jade)'}"></span>
+        <div style="flex:1;min-width:0"><strong>${hariTgl(x.tanggal)}</strong>
+          <div class="hint">${esc(x.ket||'')}</div></div>
+        <span class="tag ${x.jenis==='shift'?'ok':x.jenis==='libur'?'warn':'info'}">${label[x.jenis]||cap(x.jenis)}</span>
+      </div>`).join('')
+      :'<p class="hint">Belum ada libur, cuti, atau shift yang dijadwalkan.</p>'}
+
+    ${izinSaya.length?`<div class="hint" style="margin:14px 0 6px">Pengajuan izin saya</div>
+      ${izinSaya.map(i=>`<div class="list-item">
+        <span class="dot" style="background:${i.status==='disetujui'?'var(--ok)':i.status==='ditolak'?'var(--bad)':'var(--amber)'}"></span>
+        <div style="flex:1;min-width:0"><strong>${esc(cap(i.jenis))}</strong>
+          <div class="hint">${tgl(i.tgl_mulai)}${String(i.tgl_selesai)!==String(i.tgl_mulai)?' s/d '+tgl(i.tgl_selesai):''}
+            ${i.status==='disetujui'?' · '+(i.dibayar?'dibayar':'tanpa gaji harian'):''}</div></div>
+        ${tagHtml(i.status)}</div>`).join('')}`:''}
+  </div>`;
+}
+
+/* Mengajukan izin untuk diri sendiri, tanpa perlu hak akses modul SDM */
+function formIzinSaya(){
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Ajukan izin atau cuti</h3>
+    <p class="hint" style="margin-bottom:16px">${esc(ME.nama)} · ${esc(nm('jabatan',ME.jabatan_id))}</p>
+    <div class="field"><label for="is_jenis">Jenis</label>
+      <select id="is_jenis"><option value="izin">Izin</option><option value="sakit">Sakit</option>
+        <option value="cuti">Cuti</option></select></div>
+    <div class="grid g2">
+      <div class="field"><label for="is_mulai">Tanggal mulai</label>
+        <input type="date" id="is_mulai" value="${geser(1)}"></div>
+      <div class="field"><label for="is_selesai">Tanggal selesai</label>
+        <input type="date" id="is_selesai" value="${geser(1)}"></div>
+    </div>
+    <div class="field"><label for="is_alasan">Alasan</label>
+      <textarea id="is_alasan" rows="3" placeholder="Tuliskan keperluannya"></textarea></div>
+    <p class="hint">Pengajuan dikirim ke atasan untuk diputuskan, sekaligus ditentukan
+      apakah hari itu tetap mendapat gaji harian.</p>`,
+    {kaki:`<button class="btn" onclick="simpanIzinSaya()">Kirim pengajuan</button>
+      <button class="btn ghost" onclick="closeModal()">Batal</button>`});
+}
+async function simpanIzinSaya(){
+  const mulai=document.getElementById('is_mulai').value;
+  const selesai=document.getElementById('is_selesai').value||mulai;
+  const alasan=document.getElementById('is_alasan').value.trim();
+  if(!mulai) return toast('Pilih tanggal mulai');
+  if(selesai<mulai) return toast('Tanggal selesai tidak boleh sebelum tanggal mulai');
+  if(!alasan) return toast('Tuliskan alasannya');
+  const hasil=await simpan('izin',{id:uid(),karyawan_id:ME.id,
+    jenis:document.getElementById('is_jenis').value,
+    tgl_mulai:mulai,tgl_selesai:selesai,alasan,status:'menunggu'});
+  if(!hasil) return;
+  closeModal(); render(); toast('Pengajuan terkirim, menunggu keputusan');
 }
 
 /* ===================== ATURAN OMZET =====================
