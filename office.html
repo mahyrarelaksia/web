@@ -387,6 +387,13 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
   .kal2-hari .tgl{font-size:11.5px}
   .pil{font-size:8.5px;padding:1px 4px}
 }
+.pilih-gaji{display:flex;flex-direction:column;gap:8px}
+.pilih-gaji .opsi{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);
+ border-radius:13px;padding:12px;cursor:pointer;transition:.15s}
+.pilih-gaji .opsi:hover{border-color:var(--jade-2);background:#F7FAFF}
+.pilih-gaji .opsi:has(input:checked){border-color:var(--jade);background:#E8F1FC;box-shadow:0 0 0 1px var(--jade)}
+.pilih-gaji .opsi input{margin-top:3px;flex:none;width:17px;height:17px;accent-color:var(--jade)}
+.pilih-gaji .opsi strong{font-size:14px}
 .kartu-rekening{cursor:pointer;transition:.16s;border:1px solid var(--line)}
 .kartu-rekening:hover{border-color:var(--jade-2);transform:translateY(-1px)}
 .kartu-rekening.dipilih{border-color:var(--jade);box-shadow:0 0 0 2px rgba(47,111,191,.18)}
@@ -539,7 +546,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.22.4";
+const VERSI_APP = "2026.09.22.5";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -2452,12 +2459,17 @@ izin(){
       <div style="flex:1"><strong>${esc(r.kry)}</strong> ${tagHtml(r.jenis)}
         <div class="hint">${tgl(r.tgl_mulai)} s/d ${tgl(r.tgl_selesai)} · ${r.hari} hari</div>
         <div style="margin-top:4px">${esc(r.alasan)}</div></div>
-      <div class="row"><button class="btn sm" onclick="putusIzin('${r.id}','disetujui')">Setujui</button>
+      <div class="row"><button class="btn sm" onclick="formSetujuiIzin('${r.id}')">Setujui</button>
         <button class="btn ghost sm" onclick="putusIzin('${r.id}','ditolak')">Tolak</button></div></div>`).join('')
       :'<div class="empty"><div class="disp">Antrean kosong</div><div>Semua pengajuan sudah diputuskan.</div></div>'}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Riwayat pengajuan</h3></div>
     ${tableHtml(rows,[{k:'kry',l:'Karyawan'},{k:'jenis',t:'tag'},{k:'tgl_mulai',l:'Mulai',t:'date'},
-      {k:'tgl_selesai',l:'Selesai',t:'date'},{k:'hari',l:'Hari'},{k:'alasan'},{k:'status',t:'tag'}])}</div>`;
+      {k:'tgl_selesai',l:'Selesai',t:'date'},{k:'hari',l:'Hari'},{k:'alasan'},{k:'status',t:'tag'},
+      {k:'byr',l:'Gaji harian',fn:r=>r.status!=='disetujui'?'<span class="hint">—</span>'
+        :(r.dibayar?'<span class="tag ok">Dibayar</span>':'<span class="tag warn">Tidak dibayar</span>')},
+      {k:'aksi',l:'',fn:r=>r.status==='disetujui'&&boleh('izin','ubah')
+        ?`<button class="btn ghost sm" onclick="ubahBayarIzin('${r.id}',${r.dibayar?'false':'true'})">
+            Jadikan ${r.dibayar?'tidak dibayar':'dibayar'}</button>`:''}])}</div>`;
 },
 kas(){
   const kasKu=DB.kas.filter(k=>dalamLingkup(k,'kas'));
@@ -2561,7 +2573,9 @@ gaji(){
       {k:'nama',l:'Karyawan',fn:r=>`<strong>${esc(r.k.nama)}</strong>
         <div class="hint">${esc(nm('jabatan',r.k.jabatan_id))} · ${esc(nm('cabang',r.k.cabang_id))}</div>`},
       {k:'skema',l:'Skema',fn:r=>`${tagHtml(r.s.tipe)}<div class="hint">${esc(r.s.nama)}</div>`},
-      {k:'hari',l:'Hari kerja',fn:r=>`${r.efektif} <span class="hint">/ ${r.jatah}</span>`},
+      {k:'hari',l:'Hari kerja',fn:r=>`${r.efektif} <span class="hint">/ ${r.jatah}</span>
+        ${r.k.tgl_masuk&&String(r.k.tgl_masuk).slice(0,7)===GAJI_FIL.periode
+          ?`<div class="hint">mulai ${tgl(r.k.tgl_masuk)}</div>`:''}`},
       {k:'nOrder',l:'Order',fn:r=>r.nOrder||'—'},
       {k:'tetap',l:'Pokok & upah',fn:r=>rp(r.pokok+r.upah+r.tunj+r.um)},
       {k:'kom',l:'Komisi',fn:r=>rp(r.kom)},
@@ -3693,29 +3707,110 @@ function skemaKaryawan(k){
     bonusKinerja:N(s.bonus_kinerja) };
 }
 /* Hari kerja efektif: hari dengan minimal satu orderan selesai atau check in */
-/* Hari kerja efektif: hari yang punya absen masuk sekaligus absen pulang */
+/* Hari kerja efektif: hari dengan absen masuk sekaligus pulang,
+   ditambah hari izin atau cuti yang disetujui dan tetap dibayar. */
 function hariEfektif(karyawanId,per){
+  const hari=new Set();
   const peta={};
   DB.absen_log.filter(a=>a.karyawan_id===karyawanId&&String(a.tanggal).startsWith(per))
     .forEach(a=>{const d=String(a.tanggal).slice(0,10);
       peta[d]=peta[d]||{masuk:false,pulang:false};
       if(a.tipe==='masuk') peta[d].masuk=true; else peta[d].pulang=true;});
-  return Object.values(peta).filter(h=>h.masuk&&h.pulang).length;
+  Object.entries(peta).forEach(([d,h])=>{ if(h.masuk&&h.pulang) hari.add(d); });
+
+  (DB.izin||[]).filter(i=>i.karyawan_id===karyawanId&&i.status==='disetujui'&&i.dibayar)
+    .forEach(i=>{
+      for(let d=new Date(String(i.tgl_mulai).slice(0,10)+'T12:00:00+07:00');
+          tglLokal(d)<=String(i.tgl_selesai).slice(0,10); d.setDate(d.getDate()+1)){
+        const t=tglLokal(d); if(t.startsWith(per)) hari.add(t);
+      }
+    });
+  return hari.size;
+}
+
+/* Jatah hari kerja seorang karyawan pada sebuah periode.
+   Dihitung dari tanggal masuknya, lalu dikurangi libur terjadwal. */
+function jatahKerja(k,per,tanggal){
+  const s=skemaKaryawan(k), HK=s.hariKerja||26;
+  const [y,m]=per.split('-').map(Number);
+  const awal=`${per}-01`, akhirBln=tglLokal(new Date(y,m,0));
+  const hariSebulan=new Date(y,m,0).getDate();
+
+  const mulai=(k.tgl_masuk&&String(k.tgl_masuk).slice(0,10)>awal)?String(k.tgl_masuk).slice(0,10):awal;
+  const selesai=(tanggal||today())<akhirBln?(tanggal||today()):akhirBln;
+  if(selesai<mulai) return 0;
+
+  const hariKalender=Math.round((new Date(selesai+'T12:00:00+07:00')-new Date(mulai+'T12:00:00+07:00'))/864e5)+1;
+  let jatah=Math.round(HK*hariKalender/hariSebulan);
+
+  // libur terjadwal bukan hari kerja, jadi jatahnya ikut berkurang
+  let nLibur=0;
+  for(let d=new Date(mulai+'T12:00:00+07:00'); tglLokal(d)<=selesai; d.setDate(d.getDate()+1)){
+    if(liburKaryawan(k.id,tglLokal(d))) nLibur++;
+  }
+  jatah-=Math.round(nLibur*HK/hariSebulan);
+  return Math.max(0,Math.min(jatah,HK));
 }
 
 /* --------------------------- aksi --------------------------- */
+/* Menyetujui izin: tentukan sekaligus apakah hari itu tetap digaji */
+function formSetujuiIzin(id){
+  const i=get('izin',id); if(!i) return;
+  const hari=Math.round((new Date(i.tgl_selesai)-new Date(i.tgl_mulai))/864e5)+1;
+  const saran=i.jenis==='sakit';
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Setujui ${esc(cap(i.jenis))}</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(nm('karyawan',i.karyawan_id))} ·
+      ${tgl(i.tgl_mulai)} s/d ${tgl(i.tgl_selesai)} · ${hari} hari</p>
+    <div class="card" style="background:var(--mist);box-shadow:none;padding:12px;margin-bottom:14px">
+      <div class="hint">Alasan</div><div style="margin-top:3px">${esc(i.alasan||'-')}</div></div>
+
+    <label class="label" style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">
+      Apakah hari izin ini tetap digaji?</label>
+    <div class="pilih-gaji">
+      <label class="opsi ${saran?'terpilih':''}">
+        <input type="radio" name="izin_bayar" value="ya" ${saran?'checked':''}>
+        <div><strong>Dibayar</strong>
+          <div class="hint">Dihitung sebagai hari kerja. Gaji harian tetap diterima dan tidak ada potongan.
+            Biasanya untuk sakit dengan surat dokter atau cuti tahunan.</div></div></label>
+      <label class="opsi ${saran?'':'terpilih'}">
+        <input type="radio" name="izin_bayar" value="tidak" ${saran?'':'checked'}>
+        <div><strong>Tidak dibayar</strong>
+          <div class="hint">Tidak dapat gaji harian, dan dihitung seperti hari tidak masuk
+            (kena potongan pada skema bulanan atau training).</div></div></label>
+    </div>
+    <div class="field" style="margin-top:14px"><label for="iz_catatan">Catatan untuk karyawan</label>
+      <input id="iz_catatan" placeholder="Boleh dikosongkan"></div>`,
+    {kaki:`<button class="btn" onclick="putusIzin('${id}','disetujui')">Setujui</button>
+      <button class="btn ghost" onclick="closeModal()">Batal</button>`});
+}
+
+async function ubahBayarIzin(id,jadi){
+  const ok=await simpanSebagian('izin',id,{dibayar:jadi});
+  if(!ok) return;
+  render(); toast(jadi?'Izin ditandai dibayar':'Izin ditandai tidak dibayar');
+}
+
 async function putusIzin(id,st){
-  const i={...get('izin',id),status:st,approver_id:ME.id,tgl_approve:today()};
+  const pilih=document.querySelector('input[name="izin_bayar"]:checked');
+  const catatan=document.getElementById('iz_catatan')?.value.trim()||null;
+  const dibayar=st==='disetujui'?(pilih?pilih.value==='ya':false):null;
+  const i={...get('izin',id),status:st,approver_id:ME.id,tgl_approve:today(),
+    dibayar, catatan_hrd:catatan};
+  closeModal();
   await simpan('izin',i);
   if(st==='disetujui'){
     const d=new Date(i.tgl_mulai), akhir=new Date(i.tgl_selesai);
     while(d<=akhir){ const t=tglLokal(d);
       if(!DB.absensi.some(a=>a.karyawan_id===i.karyawan_id&&String(a.tanggal).slice(0,10)===t))
         await simpan('absensi',{id:uid(),karyawan_id:i.karyawan_id,cabang_id:get('karyawan',i.karyawan_id)?.cabang_id,
-          tanggal:t,status:i.jenis==='sakit'?'sakit':i.jenis==='cuti'?'cuti':'izin',menit_telat:0,catatan:i.alasan});
+          tanggal:t,status:i.jenis==='sakit'?'sakit':i.jenis==='cuti'?'cuti':'izin',menit_telat:0,
+          catatan:(i.dibayar?'Dibayar':'Tanpa gaji harian')+(i.alasan?' · '+i.alasan:'')});
       d.setDate(d.getDate()+1); }
   }
-  render(); toast('Pengajuan '+st);
+  render();
+  toast(st==='disetujui'
+    ? 'Izin disetujui · '+(i.dibayar?'tetap digaji':'tanpa gaji harian')
+    : 'Pengajuan ditolak');
 }
 /* ===================== PENGGAJIAN =====================
    Satu rumus untuk tampilan realtime dan slip yang disimpan, sama dengan
@@ -3754,7 +3849,7 @@ function rincianGaji(k, per, tanggal){
       pot:0, ksb:c.ksb, minimal:0, sesuai:0, total:c.total, cs:c};
   }
   const HK=s.hariKerja||26;
-  const jatah=jatahHariKerja(per,HK,tanggal);
+  const jatah=jatahKerja(k,per,tanggal);        // ikut tanggal masuk dan libur terjadwal
   const rasio=HK?jatah/HK:0;
   const efektif=Math.min(hariEfektif(k.id,per),HK);
 
@@ -3816,7 +3911,7 @@ const jt=n=>{ const v=n/1e6; return (Number.isInteger(v)?String(v):v.toFixed(1).
 
 function hitungCS(k, per, tanggal){
   const s=skemaKaryawan(k), HK=s.hariKerja||26;
-  const jatah=jatahHariKerja(per,HK,tanggal), rasio=HK?jatah/HK:0;
+  const jatah=jatahKerja(k,per,tanggal), rasio=HK?jatah/HK:0;   // ikut tanggal masuk dan libur
   const order=DB.pesanan.filter(p=>['selesai','complete'].includes(p.status)
     &&String(p.tgl_kerja||p.tanggal).slice(0,7)===per
     &&(s.dasarCs==='cabang'?p.cabang_id===k.cabang_id:p.kasir_id===k.id));
@@ -3957,6 +4052,27 @@ async function hitungGaji(){
 
 let GAJI_FIL={periode:periode(),cabang:''};
 
+/* Keterangan hari: libur terjadwal, izin dibayar, izin tanpa gaji, dan
+   tanggal mulai bila karyawan baru bergabung di tengah bulan. */
+function ringkasHariGaji(k,per){
+  const [y,m]=per.split('-').map(Number), akhir=tglLokal(new Date(y,m,0));
+  const mulai=(k.tgl_masuk&&String(k.tgl_masuk).slice(0,10)>`${per}-01`)?String(k.tgl_masuk).slice(0,10):`${per}-01`;
+  const batas=today()<akhir?today():akhir;
+  let libur=0, izinBayar=0, izinKosong=0;
+  for(let d=new Date(mulai+'T12:00:00+07:00'); tglLokal(d)<=batas; d.setDate(d.getDate()+1)){
+    const t=tglLokal(d);
+    if(liburKaryawan(k.id,t)) libur++;
+    const iz=izinKaryawan(k.id,t);
+    if(iz) (iz.dibayar?izinBayar++:izinKosong++);
+  }
+  const b=[];
+  if(mulai!==`${per}-01`) b.push(`Dihitung sejak ${tgl(mulai)} (mulai bekerja)`);
+  if(libur) b.push(`${libur} hari libur terjadwal — tidak dapat gaji harian dan tidak dipotong`);
+  if(izinBayar) b.push(`${izinBayar} hari izin dibayar — dihitung sebagai hari kerja`);
+  if(izinKosong) b.push(`${izinKosong} hari izin tanpa gaji`);
+  return b.length?b.join(' · '):'Tidak ada libur atau izin pada periode ini.';
+}
+
 function rincianGajiPanel(karyawanId){
   const k=get('karyawan',karyawanId); if(!k) return;
   const per=GAJI_FIL.periode, g=rincianGaji(k,per), s=g.s;
@@ -3983,6 +4099,7 @@ function rincianGajiPanel(karyawanId){
     ${b('Potongan hari tidak masuk',g.pot,`${Math.max(0,g.jatah-g.efektif)} hari`,true)}
     ${b('Cicilan kasbon',g.ksb,'',true)}
     ${b('Penyesuaian gaji minimal',g.sesuai,`jaminan ${rp(g.minimal)} untuk ${g.efektif} hari kerja`)}
+    <p class="hint" style="margin-top:10px">${ringkasHariGaji(k,per)}</p>
     <div class="row" style="justify-content:space-between;padding:12px 0 2px">
       <strong>Diterima</strong><strong class="rp" style="font-size:18px">${rp(g.total)}</strong></div>`,
     {kaki:`<button class="btn ghost" onclick="closeModal()">Tutup</button>`});
