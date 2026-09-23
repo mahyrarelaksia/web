@@ -355,6 +355,38 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .baris-gaji.total{border-bottom:0;padding-top:10px;font-weight:600;font-size:14px}
 .kartu-gaji-cs .saran{margin-top:10px;background:#FFF8EC;border:1px solid #F0E0C4;border-radius:10px;
  padding:9px 11px;font-size:12.5px;line-height:1.6;color:#6F5317}
+.kal2-kepala{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:10px 0 5px}
+.kal2-kepala span{text-align:center;font-size:10.5px;font-weight:700;color:var(--muted);
+ text-transform:uppercase;letter-spacing:.06em}
+.kal2-isi{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.kal2-hari{min-height:74px;border:1px solid var(--line);border-radius:11px;padding:6px;background:#fff;
+ cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:.14s}
+.kal2-hari:hover{border-color:var(--jade-2);background:#F7FAFF}
+.kal2-hari.kosong{border:0;background:none;cursor:default}
+.kal2-hari .tgl{font-size:12.5px;font-weight:600}
+.kal2-hari.minggu .tgl{color:#B5687A}
+.kal2-hari.kini{border-color:var(--jade);box-shadow:inset 0 0 0 1px var(--jade)}
+.kal2-hari.kini .tgl{color:var(--jade)}
+.kal2-hari.dipilih{background:#E8F1FC;border-color:var(--jade)}
+.kal2-hari.ada-libur{background:#FFF8EC}
+.kal2-hari.ada-jadwal{background:#F2FAF7}
+.kal2-hari .isi{display:flex;flex-direction:column;gap:3px}
+.pil{font-size:9.5px;font-weight:600;border-radius:6px;padding:2px 5px;line-height:1.3;white-space:nowrap;
+ overflow:hidden;text-overflow:ellipsis}
+.pil.libur{background:#FBEEDC;color:#8A6520}
+.pil.jadwal{background:#DDF0E8;color:#1E5E47}
+.pil.izin{background:#E8F1FC;color:#2F6FBF}
+.kal2-ket{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:var(--muted)}
+.kal2-ket .kotak{display:inline-block;width:11px;height:11px;border-radius:4px;vertical-align:-1px;margin-right:4px}
+.kal2-ket .kotak.libur{background:#FBEEDC;border:1px solid #E7CFA5}
+.kal2-ket .kotak.jadwal{background:#DDF0E8;border:1px solid #B6DFCD}
+.kal2-ket .kotak.izin{background:#E8F1FC;border:1px solid #C6DAF0}
+.kal2-ket .kotak.kini{background:#fff;border:2px solid var(--jade)}
+@media(max-width:640px){
+  .kal2-hari{min-height:60px;padding:4px;border-radius:9px}
+  .kal2-hari .tgl{font-size:11.5px}
+  .pil{font-size:8.5px;padding:1px 4px}
+}
 .kartu-rekening{cursor:pointer;transition:.16s;border:1px solid var(--line)}
 .kartu-rekening:hover{border-color:var(--jade-2);transform:translateY(-1px)}
 .kartu-rekening.dipilih{border-color:var(--jade);box-shadow:0 0 0 2px rgba(47,111,191,.18)}
@@ -507,7 +539,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.22.3";
+const VERSI_APP = "2026.09.22.4";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1517,7 +1549,7 @@ const F={
   fields:[{k:'nama',l:'Nama shift'},{k:'jam_masuk',l:'Jam masuk',t:'time'},{k:'jam_pulang',l:'Jam pulang',t:'time'},
    {k:'toleransi_menit',l:'Toleransi telat (menit)',t:'num'}],
   cols:[{k:'nama'},{k:'jam_masuk',l:'Masuk'},{k:'jam_pulang',l:'Pulang'},{k:'tol',l:'Toleransi',fn:r=>r.toleransi_menit+' mnt'}]},
- jadwal:{title:'Jadwal Kerja',sub:'Penempatan shift harian tiap terapis.',
+ jadwal:{title:'Jadwal Kerja',sub:'Kalender shift tiap terapis. Ketuk tanggal untuk menentukan shift; libur dan cuti muncul sendiri.',
   fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'tanggal',l:'Tanggal',t:'date'},
    {k:'shift_id',l:'Shift',t:'ref',ref:'shift'},{k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},
    {k:'libur',l:'Hari libur',t:'bool'},{k:'catatan',l:'Catatan',t:'area'}],
@@ -1655,7 +1687,7 @@ const F={
    {k:'saldo_awal',l:'Saldo awal',t:'rp'},{k:'tgl_saldo_awal',l:'Per tanggal',t:'date'},
    {k:'urutan',l:'Urutan tampil',t:'num'},{k:'aktif',l:'Aktif',t:'bool'}],
   cols:[{k:'nama'},{k:'nomor'},{k:'saldo_awal',l:'Saldo awal',t:'rp'},{k:'tgl_saldo_awal',l:'Per',t:'date'}]},
- libur:{title:'Tanggal Libur',sub:'Hari libur untuk semua orang, satu cabang, atau seorang terapis. Saat tanggalnya tiba, terapis melihat pemberitahuan di aplikasinya.',
+ libur:{title:'Tanggal Libur',sub:'Kalender libur terapis. Ketuk tanggal lalu pilih siapa yang libur; izin dan cuti yang disetujui ikut tampil.',
   fields:[{k:'tanggal',l:'Tanggal mulai',t:'date'},
    {k:'tgl_selesai',l:'Tanggal selesai (kosongkan bila sehari)',t:'date'},
    {k:'keterangan',l:'Keterangan'},
@@ -2157,7 +2189,9 @@ function render(){
     if(!AKSES_JBT||!get('jabatan',AKSES_JBT)) AKSES_JBT=DB.jabatan[0]?.id||null;
   }
   try{
-    view.innerHTML=key?renderModule(key):(PAGES[PAGE]?PAGES[PAGE]():'<div class="card empty">Halaman belum tersedia</div>');
+    view.innerHTML = (key==='libur'||key==='jadwal') ? halamanKalender(key)
+      : key ? renderModule(key)
+      : (PAGES[PAGE]?PAGES[PAGE]():'<div class="card empty">Halaman belum tersedia</div>');
   }catch(e){
     console.error('Halaman '+PAGE+' gagal digambar:',e);
     view.innerHTML=`<div class="card empty"><div class="disp">Halaman ini gagal ditampilkan</div>
@@ -3233,6 +3267,230 @@ function saldoRekening(r, sampai){
 function rekeningKas(k){
   if(k.rekening_id) return daftarRekening().find(r=>r.id===k.rekening_id)||get('rekening',k.rekening_id);
   return rekeningKode(k.metode==='tunai'?'TUNAI':'BCA');
+}
+
+
+/* ===================== KALENDER JADWAL & LIBUR =====================
+   Dua kalender memakai kerangka yang sama:
+   - Tanggal Libur : tentukan siapa yang libur pada sebuah tanggal
+   - Jadwal Kerja  : tentukan shift siapa pada tanggal yang tidak libur
+   Izin dan cuti yang sudah disetujui muncul sendiri di kedua kalender,
+   karena dibaca langsung dari pengajuan, bukan disalin. */
+let KAL={periode:periode(), cabang:'', hari:null};
+
+function geserKal(n){
+  const [y,m]=KAL.periode.split('-').map(Number);
+  const d=new Date(y,m-1+n,1);
+  KAL.periode=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  KAL.hari=null; render();
+}
+function terapisKal(){
+  return DB.karyawan.filter(k=>k.role==='terapis'&&k.status==='aktif'&&dalamLingkup(k,'karyawan')
+    &&(!KAL.cabang||k.cabang_id===KAL.cabang))
+    .sort((a,b)=>String(a.nama).localeCompare(String(b.nama)));
+}
+const antara=(t,a,b)=>t>=String(a).slice(0,10)&&t<=String(b||a).slice(0,10);
+
+/* Baris libur yang mengenai seorang terapis pada sebuah tanggal */
+function liburKaryawan(karyawanId,tanggal){
+  const k=get('karyawan',karyawanId)||{};
+  return (DB.libur||[]).find(l=>{
+    if(!antara(tanggal,l.tanggal,l.tgl_selesai)) return false;
+    if(l.karyawan_id) return l.karyawan_id===karyawanId;
+    return !l.cabang_id||l.cabang_id===k.cabang_id;       // libur cabang atau libur semua
+  })||null;
+}
+/* Izin atau cuti yang sudah disetujui pada tanggal itu */
+function izinKaryawan(karyawanId,tanggal){
+  return (DB.izin||[]).find(i=>i.karyawan_id===karyawanId&&i.status==='disetujui'
+    &&antara(tanggal,i.tgl_mulai,i.tgl_selesai))||null;
+}
+function jadwalKaryawan(karyawanId,tanggal){
+  return (DB.jadwal||[]).find(j=>j.karyawan_id===karyawanId
+    &&String(j.tanggal).slice(0,10)===tanggal)||null;
+}
+/* Ringkasan sebuah tanggal untuk ditampilkan di kotak kalender */
+function ringkasHari(tanggal){
+  const orang=terapisKal();
+  const libur=orang.filter(k=>liburKaryawan(k.id,tanggal));
+  const izin=orang.filter(k=>izinKaryawan(k.id,tanggal));
+  const jadwal=orang.filter(k=>{const j=jadwalKaryawan(k.id,tanggal); return j&&j.shift_id&&!j.libur;});
+  return {orang,libur,izin,jadwal};
+}
+
+function kerangkaKalender(mode){
+  const per=KAL.periode, [y,m]=per.split('-').map(Number);
+  const jmlHari=new Date(y,m,0).getDate(), mulai=new Date(y,m-1,1).getDay();
+  const namaBln=new Date(y,m-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  const sel=[];
+  for(let i=0;i<mulai;i++) sel.push('<div class="kal2-hari kosong"></div>');
+  for(let d=1;d<=jmlHari;d++){
+    const tglIni=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const r=ringkasHari(tglIni);
+    const kelas=['kal2-hari'];
+    if(tglIni===today()) kelas.push('kini');
+    if(new Date(y,m-1,d).getDay()===0) kelas.push('minggu');
+    if(KAL.hari===tglIni) kelas.push('dipilih');
+    if(mode==='libur'&&r.libur.length) kelas.push('ada-libur');
+    if(mode==='jadwal'&&r.jadwal.length) kelas.push('ada-jadwal');
+    sel.push(`<div class="${kelas.join(' ')}" onclick="KAL.hari='${tglIni}';render()">
+      <div class="tgl">${d}</div>
+      <div class="isi">
+        ${mode==='libur'
+          ? (r.libur.length?`<span class="pil libur">${r.libur.length} libur</span>`:'')
+          : (r.jadwal.length?`<span class="pil jadwal">${r.jadwal.length} shift</span>`:'')}
+        ${r.izin.length?`<span class="pil izin">${r.izin.length} izin</span>`:''}
+        ${mode==='jadwal'&&r.libur.length?`<span class="pil libur">${r.libur.length} libur</span>`:''}
+      </div>
+    </div>`);
+  }
+  return {namaBln,sel};
+}
+
+function halamanKalender(mode){
+  const {namaBln,sel}=kerangkaKalender(mode);
+  const bisaUbah=boleh(mode,'ubah')||boleh(mode,'tambah');
+  return `<div class="card">
+    <div class="head">
+      <div class="row" style="align-items:center">
+        <button class="btn ghost sm" onclick="geserKal(-1)">‹</button>
+        <h3 style="min-width:150px;text-align:center">${namaBln}</h3>
+        <button class="btn ghost sm" onclick="geserKal(1)">›</button>
+        <button class="btn ghost sm" onclick="KAL.periode=periode();KAL.hari=today();render()">Hari ini</button>
+      </div>
+      <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="KAL.cabang=this.value;render()">
+        <option value="">Semua cabang</option>
+        ${DB.cabang.filter(c=>dalamLingkup(c,'cabang')).map(c=>
+          `<option value="${c.id}" ${KAL.cabang===c.id?'selected':''}>${esc(c.nama)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="kal2-kepala">${['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map(h=>`<span>${h}</span>`).join('')}</div>
+    <div class="kal2-isi">${sel.join('')}</div>
+    <div class="kal2-ket">
+      ${mode==='libur'?'<span><i class="kotak libur"></i> ada yang libur</span>'
+                      :'<span><i class="kotak jadwal"></i> shift sudah diatur</span>'}
+      <span><i class="kotak izin"></i> izin atau cuti disetujui</span>
+      <span><i class="kotak kini"></i> hari ini</span>
+    </div>
+    <p class="hint" style="margin-top:10px">${mode==='libur'
+      ? 'Ketuk sebuah tanggal, lalu pilih terapis yang libur pada tanggal itu. Isi libur dulu, baru susun shift di Jadwal Kerja.'
+      : 'Ketuk sebuah tanggal, lalu tentukan shift tiap terapis. Yang sedang libur atau cuti tidak perlu diberi shift.'}</p>
+  </div>
+  ${KAL.hari?panelHariKalender(mode,bisaUbah):''}`;
+}
+
+function panelHariKalender(mode,bisaUbah){
+  const t=KAL.hari, orang=terapisKal();
+  const hari=new Date(t+'T00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const shift=DB.shift||[];
+
+  const baris=orang.map(k=>{
+    const lib=liburKaryawan(k.id,t), izn=izinKaryawan(k.id,t), jdw=jadwalKaryawan(k.id,t);
+    const rentang=lib&&String(lib.tgl_selesai||'').slice(0,10)>String(lib.tanggal).slice(0,10);
+    const kunci=!!izn;
+
+    let kanan='';
+    if(mode==='libur'){
+      if(kunci) kanan=`<span class="tag info">${esc(cap(izn.jenis))} disetujui</span>`;
+      else if(rentang) kanan=`<span class="tag warn">Bagian libur ${tgl(lib.tanggal)}–${tgl(lib.tgl_selesai)}</span>`;
+      else kanan=bisaUbah
+        ? `<button class="btn ${lib?'amber':'ghost'} sm" onclick="setLiburHari('${k.id}',${lib?'false':'true'})">
+             ${lib?'Libur':'Masuk'}</button>`
+        : (lib?'<span class="tag warn">Libur</span>':'<span class="tag ok">Masuk</span>');
+    }else{
+      if(kunci||lib){
+        kanan=`<span class="tag ${kunci?'info':'warn'}">${kunci?cap(izn.jenis)+' disetujui':'Libur'}</span>`;
+      }else if(bisaUbah){
+        kanan=`<select style="width:auto;min-width:150px;padding:7px 10px;font-size:12.5px"
+            onchange="setShiftHari('${k.id}',this.value)">
+            <option value="">— belum dijadwalkan —</option>
+            ${shift.map(s=>`<option value="${s.id}" ${jdw&&jdw.shift_id===s.id?'selected':''}>${esc(s.nama)} · ${
+              String(s.jam_masuk).slice(0,5)}–${String(s.jam_pulang).slice(0,5)}</option>`).join('')}
+          </select>`;
+      }else kanan=jdw&&jdw.shift_id?`<span class="tag ok">${esc(nm('shift',jdw.shift_id))}</span>`:'<span class="hint">—</span>';
+    }
+
+    return `<div class="list-item">
+      <span class="dot" style="background:${izn?'var(--jade)':lib?'var(--amber)':(jdw&&jdw.shift_id?'var(--ok)':'var(--line)')}"></span>
+      <div style="flex:1;min-width:0"><strong>${esc(k.nama)}</strong>
+        <div class="hint">${esc(nm('cabang',k.cabang_id))}${
+          izn?' · '+esc(izn.alasan||''):lib&&lib.keterangan?' · '+esc(lib.keterangan):''}</div></div>
+      ${kanan}</div>`;
+  }).join('');
+
+  const r=ringkasHari(t);
+  return `<div class="card" style="margin-top:14px">
+    <div class="head"><h3>${hari}</h3>
+      <button class="btn ghost sm" onclick="KAL.hari=null;render()">Tutup</button></div>
+    <div class="grid g3" style="margin-bottom:12px">
+      ${stat('Terapis',r.orang.length,KAL.cabang?nm('cabang',KAL.cabang):'semua cabang')}
+      ${stat('Libur',r.libur.length,'termasuk libur cabang','a')}
+      ${stat(mode==='libur'?'Izin & cuti':'Sudah dijadwalkan',mode==='libur'?r.izin.length:r.jadwal.length,
+        mode==='libur'?'disetujui':'shift terisi','g')}
+    </div>
+    ${bisaUbah?`<div class="row" style="margin-bottom:10px;flex-wrap:wrap">
+      ${mode==='libur'
+        ? `<button class="btn ghost sm" onclick="massalLibur(true)">Liburkan semua</button>
+           <button class="btn ghost sm" onclick="massalLibur(false)">Semua masuk</button>`
+        : `<select id="kal_shift" style="width:auto;padding:6px 10px;font-size:12.5px">
+             ${shift.map(s=>`<option value="${s.id}">${esc(s.nama)}</option>`).join('')}</select>
+           <button class="btn ghost sm" onclick="massalShift()">Terapkan ke yang belum dijadwalkan</button>
+           <button class="btn ghost sm" onclick="massalShift('')">Kosongkan semua</button>`}
+    </div>`:''}
+    ${baris||'<div class="empty">Tidak ada terapis pada cabang ini.</div>'}
+    ${mode==='libur'?`<p class="hint" style="margin-top:10px">Izin dan cuti yang sudah disetujui tidak bisa diubah dari sini —
+      kelola lewat menu Izin & Cuti.</p>`:''}
+  </div>`;
+}
+
+/* ---------- penyimpanan ---------- */
+async function setLiburHari(karyawanId,jadi){
+  const t=KAL.hari, k=get('karyawan',karyawanId);
+  const ada=liburKaryawan(karyawanId,t);
+  if(jadi&&!ada){
+    await simpan('libur',{id:uid(),tanggal:t,tgl_selesai:null,karyawan_id:karyawanId,
+      cabang_id:k?.cabang_id||null,jenis:'libur',keterangan:'Libur terjadwal',dibuat_oleh:ME.id});
+  }else if(!jadi&&ada){
+    if(!ada.karyawan_id) return toast('Ini libur untuk seluruh cabang. Ubah di menu Tanggal Libur.');
+    await hapus('libur',ada.id);
+    // jadwal shift pada hari itu ikut dilepas agar tidak bentrok
+  }
+  if(jadi){ const j=jadwalKaryawan(karyawanId,t); if(j&&j.shift_id) await simpanSebagian('jadwal',j.id,{shift_id:null,libur:true}); }
+  render();
+}
+async function massalLibur(jadi){
+  for(const k of terapisKal()){
+    if(izinKaryawan(k.id,KAL.hari)) continue;
+    const ada=liburKaryawan(k.id,KAL.hari);
+    if(jadi===!!ada) continue;
+    if(!jadi&&ada&&!ada.karyawan_id) continue;
+    await setLiburHari(k.id,jadi);
+  }
+  render(); toast(jadi?'Semua terapis ditandai libur':'Semua terapis ditandai masuk');
+}
+async function setShiftHari(karyawanId,shiftId){
+  const t=KAL.hari, k=get('karyawan',karyawanId);
+  const ada=jadwalKaryawan(karyawanId,t);
+  if(!shiftId){
+    if(ada) await hapus('jadwal',ada.id);
+  }else if(ada){
+    await simpanSebagian('jadwal',ada.id,{shift_id:shiftId,libur:false,cabang_id:k?.cabang_id||null});
+  }else{
+    await simpan('jadwal',{id:uid(),karyawan_id:karyawanId,tanggal:t,shift_id:shiftId,
+      cabang_id:k?.cabang_id||null,libur:false});
+  }
+  render();
+}
+async function massalShift(paksa){
+  const shiftId=paksa===''?'':(document.getElementById('kal_shift')?.value||'');
+  let n=0;
+  for(const k of terapisKal()){
+    if(izinKaryawan(k.id,KAL.hari)||liburKaryawan(k.id,KAL.hari)) continue;
+    const ada=jadwalKaryawan(k.id,KAL.hari);
+    if(shiftId&&ada&&ada.shift_id) continue;          // yang sudah diatur tidak ditimpa
+    await setShiftHari(k.id,shiftId); n++;
+  }
+  render(); toast(shiftId?n+' terapis dijadwalkan':'Jadwal hari itu dikosongkan');
 }
 
 /* ===================== ATURAN OMZET =====================
