@@ -752,7 +752,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.22.3';
+const VERSI_APP='2026.09.22.5';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -1116,6 +1116,12 @@ komisi(){
       <div style="flex:1"><strong>Gaji harian terkumpul</strong>
         <div class="hint">${hariBln} hari kerja × ${rp(sk.harian)}</div></div>
       <strong class="rp">${rp(sk.harian*hariBln)}</strong></div>`:''}
+    ${(()=>{const lb=liburSaya(periode()).length, iz=izinDibayar(periode()).length;
+      const b=[];
+      if(lb) b.push(`${lb} hari libur terjadwal — tidak dihitung hari kerja, dan tidak dipotong`);
+      if(iz) b.push(`${iz} hari izin dibayar — dihitung sebagai hari kerja`);
+      return b.length?`<div class="list-item" style="border-top:1px dashed var(--line)">
+        <div style="flex:1" class="hint">${b.join('<br>')}</div></div>`:'';})()}
     <p class="hint" style="margin-top:10px">Hari kerja dihitung dari hari Anda absen masuk —
       tetap terhitung meski hari itu tidak ada orderan.
       ${sk.minimal>0?`Bila total sebulan di bawah ${rp(sk.minimal)}, yang dibayarkan tetap gaji minimal tersebut. `:''}
@@ -1261,8 +1267,39 @@ function absenPerHari(per){
   return peta;
 }
 /* Hari kerja dihitung hanya bila absen masuk dan pulang keduanya ada */
+/* Hari kerja: hari dengan absen masuk sekaligus pulang, ditambah hari
+   izin atau cuti yang disetujui dan tetap dibayar. Aturannya sama dengan
+   yang dipakai kantor saat menghitung gaji. */
 function hariKerjaSaya(per){
-  return Object.values(absenPerHari(per)).filter(h=>h.masuk&&h.pulang).length;
+  const hari=new Set();
+  Object.values(absenPerHari(per)).forEach(h=>{ if(h.masuk&&h.pulang) hari.add(h.tanggal); });
+  izinDibayar(per).forEach(t=>hari.add(t));
+  return hari.size;
+}
+/* Tanggal izin atau cuti saya yang disetujui dan dibayar pada periode itu */
+function izinDibayar(per){
+  const hasil=[];
+  (DB.izin||[]).filter(i=>i.karyawan_id===ME.id&&i.status==='disetujui'&&i.dibayar)
+    .forEach(i=>{
+      for(let d=new Date(String(i.tgl_mulai).slice(0,10)+'T12:00:00+07:00');
+          tglLokal(d)<=String(i.tgl_selesai).slice(0,10); d.setDate(d.getDate()+1)){
+        const t=tglLokal(d); if(t.startsWith(per)) hasil.push(t);
+      }
+    });
+  return hasil;
+}
+/* Tanggal libur terjadwal saya pada periode itu */
+function liburSaya(per){
+  const hasil=[];
+  (DB.libur||[]).forEach(l=>{
+    if(l.karyawan_id&&l.karyawan_id!==ME.id) return;
+    if(!l.karyawan_id&&l.cabang_id&&l.cabang_id!==ME.cabang_id) return;
+    const a=String(l.tanggal).slice(0,10), b=String(l.tgl_selesai||l.tanggal).slice(0,10);
+    for(let d=new Date(a+'T12:00:00+07:00'); tglLokal(d)<=b; d.setDate(d.getDate()+1)){
+      const t=tglLokal(d); if(t.startsWith(per)) hasil.push(t);
+    }
+  });
+  return [...new Set(hasil)];
 }
 /* Status absen harian hari ini */
 function absenHariIni(){
