@@ -553,7 +553,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.22.6";
+const VERSI_APP = "2026.09.22.7";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1025,6 +1025,7 @@ async function muatSemua(){
     else DB[k]=data||[];
   }));
   await muatNamaKaryawan();
+  await sinkronStatusOrder();
   if(galat.length){
     console.error('Tabel yang gagal dibaca:',galat);
     toast('Sebagian tabel tidak bisa dibaca. Buka Pengaturan → Diagnosa koneksi.');
@@ -1974,9 +1975,10 @@ const STATUS_AUDIT={
 };
 /* Tiga syarat menuju complete: selesai dikerjakan, sudah dibayar, disetujui finance */
 function lencanaOrder(p){
-  if(p.status==='complete') return `<span class="tag lunas">Complete</span>`;
-  if(p.status==='batal')    return `<span class="tag bad">Batal</span>`;
-  const s=STATUS_ORDER[p.status]||{teks:cap(p.status),kelas:'info'};
+  const st=statusOrder(p);
+  if(st==='complete') return `<span class="tag lunas">Complete</span>`;
+  if(st==='batal')    return `<span class="tag bad">Batal</span>`;
+  const s=STATUS_ORDER[st]||{teks:cap(st),kelas:'info'};
   const b=STATUS_BAYAR[p.status_bayar]||{teks:'Belum dibayar',kelas:'warn'};
   const a=STATUS_AUDIT[p.audit_status||'belum'];
   return `<span class="tag ${s.kelas}">${s.teks}</span>
@@ -1985,7 +1987,7 @@ function lencanaOrder(p){
 }
 /* Status akhir order menurut tiga syarat, dipakai mode demo */
 function statusAkhir(p, statusKerja){
-  const s=statusKerja||p.status;
+  const s=statusKerja||statusOrder(p);
   if(s==='batal') return 'batal';
   if((s==='selesai'||s==='complete')&&p.status_bayar==='lunas'&&p.audit_status==='disetujui') return 'complete';
   if(s==='complete') return 'selesai';
@@ -2434,7 +2436,7 @@ order(){
   return `<div class="grid g4">
     ${stat('Order hari ini',hi.length,'dijadwalkan hari ini')}
     ${stat('Omzet hari ini',rp(sum(hi.filter(sudahDikerjakan),'total')),hi.filter(sudahDikerjakan).length+' order selesai','g')}
-    ${stat('Sedang berjalan',hi.filter(p=>p.status==='dikerjakan').length,'terapis bekerja','a')}
+    ${stat('Sedang berjalan',hi.filter(p=>statusOrder(p)==='dikerjakan').length,'terapis bekerja','a')}
     ${stat('Rata-rata transaksi',rp(hi.length?sum(hi,'total')/hi.length:0),'per order','r')}</div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Daftar order</h3>
     <button class="btn" onclick="formOrder()">Buat order</button></div>
@@ -3628,8 +3630,33 @@ async function simpanIzinSaya(){
      (selesai + dibayar + disetujui finance)
    - order berjalan = dijadwalkan atau sedang dikerjakan */
 const tglOrder=p=>String(p.tgl_kerja||p.tanggal||'').slice(0,10);
-const sudahDikerjakan=p=>['selesai','complete'].includes(p.status);
-const masihBerjalan=p=>['dijadwalkan','dikerjakan','berjalan','draft'].includes(p.status);
+
+/* Status order sebenarnya, dihitung dari status tiap pekerjaan di dalamnya.
+   Dipakai agar tampilan tetap benar walau status tersimpan belum sempat
+   diperbarui — misalnya terapis baru saja check out. */
+function statusOrder(p){
+  if(!p) return 'dijadwalkan';
+  if(p.status==='batal') return 'batal';
+  const item=DB.item.filter(i=>i.pesanan_id===p.id&&i.status!=='batal');
+  if(!item.length) return p.status||'dijadwalkan';
+  let dari='dijadwalkan';
+  if(item.every(i=>i.status==='selesai')) dari='selesai';
+  else if(item.some(i=>i.status==='berjalan'||i.status==='selesai')) dari='dikerjakan';
+  // status tersimpan menang hanya bila sudah lebih maju
+  const urut={dijadwalkan:0,dikerjakan:1,selesai:2,complete:3};
+  const pakai=(urut[p.status]??0)>(urut[dari]??0)?p.status:dari;
+  return (pakai==='selesai'&&p.status_bayar==='lunas'&&p.audit_status==='disetujui')?'complete':pakai;
+}
+const sudahDikerjakan=p=>['selesai','complete'].includes(statusOrder(p));
+const masihBerjalan=p=>['dijadwalkan','dikerjakan','berjalan','draft'].includes(statusOrder(p));
+
+/* Perbaiki status tersimpan yang tertinggal, supaya laporan ikut benar */
+async function sinkronStatusOrder(){
+  if(!LIVE||!boleh('order','ubah')) return;
+  const beda=DB.pesanan.filter(p=>p.status!=='batal'&&statusOrder(p)!==p.status).slice(0,40);
+  for(const p of beda) await simpanSebagian('pesanan',p.id,{status:statusOrder(p)});
+  if(beda.length) console.info(beda.length+' status order disamakan dengan pekerjaannya.');
+}
 
 /* Order dan pekerjaan asal sebuah catatan komisi */
 function asalKomisi(c){
@@ -4642,11 +4669,12 @@ function tautanWa(nomor,pesan){
      3. yang butuh tindakan sebelum yang sudah tuntas
    Order complete dan batal turun ke bawah. */
 function bobotOrder(p){
-  if(p.status==='batal')      return 5;
-  if(p.status==='complete')   return 4;
-  if(p.status==='selesai')    return 3;   // tinggal menagih atau menunggu finance
-  if(p.status==='dikerjakan') return 2;
-  if(p.status==='dijadwalkan')return 1;
+  const st=statusOrder(p);
+  if(st==='batal')      return 5;
+  if(st==='complete')   return 4;
+  if(st==='selesai')    return 3;   // tinggal menagih atau menunggu finance
+  if(st==='dikerjakan') return 2;
+  if(st==='dijadwalkan')return 1;
   return 3;
 }
 function urutanOrder(a,b){
