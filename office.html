@@ -553,7 +553,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.22.7";
+const VERSI_APP = "2026.09.22.8";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1527,7 +1527,8 @@ const F={
   fields:[{k:'nik',l:'NIK'},{k:'nama',l:'Nama lengkap'},{k:'jabatan_id',l:'Jabatan',t:'ref',ref:'jabatan'},
    {k:'cabang_id',l:'Cabang',t:'ref',ref:'cabang'},{k:'role',l:'Hak akses',t:'sel',o:['owner','admin','manajer','kasir','terapis']},
    {k:'skema_gaji_id',l:'Skema gaji',t:'skema'},
-   {k:'jenis_kelamin',l:'Jenis kelamin',t:'sel',o:['L','P']},{k:'telepon',l:'Telepon'},{k:'email',l:'Email'},
+   {k:'jenis_kelamin',l:'Jenis kelamin',t:'sel',o:['L','P']},
+   {k:'telepon',l:'Telepon (nomor luar negeri pakai + dan kode negara)'},{k:'email',l:'Email'},
    {k:'alamat',l:'Alamat',t:'area'},{k:'tgl_masuk',l:'Tanggal masuk',t:'date'},
    {k:'bank_nama',l:'Bank'},{k:'bank_rekening',l:'No. rekening'},
    {k:'status',l:'Status',t:'sel',o:['aktif','nonaktif','cuti_panjang']}],
@@ -1558,7 +1559,11 @@ const F={
  pelanggan:{title:'Pelanggan',sub:'Riwayat kunjungan, poin member, dan catatan preferensi.',
   fields:[{k:'kode',l:'Kode member'},{k:'nama',l:'Nama'},{k:'telepon',l:'Telepon'},{k:'jenis_kelamin',l:'Jenis kelamin',t:'sel',o:['L','P']},
    {k:'member',l:'Member',t:'bool'},{k:'alamat',l:'Alamat',t:'area'},{k:'catatan',l:'Catatan terapi',t:'area'}],
-  cols:[{k:'kode'},{k:'nama'},{k:'telepon'},{k:'total_kunjungan',l:'Kunjungan'},{k:'poin'},
+  cols:[{k:'kode'},{k:'nama'},
+   {k:'telepon',l:'Telepon',fn:r=>r.telepon
+     ? esc(r.telepon)+(nomorSah(r.telepon)?'':' <span class="tag bad">tidak lengkap</span>')
+     : '<span class="hint">belum diisi</span>'},
+   {k:'total_kunjungan',l:'Kunjungan'},{k:'poin'},
    {k:'mem',l:'Status',fn:r=>r.member?'<span class="tag ok">Member</span>':'<span class="tag">Umum</span>'}]},
  shift:{title:'Shift Kerja',sub:'Pola jam kerja dan toleransi keterlambatan.',
   fields:[{k:'nama',l:'Nama shift'},{k:'jam_masuk',l:'Jam masuk',t:'time'},{k:'jam_pulang',l:'Jam pulang',t:'time'},
@@ -4310,7 +4315,9 @@ function formOrder(){
      <datalist id="dlPelanggan">${DB.pelanggan.map(p=>`<option value="${esc(p.nama)}">${esc(p.telepon||'')}</option>`).join('')}</datalist>
      <div id="o_infoPel" class="hint" style="margin-top:6px">Pelanggan baru akan langsung disimpan ke daftar.</div></div>
 
-   <div class="field"><label for="o_hp">Nomor HP</label><input id="o_hp" placeholder="08xxxxxxxxxx"></div>
+   <div class="field"><label for="o_hp">Nomor HP</label>
+     <input id="o_hp" placeholder="08xxxxxxxxxx atau +1 647 347 0771">
+     <p class="hint" style="margin-top:6px">Nomor luar negeri ditulis dengan tanda plus dan kode negaranya.</p></div>
    <div class="grid g2">
      <div class="field"><label for="o_tglkerja">Tanggal pengerjaan</label>
        <input id="o_tglkerja" type="date" value="${today()}"></div>
@@ -4650,12 +4657,26 @@ function pesanTerapis(p, terapisId){
 }
 
 /* Nomor lokal 08xx diubah ke format internasional 62xx */
+/* Nomor WhatsApp dalam format internasional tanpa tanda plus.
+   Nomor luar negeri dikenali dari tanda + atau awalan 00, jadi tidak
+   keliru dianggap nomor Indonesia. Contoh:
+     0812 3456 7890   → 6281234567890
+     +1 647 347 0771  → 16473470771
+     0016473470771    → 16473470771
+     8123456789       → 628123456789   */
 const noWa = n => {
-  let s = String(n||'').replace(/[^0-9]/g,'');
-  if (s.startsWith('0')) s = '62' + s.slice(1);
-  else if (s.startsWith('8')) s = '62' + s;
+  let s = String(n||'').trim().replace(/[^0-9+]/g,'');
+  const internasional = s.startsWith('+') || s.startsWith('00');
+  s = s.replace(/\+/g,'');
+  if (s.startsWith('00')) s = s.slice(2);
+  if (!internasional) {
+    if (s.startsWith('0')) s = '62' + s.slice(1);        // nomor lokal Indonesia
+    else if (s.startsWith('8')) s = '62' + s;            // ditulis tanpa nol depan
+  }
   return s;
 };
+/* Nomor yang terlalu pendek hampir pasti salah ketik */
+const nomorSah = n => noWa(n).length >= 8;
 function tautanWa(nomor,pesan){
   return 'https://wa.me/'+noWa(nomor)+'?text='+encodeURIComponent(pesan);
 }
@@ -4972,6 +4993,7 @@ async function batalkanPembatalan(pesananId){
 function kirimBukti(pesananId){
   const p=get('pesanan',pesananId), pel=get('pelanggan',p.pelanggan_id)||{};
   if(!pel.telepon) return toast('Nomor HP pelanggan belum diisi');
+  if(!nomorSah(pel.telepon)) return toast('Nomor '+pel.telepon+' tidak lengkap');
   const pesan=`Halo *${pel.nama}*, pembayaran Anda sudah kami terima.\n\n`
     + `*No. order*\n${p.nomor}\n\n`
     + `*Jumlah*\n${rp(p.total)}\n\n`
@@ -5330,7 +5352,7 @@ function ubahOrder(pesananId){
       <input id="u_nama" value="${esc(pel.nama||'')}"></div>
     <div class="grid g2">
       <div class="field"><label for="u_hp">Nomor HP</label>
-        <input id="u_hp" value="${esc(pel.telepon||'')}" placeholder="08xxxxxxxxxx"></div>
+        <input id="u_hp" value="${esc(pel.telepon||'')}" placeholder="08xxxxxxxxxx atau +1 647 347 0771"></div>
       <div class="field"><label for="u_cab">Cabang</label>
         <select id="u_cab">${opsiRef('cabang').map(c=>
           `<option value="${c.id}" ${c.id===p.cabang_id?'selected':''}>${esc(c.nama)}</option>`).join('')}</select></div>
@@ -5501,6 +5523,7 @@ function waPelanggan(pesananId){
     if(!p) return toast('Order tidak ditemukan');
     const pel=get('pelanggan',p.pelanggan_id)||{};
     if(!pel.telepon) return toast('Nomor HP '+(pel.nama||'pelanggan')+' belum diisi di data pelanggan');
+    if(!nomorSah(pel.telepon)) return toast('Nomor '+pel.telepon+' terlalu pendek. Periksa di data pelanggan.');
     bukaWa(tautanWa(pel.telepon,pesanPelanggan(p)));
   }catch(e){ console.error(e); toast('Gagal menyiapkan pesan: '+e.message); }
 }
