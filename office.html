@@ -401,6 +401,15 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .pilih-gaji .opsi:has(input:checked){border-color:var(--jade);background:#E8F1FC;box-shadow:0 0 0 1px var(--jade)}
 .pilih-gaji .opsi input{margin-top:3px;flex:none;width:17px;height:17px;accent-color:var(--jade)}
 .pilih-gaji .opsi strong{font-size:14px}
+.pilih-banyak{border:1px solid var(--line);border-radius:13px;padding:11px;background:#fff}
+.pilih-banyak .aksi-pilih{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
+.pilih-banyak .kotak-pilih{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;
+ max-height:240px;overflow-y:auto}
+.opsi-pilih{display:flex;gap:9px;align-items:center;border:1px solid var(--line);border-radius:10px;
+ padding:9px 11px;cursor:pointer;font-size:13px;transition:.14s}
+.opsi-pilih:hover{border-color:var(--jade-2);background:#F7FAFF}
+.opsi-pilih.aktif{border-color:var(--jade);background:#E8F1FC;font-weight:600}
+.opsi-pilih input{width:16px;height:16px;flex:none;accent-color:var(--jade)}
 .kartu-promo{border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:10px;background:#fff;
  border-left-width:4px;border-left-color:var(--line)}
 .kartu-promo.jalan{border-left-color:#1E7A5A;background:linear-gradient(100deg,#F2FAF7,#fff 45%)}
@@ -414,6 +423,8 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .tangga-tarif{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
 .tangga-tarif .tingkat{border:1px solid var(--line);border-radius:13px;padding:12px;background:var(--mist);cursor:pointer}
 .tangga-tarif .tingkat:hover{border-color:var(--jade);background:#F4F9FF}
+.tangga-tarif .tingkat.gratis{background:#E4F4EE;border-color:#C3E6D8}
+.tangga-tarif .tingkat.gratis .rp{color:#1E5E47}
 .tangga-tarif .km{font-size:12px;color:var(--muted)}
 .tangga-tarif .rp{font-family:Fraunces,serif;font-size:19px;margin-top:2px}
 .contoh-tarif{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -573,7 +584,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.23.2";
+const VERSI_APP = "2026.09.23.3";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1725,7 +1736,7 @@ const F={
   fields:[{k:'jenis',l:'Jenis',t:'sel',o:['promo','ketentuan']},
    {k:'nama',l:'Nama promo atau ketentuan'},
    {k:'deskripsi',l:'Keterangan',t:'area'},
-   {k:'layanan_id',l:'Layanan (kosongkan bila semua)',t:'ref',ref:'layanan'},
+   {k:'layanan_ids',l:'Layanan yang ikut promo',t:'multiref',ref:'layanan'},
    {k:'cabang_id',l:'Cabang (kosongkan bila semua)',t:'ref',ref:'cabang'},
    {k:'diskon_persen',l:'Diskon (%)',t:'num'},
    {k:'diskon_nominal',l:'Atau potongan rupiah',t:'rp'},
@@ -1733,18 +1744,21 @@ const F={
    {k:'syarat',l:'Syarat & ketentuan',t:'area'},
    {k:'urutan',l:'Urutan tampil',t:'num'},{k:'aktif',l:'Aktif',t:'bool'}],
   cols:[{k:'nama'},{k:'jenis',t:'tag'},
-   {k:'lay',l:'Layanan',fn:r=>r.layanan_id?esc(nm('layanan',r.layanan_id)):'<span class="tag">Semua layanan</span>'},
+   {k:'lay',l:'Layanan',fn:r=>labelLayananPromo(r)},
    {k:'potongan',l:'Potongan',fn:r=>r.diskon_persen>0?r.diskon_persen+'%':(r.diskon_nominal>0?rp(r.diskon_nominal):'—')},
    {k:'berlaku',l:'Berlaku',fn:r=>ringkasBerlaku(r)},
    {k:'aktif',l:'Status',fn:r=>promoBerjalan(r)?'<span class="tag ok">Berjalan</span>'
      :r.aktif===false?'<span class="tag">Nonaktif</span>':'<span class="tag warn">Di luar tanggal</span>'}]},
 
- tarif_transport:{title:'Tarif Transport',sub:'Biaya transport menurut jarak tempuh. Dipakai saat memberi bonus transport dan menghitung ongkos pada order.',
-  fields:[{k:'km_sampai',l:'Sampai berapa kilometer',t:'num'},
-   {k:'biaya',l:'Biaya',t:'rp'},
+ tarif_transport:{title:'Tarif Transport',sub:'Biaya transport menurut rentang jarak. Dipakai saat memberi bonus transport dan menghitung ongkos pada order.',
+  fields:[{k:'km_dari',l:'Dari kilometer',t:'num'},
+   {k:'km_sampai',l:'Sampai kilometer',t:'num'},
+   {k:'biaya',l:'Biaya (isi 0 untuk gratis)',t:'rp'},
    {k:'cabang_id',l:'Cabang (kosongkan bila semua)',t:'ref',ref:'cabang'},
-   {k:'keterangan',l:'Keterangan'},{k:'aktif',l:'Aktif',t:'bool'}],
-  cols:[{k:'km',l:'Jarak',fn:r=>'sampai '+r.km_sampai+' km'},{k:'biaya',t:'rp'},
+   {k:'keterangan',l:'Keterangan'},{k:'urutan',l:'Urutan tampil',t:'num'},
+   {k:'aktif',l:'Aktif',t:'bool'}],
+  cols:[{k:'km',l:'Jarak',fn:r=>rentangKm(r)},
+   {k:'biaya',l:'Biaya',fn:r=>Number(r.biaya)>0?rp(r.biaya):'<span class="tag ok">Gratis</span>'},
    {k:'keterangan'},{k:'aktif',l:'Status',t:'tag'}]},
 
  rekening:{title:'Rekening',sub:'Daftar rekening dan saldo awalnya. Saldo berjalan dihitung dari buku kas sejak tanggal saldo awal.',
@@ -1894,7 +1908,7 @@ function openForm(key,id){
                 libur:{jenis:'libur',tanggal:today(),cabang_id:null,karyawan_id:null},
                 rekening:{jenis:'bank',aktif:true,saldo_awal:0,tgl_saldo_awal:today(),urutan:4},
                 ketentuan:{jenis:'promo',aktif:true,urutan:1,mulai:today(),diskon_persen:0,diskon_nominal:0},
-                tarif_transport:{aktif:true,km_sampai:15,biaya:5000},
+                tarif_transport:{aktif:true,km_dari:0,km_sampai:5,biaya:0,urutan:99},
                 layanan:{aktif:true,butuh_terapis:true,harga_manual:false,durasi_menit:60},
                 pengeluaran:{tanggal:today(),status:'menunggu',rekening_id:rekeningKode('BCA')?.id,cabang_id:ME?.cabang_id},
                 skema_gaji:{tipe_gaji:'harian',hari_kerja:26,aktif:true,cabang_id:null,
@@ -1932,15 +1946,57 @@ function fieldHtml(f,v){
     <p class="hint" style="margin-top:6px">Pilih <b>Tanpa skema</b> untuk owner, investor, atau mitra supaya
       tidak masuk Penggajian, Laporan, dan Struktur Biaya.</p>`;
   }
+  else if(t==='multiref'){
+    // beberapa pilihan sekaligus, dicentang
+    const dipilih=new Set(Array.isArray(v)?v:(v?String(v).split(','):[]));
+    const daftar=opsiRef(f.ref);
+    inp=`<div class="pilih-banyak" id="${id}" data-nilai="${[...dipilih].join(',')}">
+      <div class="aksi-pilih">
+        <button type="button" class="btn ghost sm" onclick="pilihSemua('${id}',true)">Pilih semua</button>
+        <button type="button" class="btn ghost sm" onclick="pilihSemua('${id}',false)">Kosongkan</button>
+        <span class="hint" id="${id}_jml"></span>
+      </div>
+      <div class="kotak-pilih">
+        ${daftar.map(o=>`<label class="opsi-pilih ${dipilih.has(o.id)?'aktif':''}">
+          <input type="checkbox" value="${o.id}" ${dipilih.has(o.id)?'checked':''}
+            onchange="segarkanPilihan('${id}')">
+          <span>${esc(o.nama)}</span></label>`).join('')
+          ||'<p class="hint">Belum ada pilihan.</p>'}
+      </div>
+      <p class="hint" style="margin-top:6px">Tidak ada yang dicentang berarti berlaku untuk semuanya.</p>
+    </div>`;
+  }
   else if(t==='date')inp=`<input id="${id}" type="date" value="${v?String(v).slice(0,10):today()}">`;
   else if(t==='time')inp=`<input id="${id}" type="time" value="${v||''}">`;
   else if(t==='num'||t==='rp')inp=`<input id="${id}" type="number" value="${v??''}">`;
   else inp=`<input id="${id}" value="${esc(v||'')}">`;
   return `<div class="field"><label for="${id}">${f.l}</label>${inp}</div>`;
 }
+/* Centang banyak pilihan */
+function segarkanPilihan(id){
+  const kotak=document.getElementById(id); if(!kotak) return;
+  const pilih=[...kotak.querySelectorAll('input[type=checkbox]')];
+  pilih.forEach(c=>c.closest('.opsi-pilih')?.classList.toggle('aktif',c.checked));
+  const terpilih=pilih.filter(c=>c.checked);
+  kotak.dataset.nilai=terpilih.map(c=>c.value).join(',');
+  const ket=document.getElementById(id+'_jml');
+  if(ket) ket.textContent=terpilih.length?terpilih.length+' dipilih':'semua';
+}
+function pilihSemua(id,jadi){
+  const kotak=document.getElementById(id); if(!kotak) return;
+  kotak.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=jadi);
+  segarkanPilihan(id);
+}
+
 async function saveForm(){
   const m=F[EDIT.mod]; const obj=EDIT.id?{...get(EDIT.mod,EDIT.id)}:{id:uid()};
-  m.fields.forEach(f=>{const el=document.getElementById('f_'+f.k);let v=el.value;
+  m.fields.forEach(f=>{const el=document.getElementById('f_'+f.k);
+    if(f.t==='multiref'){
+      const isi=(el.dataset.nilai||'').split(',').filter(Boolean);
+      obj[f.k]=isi.length?isi:null;
+      return;
+    }
+    let v=el.value;
     if(f.t==='bool')v=v==='true'; else if(f.t==='num'||f.t==='rp')v=Number(v)||0;
     else if(f.t==='ref'&&v==='')v=null;
     else if(f.t==='skema'){ obj.tanpa_gaji=(v==='__tanpa'); v=(v===''||v==='__tanpa')?null:v; }
@@ -2416,15 +2472,15 @@ ketentuan(){
       <div class="head"><h3>Aturan biaya transport</h3>
         ${bisaUbah?`<button class="btn ghost" onclick="openForm('tarif_transport')">Tambah tingkat</button>`:''}</div>
       ${tarif.length?`<div class="tangga-tarif">${tarif.map(x=>`
-        <div class="tingkat" ${bisaUbah?`onclick="openForm('tarif_transport','${x.id}')"`:''}>
-          <div class="km">sampai ${x.km_sampai} km</div>
-          <div class="rp">${rp(x.biaya)}</div>
+        <div class="tingkat ${Number(x.biaya)>0?'':'gratis'}" ${bisaUbah?`onclick="openForm('tarif_transport','${x.id}')"`:''}>
+          <div class="km">${rentangKm(x)}</div>
+          <div class="rp">${Number(x.biaya)>0?rp(x.biaya):'Gratis'}</div>
           ${x.keterangan?`<div class="hint">${esc(x.keterangan)}</div>`:''}
           ${x.cabang_id?`<div class="hint">${esc(nm('cabang',x.cabang_id))}</div>`:''}
         </div>`).join('')}</div>
         <p class="hint" style="margin-top:10px">Jarak memakai tingkat terkecil yang masih mencukupi.
           Lebih jauh dari tingkat tertinggi, kelebihannya dihitung ${rp(tarifKm())} per kilometer.</p>
-        <div class="contoh-tarif">${[5,15,18,25].map(km=>
+        <div class="contoh-tarif">${[10,14,18,27,45,60].map(km=>
           `<div><span>${km} km</span><b>${rp(biayaTransport(km))}</b></div>`).join('')}</div>`
         :'<div class="empty"><div class="disp">Belum ada aturan transport</div><div>Tambahkan tingkat jarak dan biayanya.</div></div>'}
     </div>`;
@@ -3732,6 +3788,25 @@ async function simpanIzinSaya(){
 }
 
 /* ===================== PROMO & TARIF TRANSPORT ===================== */
+/* Layanan yang tercakup sebuah promo. Kosong berarti semua layanan. */
+function layananPromo(k){
+  const daftar=Array.isArray(k.layanan_ids)?k.layanan_ids
+    :(k.layanan_ids?String(k.layanan_ids).replace(/[{}]/g,'').split(',').filter(Boolean):[]);
+  if(daftar.length) return daftar;
+  return k.layanan_id?[k.layanan_id]:[];
+}
+function labelLayananPromo(k){
+  const daftar=layananPromo(k);
+  if(!daftar.length) return '<span class="tag">Semua layanan</span>';
+  if(daftar.length<=2) return esc(daftar.map(id=>nm('layanan',id)).join(', '));
+  return esc(daftar.slice(0,2).map(id=>nm('layanan',id)).join(', '))+
+    ` <span class="tag info">+${daftar.length-2} lagi</span>`;
+}
+function promoUntukLayanan(k,layananId){
+  const daftar=layananPromo(k);
+  return !daftar.length||daftar.includes(layananId);
+}
+
 function promoBerjalan(k,tanggal){
   if(k.aktif===false) return false;
   const t=tanggal||today();
@@ -3750,17 +3825,26 @@ function promoAktif(cabangId){
 }
 function daftarTarif(cabangId){
   return (DB.tarif_transport||[]).filter(x=>x.aktif!==false&&(!x.cabang_id||!cabangId||x.cabang_id===cabangId))
-    .sort((a,b)=>Number(a.km_sampai)-Number(b.km_sampai));
+    .sort((a,b)=>(Number(a.urutan||0)-Number(b.urutan||0))||(Number(a.km_sampai)-Number(b.km_sampai)));
+}
+/* "Hingga 13 km" atau "14–15 km" */
+function rentangKm(x){
+  const dari=Number(x.km_dari||0), sampai=Number(x.km_sampai||0);
+  return dari<=0?`Hingga ${sampai} km`:(dari===sampai?`${sampai} km`:`${dari}–${sampai} km`);
 }
 /* Biaya transport: tingkat terkecil yang masih mencukupi jaraknya.
    Lebih jauh dari tingkat tertinggi, kelebihannya dihitung per kilometer. */
 function biayaTransport(km,cabangId){
   const j=Number(km)||0; if(j<=0) return 0;
-  const daftar=daftarTarif(cabangId);
+  const daftar=daftarTarif(cabangId).slice()
+    .sort((a,b)=>Number(a.km_sampai)-Number(b.km_sampai));
   if(!daftar.length) return Math.round(j*tarifKm());
-  const pas=daftar.find(x=>Number(x.km_sampai)>=j);
-  if(pas) return Number(pas.biaya);
+  // rentang yang memuat jarak itu
+  const pas=daftar.find(x=>j>Number(x.km_dari||0)-1&&j<=Number(x.km_sampai));
+  if(pas) return Number(pas.biaya)||0;
   const atas=daftar[daftar.length-1];
+  if(j<=Number(atas.km_sampai)) return Number(atas.biaya)||0;
+  // lebih jauh dari rentang tertinggi: kelebihannya dihitung per kilometer
   return Math.round(Number(atas.biaya)+(j-Number(atas.km_sampai))*tarifKm());
 }
 
@@ -3775,7 +3859,7 @@ function kartuKetentuanSaya(){
     ${promo.length?promo.map(k=>`<div class="list-item">
         <span class="dot" style="background:var(--ok)"></span>
         <div style="flex:1;min-width:0"><strong>${esc(k.nama)}</strong>
-          <div class="hint">${k.layanan_id?esc(nm('layanan',k.layanan_id)):'Semua layanan'} · ${ringkasBerlaku(k)}
+          <div class="hint">${labelLayananPromo(k)} · ${ringkasBerlaku(k)}
             ${k.syarat?'<br>'+esc(k.syarat):''}</div></div>
         <span class="tag ok">${k.diskon_persen>0?k.diskon_persen+'%':(k.diskon_nominal>0?rp(k.diskon_nominal):cap(k.jenis))}</span>
       </div>`).join('')
@@ -3783,7 +3867,7 @@ function kartuKetentuanSaya(){
 
     ${tarif.length?`<div class="hint" style="margin:14px 0 6px">Biaya transport menurut jarak</div>
       <div class="contoh-tarif">${tarif.map(x=>
-        `<div><span>sampai ${x.km_sampai} km</span><b>${rp(x.biaya)}</b></div>`).join('')}</div>
+        `<div><span>${rentangKm(x)}</span><b>${Number(x.biaya)>0?rp(x.biaya):'Gratis'}</b></div>`).join('')}</div>
       <p class="hint" style="margin-top:8px">Lebih jauh dari ${tarif[tarif.length-1].km_sampai} km,
         kelebihannya ${rp(tarifKm())} per kilometer.</p>`:''}
   </div>`;
@@ -3796,8 +3880,7 @@ function kartuPromo(k,bisaUbah){
     <div class="atas">
       <div style="min-width:0">
         <h4>${esc(k.nama)}</h4>
-        <div class="hint">${k.layanan_id?esc(nm('layanan',k.layanan_id)):'Semua layanan'}
-          ${k.cabang_id?' · '+esc(nm('cabang',k.cabang_id)):' · semua cabang'}</div>
+        <div class="hint">${labelLayananPromo(k)}${k.cabang_id?' · '+esc(nm('cabang',k.cabang_id)):' · semua cabang'}</div>
       </div>
       ${potongan?`<span class="potongan">${potongan}</span>`:`<span class="tag info">${cap(k.jenis)}</span>`}
     </div>
@@ -5302,7 +5385,7 @@ function hitungTransport(){
   if(isi) isi.value=nominal||'';
   const ket=document.getElementById('b_hitung');
   const daftar=daftarTarif(ME?.cabang_id);
-  const aturan=daftar.length?daftar.map(x=>`sampai ${x.km_sampai} km ${rp(x.biaya)}`).join(' · ')
+  const aturan=daftar.length?daftar.map(x=>`${rentangKm(x)} ${Number(x.biaya)>0?rp(x.biaya):'gratis'}`).join(' · ')
     :`${rp(tarifKm())} per kilometer`;
   if(ket) ket.innerHTML=km
     ? `${km} km → <strong class="rp">${rp(nominal)}</strong> untuk tiap terapis yang dipilih.<br>
