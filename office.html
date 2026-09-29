@@ -401,6 +401,19 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .pilih-gaji .opsi:has(input:checked){border-color:var(--jade);background:#E8F1FC;box-shadow:0 0 0 1px var(--jade)}
 .pilih-gaji .opsi input{margin-top:3px;flex:none;width:17px;height:17px;accent-color:var(--jade)}
 .pilih-gaji .opsi strong{font-size:14px}
+.promo-cs{border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:9px;background:#fff;
+ border-left-width:4px;border-left-color:var(--line)}
+.promo-cs.jalan{border-left-color:#1E7A5A;background:linear-gradient(100deg,#F2FAF7,#fff 50%)}
+.promo-cs.pudar{opacity:.72;background:var(--mist)}
+.promo-cs .atas{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.promo-cs h4{font-size:14.5px;font-weight:600}
+.promo-cs .isi{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+.promo-cs .potongan-cs{font-family:Fraunces,serif;font-size:21px;color:#1E7A5A;white-space:nowrap;line-height:1.1}
+.promo-cs.pudar .potongan-cs{color:var(--muted)}
+.daftar-layanan{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.pil-layanan{font-size:11.5px;font-weight:600;background:#E8F1FC;color:#2F6FBF;border-radius:8px;padding:4px 9px}
+.pil-layanan.semua{background:#DDF0E8;color:#1E5E47}
+.syarat-cs{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5}
 .pilih-banyak{border:1px solid var(--line);border-radius:13px;padding:11px;background:#fff}
 .pilih-banyak .aksi-pilih{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
 .pilih-banyak .kotak-pilih{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;
@@ -584,7 +597,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.23.3";
+const VERSI_APP = "2026.09.23.4";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -2415,7 +2428,8 @@ dash(){
        {k:'total',t:'rp'},{k:'status',l:'Status',fn:r=>lencanaOrder(r)}])}</div>
   ${skemaKaryawan(ME).tipe==='cs'?`<div class="card" style="margin-top:14px">
       <div class="head"><h3>Gaji & target saya bulan ini</h3><span class="hint">per hari ini</span></div>
-      ${kartuGajiCS(ME,periode())}</div>`:''}
+      ${kartuGajiCS(ME,periode())}</div>
+    ${kartuKetentuanSaya()}`:''}
   ${kartuJadwalSaya()}
   ${kartuLiburTerapis()}`;
 },
@@ -3808,10 +3822,13 @@ function promoUntukLayanan(k,layananId){
 }
 
 function promoBerjalan(k,tanggal){
-  if(k.aktif===false) return false;
+  if(!k||k.aktif===false) return false;
   const t=tanggal||today();
-  if(k.mulai&&t<String(k.mulai).slice(0,10)) return false;
-  if(k.selesai&&t>String(k.selesai).slice(0,10)) return false;
+  const mulai=String(k.mulai||'').slice(0,10);
+  const selesai=String(k.selesai||'').slice(0,10);
+  // tanggal kosong berarti tanpa batas
+  if(/^\d{4}-\d{2}-\d{2}$/.test(mulai)&&t<mulai) return false;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(selesai)&&t>selesai) return false;
   return true;
 }
 function ringkasBerlaku(k){
@@ -3850,22 +3867,65 @@ function biayaTransport(km,cabangId){
 
 /* Promo dan aturan transport yang perlu diketahui customer service */
 function kartuKetentuanSaya(){
-  const promo=promoAktif(ME?.cabang_id);
+  const semua=(DB.ketentuan||[]).slice().sort((a,b)=>(a.urutan||9)-(b.urutan||9));
   const tarif=daftarTarif(ME?.cabang_id);
-  if(!promo.length&&!tarif.length) return '';
-  return `<div class="card" style="margin-top:14px">
-    <div class="head"><h3>Ketentuan & promo berjalan</h3>
-      ${boleh('ketentuan','ubah')?`<button class="btn ghost sm" onclick="go('ketentuan')">Kelola</button>`:''}</div>
-    ${promo.length?promo.map(k=>`<div class="list-item">
-        <span class="dot" style="background:var(--ok)"></span>
-        <div style="flex:1;min-width:0"><strong>${esc(k.nama)}</strong>
-          <div class="hint">${labelLayananPromo(k)} · ${ringkasBerlaku(k)}
-            ${k.syarat?'<br>'+esc(k.syarat):''}</div></div>
-        <span class="tag ok">${k.diskon_persen>0?k.diskon_persen+'%':(k.diskon_nominal>0?rp(k.diskon_nominal):cap(k.jenis))}</span>
-      </div>`).join('')
-      :'<p class="hint">Tidak ada promo yang sedang berjalan.</p>'}
 
-    ${tarif.length?`<div class="hint" style="margin:14px 0 6px">Biaya transport menurut jarak</div>
+  // dikelompokkan supaya tidak ada yang tersembunyi
+  const untukSaya=k=>!k.cabang_id||!ME?.cabang_id||k.cabang_id===ME.cabang_id;
+  const berjalan=semua.filter(k=>untukSaya(k)&&promoBerjalan(k));
+  const nanti   =semua.filter(k=>untukSaya(k)&&!promoBerjalan(k)&&k.aktif!==false
+                                 &&k.mulai&&String(k.mulai).slice(0,10)>today());
+  const lewat   =semua.filter(k=>untukSaya(k)&&!promoBerjalan(k)&&!nanti.includes(k));
+  const cabangLain=semua.filter(k=>!untukSaya(k)&&promoBerjalan(k));
+
+  const barisPromo=(k,aktif)=>{
+    const daftar=layananPromo(k);
+    const potongan=k.diskon_persen>0?k.diskon_persen+'%'
+      :(k.diskon_nominal>0?rp(k.diskon_nominal):cap(k.jenis||'ketentuan'));
+    return `<div class="promo-cs ${aktif?'jalan':'pudar'}">
+      <div class="atas">
+        <div style="min-width:0">
+          <h4>${esc(k.nama)}</h4>
+          <div class="hint">${ringkasBerlaku(k)}${k.cabang_id?' · '+esc(nm('cabang',k.cabang_id)):''}
+            ${aktif?'':' · '+(k.aktif===false?'dinonaktifkan':(k.mulai&&String(k.mulai).slice(0,10)>today()?'belum mulai':'sudah berakhir'))}</div>
+        </div>
+        <span class="potongan-cs">${potongan}</span>
+      </div>
+      ${k.deskripsi?`<p class="isi">${esc(k.deskripsi)}</p>`:''}
+      <div class="daftar-layanan">
+        ${daftar.length
+          ? daftar.map(id=>`<span class="pil-layanan">${esc(nm('layanan',id))}</span>`).join('')
+          : '<span class="pil-layanan semua">Semua layanan</span>'}
+      </div>
+      ${k.syarat?`<p class="syarat-cs">Syarat: ${esc(k.syarat)}</p>`:''}
+    </div>`;
+  };
+
+  return `<div class="card" style="margin-top:14px">
+    <div class="head"><h3>Promo & ketentuan</h3>
+      <div class="row">
+        <span class="tag ${berjalan.length?'ok':'warn'}">${berjalan.length} berjalan</span>
+        ${boleh('ketentuan','ubah')?`<button class="btn ghost sm" onclick="go('ketentuan')">Kelola</button>`:''}
+      </div></div>
+
+    ${berjalan.length?berjalan.map(k=>barisPromo(k,true)).join('')
+      : semua.length
+        ? '<p class="hint">Tidak ada promo yang sedang berjalan hari ini. Yang belum mulai atau sudah berakhir ada di bawah.</p>'
+        : `<div class="empty"><div class="disp">Belum ada promo</div>
+             <div>Kantor belum membuat promo, atau data belum termuat.
+             Coba tekan tombol perbarui di kanan atas.</div></div>`}
+
+    ${nanti.length?`<div class="hint" style="margin:14px 0 6px">Akan datang</div>
+      ${nanti.map(k=>barisPromo(k,false)).join('')}`:''}
+
+    ${lewat.length?`<details style="margin-top:12px"><summary class="hint" style="cursor:pointer">
+        Sudah berakhir atau nonaktif (${lewat.length})</summary>
+        <div style="margin-top:8px">${lewat.map(k=>barisPromo(k,false)).join('')}</div></details>`:''}
+
+    ${cabangLain.length?`<p class="hint" style="margin-top:10px">${cabangLain.length} promo lain berlaku
+      di cabang yang berbeda: ${cabangLain.map(k=>esc(k.nama)+' ('+esc(nm('cabang',k.cabang_id))+')').join(', ')}.</p>`:''}
+
+    ${tarif.length?`<div class="hint" style="margin:16px 0 6px">Biaya transport menurut jarak</div>
       <div class="contoh-tarif">${tarif.map(x=>
         `<div><span>${rentangKm(x)}</span><b>${Number(x.biaya)>0?rp(x.biaya):'Gratis'}</b></div>`).join('')}</div>
       <p class="hint" style="margin-top:8px">Lebih jauh dari ${tarif[tarif.length-1].km_sampai} km,
