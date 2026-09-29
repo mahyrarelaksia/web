@@ -401,6 +401,25 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .pilih-gaji .opsi:has(input:checked){border-color:var(--jade);background:#E8F1FC;box-shadow:0 0 0 1px var(--jade)}
 .pilih-gaji .opsi input{margin-top:3px;flex:none;width:17px;height:17px;accent-color:var(--jade)}
 .pilih-gaji .opsi strong{font-size:14px}
+.kartu-promo{border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:10px;background:#fff;
+ border-left-width:4px;border-left-color:var(--line)}
+.kartu-promo.jalan{border-left-color:#1E7A5A;background:linear-gradient(100deg,#F2FAF7,#fff 45%)}
+.kartu-promo .atas{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.kartu-promo h4{font-size:15px;font-weight:600}
+.kartu-promo .isi{font-size:13px;color:var(--muted);margin-top:7px;line-height:1.5}
+.kartu-promo .potongan{font-family:Fraunces,serif;font-size:20px;color:#1E7A5A;white-space:nowrap}
+.kartu-promo .kaki-promo{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.kartu-promo .syarat{font-size:11.5px;color:var(--muted);margin-top:8px;padding-top:8px;
+ border-top:1px dashed var(--line);line-height:1.5}
+.tangga-tarif{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+.tangga-tarif .tingkat{border:1px solid var(--line);border-radius:13px;padding:12px;background:var(--mist);cursor:pointer}
+.tangga-tarif .tingkat:hover{border-color:var(--jade);background:#F4F9FF}
+.tangga-tarif .km{font-size:12px;color:var(--muted)}
+.tangga-tarif .rp{font-family:Fraunces,serif;font-size:19px;margin-top:2px}
+.contoh-tarif{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.contoh-tarif div{border:1px solid var(--line);border-radius:10px;padding:7px 11px;background:#fff;font-size:12.5px}
+.contoh-tarif span{color:var(--muted);margin-right:7px}
+.contoh-tarif b{font-variant-numeric:tabular-nums}
 .kartu-rekening{cursor:pointer;transition:.16s;border:1px solid var(--line)}
 .kartu-rekening:hover{border-color:var(--jade-2);transform:translateY(-1px)}
 .kartu-rekening.dipilih{border-color:var(--jade);box-shadow:0 0 0 2px rgba(47,111,191,.18)}
@@ -408,6 +427,7 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .kartu-rekening .ikon-rek{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;
  background:#E8F1FC;color:var(--jade);flex:none}
 .kartu-rekening.rek-tunai .ikon-rek{background:#FFF4E3;color:#B7791F}
+.kartu-rekening.rek-qris .ikon-rek{background:#F1E9FB;color:#6B4BA8}
 .kartu-audit{border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px;background:#fff;
  border-left-width:5px}
 .kartu-audit.audit-belum{border-left-color:#E0A13A}
@@ -553,7 +573,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.22.8";
+const VERSI_APP = "2026.09.23.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -736,11 +756,12 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
  komisi:'komisi',bonus:'bonus',aturan_bonus:'aturan_bonus',gaji:'gaji',kasbon:'kasbon',
  kategori_pengeluaran:'kategori_pengeluaran',pengeluaran:'pengeluaran',kas:'kas',target:'target',
  hak_akses:'hak_akses',absen_log:'absen_log',pengaturan:'pengaturan',skema_gaji:'skema_gaji',
- libur:'libur',notifikasi:'notifikasi',rekening:'rekening'};
+ libur:'libur',notifikasi:'notifikasi',rekening:'rekening',
+ ketentuan:'ketentuan',tarif_transport:'tarif_transport'};
 
 /* ------------------ MODUL & MESIN HAK AKSES ------------------ */
 const MODUL=[
- ['dash','Dashboard'],['order','Order'],['audit','Audit Order'],['kasbank','Kas Bank'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
+ ['dash','Dashboard'],['order','Order'],['audit','Audit Order'],['kasbank','Kas Bank'],['ketentuan','Ketentuan & Diskon'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
  ['jadwal','Jadwal Kerja'],['shift','Shift Kerja'],['karyawan','Karyawan'],['jabatan','Jabatan'],
  ['cabang','Cabang'],['absensi','Absensi'],['izin','Izin & Cuti'],['kasbon','Kasbon'],
  ['kas','Kas'],['pengeluaran','Pengeluaran'],['komisi','Komisi'],['bonus','Bonus'],['gaji','Penggajian'],['skema_gaji','Skema Gaji'],['libur','Tanggal Libur'],
@@ -920,7 +941,7 @@ const nm=(t,id,f='nama')=>{const r=get(t,id);return r?r[f]:'-'};
 /* ------------------------- data (demo seed) ------------------------- */
 const DB={cabang:[],jabatan:[],karyawan:[],layanan:[],pelanggan:[],shift:[],jadwal:[],pesanan:[],item:[],
  absensi:[],izin:[],komisi:[],bonus:[],aturan_bonus:[],gaji:[],kasbon:[],kategori_pengeluaran:[],
- pengeluaran:[],kas:[],target:[],hak_akses:[],absen_log:[],pengaturan:[],skema_gaji:[],libur:[],notifikasi:[],rekening:[]};
+ pengeluaran:[],kas:[],target:[],hak_akses:[],absen_log:[],pengaturan:[],skema_gaji:[],libur:[],notifikasi:[],rekening:[],ketentuan:[],tarif_transport:[]};
 
 const AKUN_DEMO={ 'owner@mahyra.id':{pw:'mahyra123',id:'k1'}, 'admin@mahyra.id':{pw:'mahyra123',id:'k2'},
                   'kasir@mahyra.id':{pw:'mahyra123',id:'k6'} };
@@ -1700,9 +1721,35 @@ const F={
      return o.length?`${o.length} orang<div class="hint">${o.slice(0,3).map(k=>esc(k.nama)).join(', ')}${o.length>3?'…':''}</div>`
        :'<span class="hint">belum dipakai</span>';}},
    {k:'ak',l:'Status',fn:r=>r.aktif!==false?'<span class="tag ok">Aktif</span>':'<span class="tag">Nonaktif</span>'}]},
+ ketentuan:{title:'Promo & Ketentuan',sub:'Promo yang sedang berjalan, berlaku untuk layanan apa, dan sampai kapan.',
+  fields:[{k:'jenis',l:'Jenis',t:'sel',o:['promo','ketentuan']},
+   {k:'nama',l:'Nama promo atau ketentuan'},
+   {k:'deskripsi',l:'Keterangan',t:'area'},
+   {k:'layanan_id',l:'Layanan (kosongkan bila semua)',t:'ref',ref:'layanan'},
+   {k:'cabang_id',l:'Cabang (kosongkan bila semua)',t:'ref',ref:'cabang'},
+   {k:'diskon_persen',l:'Diskon (%)',t:'num'},
+   {k:'diskon_nominal',l:'Atau potongan rupiah',t:'rp'},
+   {k:'mulai',l:'Mulai berlaku',t:'date'},{k:'selesai',l:'Sampai tanggal',t:'date'},
+   {k:'syarat',l:'Syarat & ketentuan',t:'area'},
+   {k:'urutan',l:'Urutan tampil',t:'num'},{k:'aktif',l:'Aktif',t:'bool'}],
+  cols:[{k:'nama'},{k:'jenis',t:'tag'},
+   {k:'lay',l:'Layanan',fn:r=>r.layanan_id?esc(nm('layanan',r.layanan_id)):'<span class="tag">Semua layanan</span>'},
+   {k:'potongan',l:'Potongan',fn:r=>r.diskon_persen>0?r.diskon_persen+'%':(r.diskon_nominal>0?rp(r.diskon_nominal):'—')},
+   {k:'berlaku',l:'Berlaku',fn:r=>ringkasBerlaku(r)},
+   {k:'aktif',l:'Status',fn:r=>promoBerjalan(r)?'<span class="tag ok">Berjalan</span>'
+     :r.aktif===false?'<span class="tag">Nonaktif</span>':'<span class="tag warn">Di luar tanggal</span>'}]},
+
+ tarif_transport:{title:'Tarif Transport',sub:'Biaya transport menurut jarak tempuh. Dipakai saat memberi bonus transport dan menghitung ongkos pada order.',
+  fields:[{k:'km_sampai',l:'Sampai berapa kilometer',t:'num'},
+   {k:'biaya',l:'Biaya',t:'rp'},
+   {k:'cabang_id',l:'Cabang (kosongkan bila semua)',t:'ref',ref:'cabang'},
+   {k:'keterangan',l:'Keterangan'},{k:'aktif',l:'Aktif',t:'bool'}],
+  cols:[{k:'km',l:'Jarak',fn:r=>'sampai '+r.km_sampai+' km'},{k:'biaya',t:'rp'},
+   {k:'keterangan'},{k:'aktif',l:'Status',t:'tag'}]},
+
  rekening:{title:'Rekening',sub:'Daftar rekening dan saldo awalnya. Saldo berjalan dihitung dari buku kas sejak tanggal saldo awal.',
   fields:[{k:'kode',l:'Kode singkat'},{k:'nama',l:'Nama rekening'},
-   {k:'jenis',l:'Jenis',t:'sel',o:['bank','tunai']},
+   {k:'jenis',l:'Jenis',t:'sel',o:['bank','tunai','qris']},
    {k:'nomor',l:'Nomor rekening'},{k:'atas_nama',l:'Atas nama'},
    {k:'saldo_awal',l:'Saldo awal',t:'rp'},{k:'tgl_saldo_awal',l:'Per tanggal',t:'date'},
    {k:'urutan',l:'Urutan tampil',t:'num'},{k:'aktif',l:'Aktif',t:'bool'}],
@@ -1737,7 +1784,7 @@ const MENU=[
  ['Keuangan',[['audit','audit','Audit Order'],['kasbank','bank','Kas Bank'],['kas','kas','Buku Kas'],['m_pengeluaran','pengeluaran','Pengeluaran'],['m_komisi','komisi','Komisi'],
    ['m_bonus','bonus','Bonus'],['m_skema_gaji','skema_gaji','Skema Gaji'],['gaji','gaji','Penggajian']]],
  ['Analitik',[['laporan','laporan','Laporan'],['biaya','biaya','Struktur Biaya & Laba']]],
- ['Pengaturan',[['m_aturan_bonus','aturan_bonus','Aturan Bonus'],['m_target','target','Target'],
+ ['Pengaturan',[['ketentuan','bonus','Ketentuan & Diskon'],['m_aturan_bonus','aturan_bonus','Aturan Bonus'],['m_target','target','Target'],
    ['m_kategori_pengeluaran','kategori_pengeluaran','Kategori Biaya'],['akses','akses','Hak Akses & Peran'],
    ['pengaturan','pengaturan','Profil Usaha']]]
 ];
@@ -1846,6 +1893,8 @@ function openForm(key,id){
                 jabatan:{lingkup:'cabang',level:1},
                 libur:{jenis:'libur',tanggal:today(),cabang_id:null,karyawan_id:null},
                 rekening:{jenis:'bank',aktif:true,saldo_awal:0,tgl_saldo_awal:today(),urutan:4},
+                ketentuan:{jenis:'promo',aktif:true,urutan:1,mulai:today(),diskon_persen:0,diskon_nominal:0},
+                tarif_transport:{aktif:true,km_sampai:15,biaya:5000},
                 layanan:{aktif:true,butuh_terapis:true,harga_manual:false,durasi_menit:60},
                 pengeluaran:{tanggal:today(),status:'menunggu',rekening_id:rekeningKode('BCA')?.id,cabang_id:ME?.cabang_id},
                 skema_gaji:{tipe_gaji:'harian',hari_kerja:26,aktif:true,cabang_id:null,
@@ -1939,13 +1988,27 @@ new MutationObserver(()=>{
 /* Tombol kembali ponsel menutup panel, bukan keluar aplikasi */
 addEventListener('popstate',()=>{ if(modal.classList.contains('on')) closeModal(); });
 
+/* Pencarian: tunggu sejenak agar tidak menggambar ulang tiap ketukan,
+   lalu kembalikan fokus dan posisi kursor ke kotak pencarian. */
+let _cariJeda=null;
+function cariKetik(nilai){
+  SEARCH=nilai;
+  clearTimeout(_cariJeda);
+  _cariJeda=setTimeout(()=>{
+    render();
+    const k=document.getElementById('cariBox');
+    if(k){ k.focus(); const n=k.value.length; try{ k.setSelectionRange(n,n); }catch(_){} }
+  },250);
+}
+
 function renderModule(key){
   // baris ringkas (hanya nama) tidak ditampilkan sebagai data lengkap
   const m=F[key]; let rows=DB[key].filter(r=>!r._ringkas&&dalamLingkup(r,key));
   if(SEARCH) rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(SEARCH.toLowerCase()));
   const bawah=m.bawah?m.bawah():'';
   return `<div class="card"><div class="head"><h3>${m.title}</h3>
-    <div class="row"><input placeholder="Cari…" style="width:180px" value="${esc(SEARCH)}" oninput="SEARCH=this.value;render()">
+    <div class="row"><input id="cariBox" placeholder="Cari…" style="width:180px" value="${esc(SEARCH)}"
+      autocomplete="off" oninput="cariKetik(this.value)">
       ${boleh(key,'tambah')?`<button class="btn" onclick="openForm('${key}')">Tambah</button>`:''}</div></div>
     ${tableHtml(rows,m.cols,boleh(key,'ubah')?key:null,boleh(key,'ubah')?m.extra:null)}</div>${bawah}`;
 }
@@ -2158,6 +2221,7 @@ const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang
  notif:['Notifikasi','Semua pemberitahuan untuk akun Anda.'],
  order:['Order','Buat order baru dan pantau yang sedang berjalan.'],
  targetsaya:['Gaji & Target Saya','Skema gaji, target order, dan perkiraan gaji bulan ini.'],
+ ketentuan:['Ketentuan & Diskon','Promo yang berlaku dan aturan biaya transport.'],
  kasbank:['Kas Bank','Saldo dan mutasi tiap rekening: BCA, Mandiri, dan kas tunai.'],
  audit:['Audit Order','Periksa order dan bukti pembayaran seluruh cabang, lalu setujui atau kembalikan.'],
  izin:['Izin & Cuti','Pengajuan yang menunggu keputusan HRD.'],
@@ -2326,7 +2390,44 @@ targetsaya(){
         <div><span>Bonus kinerja</span><b>${rp(s0.bonus_kinerja)}</b><em>jika dinilai tercapai</em></div>
       </div>
       <p class="hint" style="margin-top:12px">Yang dihitung adalah order berstatus selesai atau complete
-        pada bulan pengerjaannya. Selama bulan berjalan, gaji pokok dihitung sampai hari ini.</p></div>`;
+        pada bulan pengerjaannya. Selama bulan berjalan, gaji pokok dihitung sampai hari ini.</p></div>
+    ${kartuKetentuanSaya()}`;
+},
+ketentuan(){
+  const bisaUbah=boleh('ketentuan','ubah')||boleh('ketentuan','tambah');
+  const promo=(DB.ketentuan||[]).slice().sort((a,b)=>(a.urutan||9)-(b.urutan||9));
+  const jalan=promo.filter(k=>promoBerjalan(k));
+  const tarif=daftarTarif();
+
+  return `<div class="grid g3">
+      ${stat('Promo berjalan',jalan.length,'aktif hari ini','g')}
+      ${stat('Semua ketentuan',promo.length,'termasuk yang sudah lewat')}
+      ${stat('Tingkat tarif transport',tarif.length,tarif.length?`sampai ${tarif[tarif.length-1].km_sampai} km`:'belum diatur')}
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="head"><h3>Promo & ketentuan</h3>
+        ${bisaUbah?`<button class="btn" onclick="openForm('ketentuan')">Tambah promo</button>`:''}</div>
+      ${promo.length?promo.map(k=>kartuPromo(k,bisaUbah)).join('')
+        :'<div class="empty"><div class="disp">Belum ada promo</div><div>Tambahkan promo agar terlihat oleh customer service.</div></div>'}
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="head"><h3>Aturan biaya transport</h3>
+        ${bisaUbah?`<button class="btn ghost" onclick="openForm('tarif_transport')">Tambah tingkat</button>`:''}</div>
+      ${tarif.length?`<div class="tangga-tarif">${tarif.map(x=>`
+        <div class="tingkat" ${bisaUbah?`onclick="openForm('tarif_transport','${x.id}')"`:''}>
+          <div class="km">sampai ${x.km_sampai} km</div>
+          <div class="rp">${rp(x.biaya)}</div>
+          ${x.keterangan?`<div class="hint">${esc(x.keterangan)}</div>`:''}
+          ${x.cabang_id?`<div class="hint">${esc(nm('cabang',x.cabang_id))}</div>`:''}
+        </div>`).join('')}</div>
+        <p class="hint" style="margin-top:10px">Jarak memakai tingkat terkecil yang masih mencukupi.
+          Lebih jauh dari tingkat tertinggi, kelebihannya dihitung ${rp(tarifKm())} per kilometer.</p>
+        <div class="contoh-tarif">${[5,15,18,25].map(km=>
+          `<div><span>${km} km</span><b>${rp(biayaTransport(km))}</b></div>`).join('')}</div>`
+        :'<div class="empty"><div class="disp">Belum ada aturan transport</div><div>Tambahkan tingkat jarak dan biayanya.</div></div>'}
+    </div>`;
 },
 kasbank(){
   const rek=daftarRekening();
@@ -2356,7 +2457,7 @@ kasbank(){
       <div class="row" style="justify-content:space-between;align-items:flex-start">
         <div><strong style="font-size:15px">${esc(x.r.nama)}</strong>
           <div class="hint">${x.r.nomor?esc(x.r.nomor):'Kas tunai'}${x.r.atas_nama?' · '+esc(x.r.atas_nama):''}</div></div>
-        <span class="ikon-rek">${ikon(x.r.jenis==='tunai'?'kas':'bank',20)}</span></div>
+        <span class="ikon-rek">${ikon(x.r.jenis==='tunai'?'kas':x.r.jenis==='qris'?'kategori_pengeluaran':'bank',20)}</span></div>
       <div class="saldo">${rp(x.saldo)}</div>
       <div class="hint">masuk ${rp(x.masuk)} · keluar ${rp(x.keluar)}</div>
       <div class="hint" style="margin-top:2px">saldo awal ${rp(x.r.saldo_awal)}${x.r.tgl_saldo_awal?' per '+tgl(x.r.tgl_saldo_awal):''}</div>
@@ -3262,7 +3363,8 @@ function skemaJabatan(jabatanId){
 const REKENING_BAWAAN=[
   {id:'rek-bca',kode:'BCA',nama:'BCA',jenis:'bank',nomor:'3888881061',atas_nama:'Klinhome Indonesia',saldo_awal:0,urutan:1,aktif:true},
   {id:'rek-mdr',kode:'MANDIRI',nama:'Mandiri',jenis:'bank',nomor:'1420027509784',atas_nama:'Klinhome Indonesia',saldo_awal:0,urutan:2,aktif:true},
-  {id:'rek-tun',kode:'TUNAI',nama:'Tunai',jenis:'tunai',nomor:null,atas_nama:null,saldo_awal:0,urutan:3,aktif:true}];
+  {id:'rek-tun',kode:'TUNAI',nama:'Tunai',jenis:'tunai',nomor:null,atas_nama:null,saldo_awal:0,urutan:3,aktif:true},
+  {id:'rek-qrs',kode:'QRIS',nama:'QRIS',jenis:'qris',nomor:null,atas_nama:'Klinhome Indonesia',saldo_awal:0,urutan:4,aktif:true}];
 function daftarRekening(){
   if(!DB.rekening||!DB.rekening.length) DB.rekening=REKENING_BAWAAN.map(r=>({...r}));
   return DB.rekening.filter(r=>r.aktif!==false).sort((a,b)=>(a.urutan||9)-(b.urutan||9));
@@ -3277,7 +3379,8 @@ function labelBayar(p){ const r=rekeningOrder(p); return r?r.nama:cap(p.metode_b
 /* metode lama diisi dari jenis rekening, supaya laporan lama tetap jalan */
 function metodeDari(rekeningId){
   const r=daftarRekening().find(x=>x.id===rekeningId);
-  return r&&r.jenis==='tunai'?'tunai':'transfer';
+  if(!r) return 'transfer';
+  return r.jenis==='tunai'?'tunai':r.jenis==='qris'?'qris':'transfer';
 }
 function opsiRekening(pilih){
   return daftarRekening().map(r=>`<option value="${r.id}" ${r.id===pilih?'selected':''}>${esc(r.nama)}${
@@ -3626,6 +3729,87 @@ async function simpanIzinSaya(){
     tgl_mulai:mulai,tgl_selesai:selesai,alasan,status:'menunggu'});
   if(!hasil) return;
   closeModal(); render(); toast('Pengajuan terkirim, menunggu keputusan');
+}
+
+/* ===================== PROMO & TARIF TRANSPORT ===================== */
+function promoBerjalan(k,tanggal){
+  if(k.aktif===false) return false;
+  const t=tanggal||today();
+  if(k.mulai&&t<String(k.mulai).slice(0,10)) return false;
+  if(k.selesai&&t>String(k.selesai).slice(0,10)) return false;
+  return true;
+}
+function ringkasBerlaku(k){
+  if(!k.mulai&&!k.selesai) return '<span class="hint">tanpa batas waktu</span>';
+  if(k.mulai&&k.selesai) return tgl(k.mulai)+' – '+tgl(k.selesai);
+  return k.mulai?'mulai '+tgl(k.mulai):'sampai '+tgl(k.selesai);
+}
+function promoAktif(cabangId){
+  return (DB.ketentuan||[]).filter(k=>promoBerjalan(k)&&(!k.cabang_id||!cabangId||k.cabang_id===cabangId))
+    .sort((a,b)=>(a.urutan||9)-(b.urutan||9));
+}
+function daftarTarif(cabangId){
+  return (DB.tarif_transport||[]).filter(x=>x.aktif!==false&&(!x.cabang_id||!cabangId||x.cabang_id===cabangId))
+    .sort((a,b)=>Number(a.km_sampai)-Number(b.km_sampai));
+}
+/* Biaya transport: tingkat terkecil yang masih mencukupi jaraknya.
+   Lebih jauh dari tingkat tertinggi, kelebihannya dihitung per kilometer. */
+function biayaTransport(km,cabangId){
+  const j=Number(km)||0; if(j<=0) return 0;
+  const daftar=daftarTarif(cabangId);
+  if(!daftar.length) return Math.round(j*tarifKm());
+  const pas=daftar.find(x=>Number(x.km_sampai)>=j);
+  if(pas) return Number(pas.biaya);
+  const atas=daftar[daftar.length-1];
+  return Math.round(Number(atas.biaya)+(j-Number(atas.km_sampai))*tarifKm());
+}
+
+/* Promo dan aturan transport yang perlu diketahui customer service */
+function kartuKetentuanSaya(){
+  const promo=promoAktif(ME?.cabang_id);
+  const tarif=daftarTarif(ME?.cabang_id);
+  if(!promo.length&&!tarif.length) return '';
+  return `<div class="card" style="margin-top:14px">
+    <div class="head"><h3>Ketentuan & promo berjalan</h3>
+      ${boleh('ketentuan','ubah')?`<button class="btn ghost sm" onclick="go('ketentuan')">Kelola</button>`:''}</div>
+    ${promo.length?promo.map(k=>`<div class="list-item">
+        <span class="dot" style="background:var(--ok)"></span>
+        <div style="flex:1;min-width:0"><strong>${esc(k.nama)}</strong>
+          <div class="hint">${k.layanan_id?esc(nm('layanan',k.layanan_id)):'Semua layanan'} · ${ringkasBerlaku(k)}
+            ${k.syarat?'<br>'+esc(k.syarat):''}</div></div>
+        <span class="tag ok">${k.diskon_persen>0?k.diskon_persen+'%':(k.diskon_nominal>0?rp(k.diskon_nominal):cap(k.jenis))}</span>
+      </div>`).join('')
+      :'<p class="hint">Tidak ada promo yang sedang berjalan.</p>'}
+
+    ${tarif.length?`<div class="hint" style="margin:14px 0 6px">Biaya transport menurut jarak</div>
+      <div class="contoh-tarif">${tarif.map(x=>
+        `<div><span>sampai ${x.km_sampai} km</span><b>${rp(x.biaya)}</b></div>`).join('')}</div>
+      <p class="hint" style="margin-top:8px">Lebih jauh dari ${tarif[tarif.length-1].km_sampai} km,
+        kelebihannya ${rp(tarifKm())} per kilometer.</p>`:''}
+  </div>`;
+}
+
+function kartuPromo(k,bisaUbah){
+  const jalan=promoBerjalan(k);
+  const potongan=k.diskon_persen>0?k.diskon_persen+'%':(k.diskon_nominal>0?rp(k.diskon_nominal):null);
+  return `<div class="kartu-promo ${jalan?'jalan':''}">
+    <div class="atas">
+      <div style="min-width:0">
+        <h4>${esc(k.nama)}</h4>
+        <div class="hint">${k.layanan_id?esc(nm('layanan',k.layanan_id)):'Semua layanan'}
+          ${k.cabang_id?' · '+esc(nm('cabang',k.cabang_id)):' · semua cabang'}</div>
+      </div>
+      ${potongan?`<span class="potongan">${potongan}</span>`:`<span class="tag info">${cap(k.jenis)}</span>`}
+    </div>
+    ${k.deskripsi?`<p class="isi">${esc(k.deskripsi)}</p>`:''}
+    <div class="kaki-promo">
+      <span class="tag ${jalan?'ok':(k.aktif===false?'':'warn')}">${
+        jalan?'Berjalan':(k.aktif===false?'Nonaktif':'Di luar tanggal')}</span>
+      <span class="hint">${ringkasBerlaku(k)}</span>
+      ${bisaUbah?`<button class="btn ghost sm" onclick="openForm('ketentuan','${k.id}')">Ubah</button>`:''}
+    </div>
+    ${k.syarat?`<p class="syarat">${esc(k.syarat)}</p>`:''}
+  </div>`;
 }
 
 /* ===================== ATURAN OMZET =====================
@@ -4336,7 +4520,13 @@ function formOrder(){
 
    <div class="grid g2">
      <div class="field"><label for="o_room">Ruangan / catatan lokasi</label><input id="o_room" value="Rumah pelanggan"></div>
-     <div class="field"><label for="o_disk">Diskon</label><input id="o_disk" type="number" value="0" oninput="hitungOrder()"></div>
+     <div class="field"><label for="o_disk">Diskon</label>
+       <div class="row" style="flex-wrap:nowrap;gap:6px">
+         <input id="o_disk" type="number" value="0" oninput="hitungOrder()" style="flex:1">
+         <select id="o_diskMode" style="width:auto;padding:9px 10px" onchange="hitungOrder()">
+           <option value="nominal">Rupiah</option><option value="persen">Persen</option></select>
+       </div>
+       <p class="hint" id="o_diskKet" style="margin-top:6px">Kosongkan bila tidak ada potongan.</p></div>
    </div>
    <div class="field"><label for="o_bayar">Pembayaran ke</label>
      <select id="o_bayar">${opsiRekening(rekeningKode('BCA')?.id)}</select></div>
@@ -4411,10 +4601,22 @@ function gambarBaris(){
   }).join('');
 }
 
+/* Diskon boleh diisi rupiah atau persen; yang disimpan selalu nominalnya. */
+function nilaiDiskon(sub, isi, mode){
+  const n=Number(isi)||0;
+  if(mode==='persen') return Math.min(sub, Math.round(sub*Math.min(100,n)/100));
+  return Math.min(sub, n);
+}
 function hitungOrder(){
   const kotak=document.getElementById('o_total'); if(!kotak) return;
-  const disk=Number(document.getElementById('o_disk')?.value)||0;
   const sub=ORD.baris.reduce((a,b)=>a+Number(b.harga||0),0);
+  const mode=document.getElementById('o_diskMode')?.value||'nominal';
+  const isi=Number(document.getElementById('o_disk')?.value)||0;
+  const disk=nilaiDiskon(sub,isi,mode);
+  const ket=document.getElementById('o_diskKet');
+  if(ket) ket.innerHTML = !isi ? 'Kosongkan bila tidak ada potongan.'
+    : mode==='persen' ? `${isi}% dari ${rp(sub)} = <strong class="rp">${rp(disk)}</strong>`
+    : `Potongan ${rp(disk)}${sub?` · setara ${(disk/sub*100).toFixed(1).replace('.',',')}%`:''}`;
   const total=Math.max(0,sub-disk);
   const kosong=ORD.baris.filter(b=>{
     const l=get('layanan',b.layanan_id)||{};
@@ -4499,9 +4701,11 @@ async function simpanOrder(){
     pel=await simpan('pelanggan',{...pel,telepon:hp,alamat})||pel;
   }
 
-  const disk=Number(document.getElementById('o_disk').value)||0;
-  const cab=get('cabang',document.getElementById('o_cab').value||ME.cabang_id);
   const sub=ORD.baris.reduce((a,b)=>a+Number(b.harga||0),0);
+  const modeDisk=document.getElementById('o_diskMode')?.value||'nominal';
+  const isiDisk=Number(document.getElementById('o_disk').value)||0;
+  const disk=nilaiDiskon(sub,isiDisk,modeDisk);
+  const cab=get('cabang',document.getElementById('o_cab').value||ME.cabang_id);
   const n=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()).length+1;
 
   const p={id:uid(),nomor:'MHR-'+cab.kode+'-'+today().slice(2).replace(/-/g,'')+'-'+String(n).padStart(4,'0'),
@@ -4510,7 +4714,8 @@ async function simpanOrder(){
     jam:document.getElementById('o_jam').value||jam(),
     jam_kerja:document.getElementById('o_jam').value||jam(),
     cabang_id:cab.id,pelanggan_id:pel.id,kasir_id:ME.id,status:'dijadwalkan',
-    subtotal:sub,diskon:disk,total:Math.max(0,sub-disk),
+    subtotal:sub,diskon:disk,diskon_persen:modeDisk==='persen'?isiDisk:0,
+    total:Math.max(0,sub-disk),
     rekening_id:document.getElementById('o_bayar').value,
     metode_bayar:metodeDari(document.getElementById('o_bayar').value),status_bayar:'belum',
     catatan:document.getElementById('o_cat').value};
@@ -4613,7 +4818,10 @@ function pesanPelanggan(p){
 
   // pembayaran: rekening yang dipilih kasir
   const rek = rekeningOrder(p);
-  if (rek && rek.jenis === 'bank') {
+  if (rek && rek.jenis === 'qris') {
+    bagian.push(`*PEMBAYARAN*\nQRIS — silakan pindai kode yang ditunjukkan terapis.\n\n` +
+      `Mohon kirimkan bukti pembayaran setelah selesai.`);
+  } else if (rek && rek.jenis === 'bank') {
     bagian.push(`*PEMBAYARAN*\nTransfer ke rekening berikut:\n\n` +
       `*${rek.nama}*\n${rek.nomor || '-'}\na.n. ${rek.atas_nama || REKENING.nama}\n\n` +
       `Mohon kirimkan bukti transfer setelah pembayaran.`);
@@ -5089,13 +5297,17 @@ function ubahJenisBonus(){
 
 function hitungTransport(){
   const km=Number(document.getElementById('b_km')?.value)||0;
-  const nominal=Math.round(km*tarifKm());
+  const nominal=biayaTransport(km, ME?.cabang_id);
   const isi=document.getElementById('b_nominal');
   if(isi) isi.value=nominal||'';
   const ket=document.getElementById('b_hitung');
+  const daftar=daftarTarif(ME?.cabang_id);
+  const aturan=daftar.length?daftar.map(x=>`sampai ${x.km_sampai} km ${rp(x.biaya)}`).join(' · ')
+    :`${rp(tarifKm())} per kilometer`;
   if(ket) ket.innerHTML=km
-    ? `${km} km × ${rp(tarifKm())} = <strong class="rp">${rp(nominal)}</strong> untuk tiap terapis yang dipilih.`
-    : `Tarif ${rp(tarifKm())} per kilometer. Isi jaraknya, nominalnya dihitung sendiri.`;
+    ? `${km} km → <strong class="rp">${rp(nominal)}</strong> untuk tiap terapis yang dipilih.<br>
+       <span class="hint">Aturan: ${aturan}</span>`
+    : `Aturan transport: ${aturan}. Isi jaraknya, nominalnya dihitung sendiri.`;
 }
 
 function gambarTerapisBonus(pesananId){
@@ -5162,13 +5374,12 @@ function ubahJenisBonusEdit(){
 }
 function hitungTransportEdit(){
   const km=Number(document.getElementById('ub_km')?.value)||0;
-  const nominal=Math.round(km*tarifKm());
+  const nominal=biayaTransport(km, ME?.cabang_id);
   const isi=document.getElementById('ub_nominal');
   if(isi) isi.value=nominal||'';
   const ket=document.getElementById('ub_hitung');
-  if(ket) ket.innerHTML=km
-    ? `${km} km × ${rp(tarifKm())} = <strong class="rp">${rp(nominal)}</strong>`
-    : `Tarif ${rp(tarifKm())} per kilometer.`;
+  if(ket) ket.innerHTML=km?`${km} km → <strong class="rp">${rp(nominal)}</strong>`
+    :`Isi jaraknya, biayanya dihitung dari aturan transport.`;
 }
 
 async function simpanUbahBonus(bonusId,pesananId){
@@ -5416,7 +5627,12 @@ function ubahOrder(pesananId){
     <div class="bagian">Pembayaran & catatan</div>
     <div class="grid g2">
       <div class="field"><label for="u_disk">Diskon</label>
-        <input type="number" id="u_disk" value="${p.diskon||0}"></div>
+        <div class="row" style="flex-wrap:nowrap;gap:6px">
+          <input type="number" id="u_disk" value="${p.diskon_persen>0?p.diskon_persen:(p.diskon||0)}" style="flex:1">
+          <select id="u_diskMode" style="width:auto;padding:9px 10px">
+            <option value="nominal" ${p.diskon_persen>0?'':'selected'}>Rupiah</option>
+            <option value="persen" ${p.diskon_persen>0?'selected':''}>Persen</option></select>
+        </div></div>
       <div class="field"><label for="u_bayar">Pembayaran ke</label>
         <select id="u_bayar">${opsiRekening(rekeningOrder(p)?.id)}</select></div>
     </div>
@@ -5486,7 +5702,9 @@ async function simpanUbahOrder(pesananId){
 
   const item=DB.item.filter(i=>i.pesanan_id===p.id&&i.status!=='batal');
   const kotor=item.reduce((a,i)=>a+Number(i.harga||0),0);
-  const disk=Math.min(Number(document.getElementById('u_disk').value)||0, kotor);
+  const modeDisk=document.getElementById('u_diskMode')?.value||'nominal';
+  const isiDisk=Number(document.getElementById('u_disk').value)||0;
+  const disk=nilaiDiskon(kotor,isiDisk,modeDisk);
 
   const hasil=await simpanSebagian('pesanan',pesananId,{
     cabang_id:document.getElementById('u_cab').value,
@@ -5496,7 +5714,8 @@ async function simpanUbahOrder(pesananId){
     status:document.getElementById('u_status').value,
     rekening_id:document.getElementById('u_bayar').value,
     metode_bayar:metodeDari(document.getElementById('u_bayar').value),
-    diskon:disk, subtotal:kotor, total:Math.max(0,kotor-disk),
+    diskon:disk, diskon_persen:modeDisk==='persen'?isiDisk:0,
+    subtotal:kotor, total:Math.max(0,kotor-disk),
     catatan:document.getElementById('u_cat').value.trim()||null});
   if(!hasil) return;
 
