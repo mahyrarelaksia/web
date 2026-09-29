@@ -411,8 +411,14 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .promo-cs .potongan-cs{font-family:Fraunces,serif;font-size:21px;color:#1E7A5A;white-space:nowrap;line-height:1.1}
 .promo-cs.pudar .potongan-cs{color:var(--muted)}
 .daftar-layanan{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
-.pil-layanan{font-size:11.5px;font-weight:600;background:#E8F1FC;color:#2F6FBF;border-radius:8px;padding:4px 9px}
+.pil-layanan{display:inline-flex;flex-direction:column;gap:1px;font-size:11.5px;background:#E8F1FC;color:#2F6FBF;
+ border-radius:9px;padding:6px 10px;line-height:1.3}
+.pil-layanan b{font-weight:600}
+.pil-layanan i{font-style:normal;font-size:10.5px;opacity:.85}
+.pil-layanan u{text-decoration:none;font-size:10.5px;opacity:.85;font-variant-numeric:tabular-nums}
 .pil-layanan.semua{background:#DDF0E8;color:#1E5E47}
+.opsi-pilih span em{display:block;font-style:normal;font-size:11px;color:var(--muted);font-weight:400}
+
 .syarat-cs{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5}
 .pilih-banyak{border:1px solid var(--line);border-radius:13px;padding:11px;background:#fff}
 .pilih-banyak .aksi-pilih{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
@@ -597,7 +603,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.23.4";
+const VERSI_APP = "2026.09.23.5";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -834,6 +840,8 @@ function dalamLingkup(r,key){
 /* Pilihan cabang & karyawan pada formulir ikut dibatasi lingkup */
 function opsiRef(ref){
   if(ref==='rekening') return daftarRekening();
+  if(ref==='layanan') return (DB.layanan||[]).filter(l=>l.aktif!==false)
+    .map(l=>({...l,durasi_menit:l.durasi_menit}));
   const L=lingkupSaya(), daftar=DB[ref]||[];
   if(L==='semua') return daftar;
   if(ref==='cabang')   return daftar.filter(o=>o.id===ME.cabang_id);
@@ -1973,7 +1981,7 @@ function fieldHtml(f,v){
         ${daftar.map(o=>`<label class="opsi-pilih ${dipilih.has(o.id)?'aktif':''}">
           <input type="checkbox" value="${o.id}" ${dipilih.has(o.id)?'checked':''}
             onchange="segarkanPilihan('${id}')">
-          <span>${esc(o.nama)}</span></label>`).join('')
+          <span>${esc(o.nama)}${o.durasi_menit?`<em>${o.durasi_menit} menit</em>`:''}</span></label>`).join('')
           ||'<p class="hint">Belum ada pilihan.</p>'}
       </div>
       <p class="hint" style="margin-top:6px">Tidak ada yang dicentang berarti berlaku untuk semuanya.</p>
@@ -2428,8 +2436,7 @@ dash(){
        {k:'total',t:'rp'},{k:'status',l:'Status',fn:r=>lencanaOrder(r)}])}</div>
   ${skemaKaryawan(ME).tipe==='cs'?`<div class="card" style="margin-top:14px">
       <div class="head"><h3>Gaji & target saya bulan ini</h3><span class="hint">per hari ini</span></div>
-      ${kartuGajiCS(ME,periode())}</div>
-    ${kartuKetentuanSaya()}`:''}
+      ${kartuGajiCS(ME,periode())}</div>`:''}
   ${kartuJadwalSaya()}
   ${kartuLiburTerapis()}`;
 },
@@ -3802,6 +3809,12 @@ async function simpanIzinSaya(){
 }
 
 /* ===================== PROMO & TARIF TRANSPORT ===================== */
+/* Nama layanan beserta durasinya, misalnya "Signature Relax · 60 menit" */
+function labelLayanan(id){
+  const l=get('layanan',id); if(!l) return '-';
+  return l.nama+(l.durasi_menit?' · '+l.durasi_menit+' menit':'');
+}
+
 /* Layanan yang tercakup sebuah promo. Kosong berarti semua layanan. */
 function layananPromo(k){
   const daftar=Array.isArray(k.layanan_ids)?k.layanan_ids
@@ -3812,8 +3825,8 @@ function layananPromo(k){
 function labelLayananPromo(k){
   const daftar=layananPromo(k);
   if(!daftar.length) return '<span class="tag">Semua layanan</span>';
-  if(daftar.length<=2) return esc(daftar.map(id=>nm('layanan',id)).join(', '));
-  return esc(daftar.slice(0,2).map(id=>nm('layanan',id)).join(', '))+
+  if(daftar.length<=2) return esc(daftar.map(labelLayanan).join(', '));
+  return esc(daftar.slice(0,2).map(labelLayanan).join(', '))+
     ` <span class="tag info">+${daftar.length-2} lagi</span>`;
 }
 function promoUntukLayanan(k,layananId){
@@ -3894,8 +3907,11 @@ function kartuKetentuanSaya(){
       ${k.deskripsi?`<p class="isi">${esc(k.deskripsi)}</p>`:''}
       <div class="daftar-layanan">
         ${daftar.length
-          ? daftar.map(id=>`<span class="pil-layanan">${esc(nm('layanan',id))}</span>`).join('')
-          : '<span class="pil-layanan semua">Semua layanan</span>'}
+          ? daftar.map(id=>{const l=get('layanan',id)||{};
+              return `<span class="pil-layanan"><b>${esc(l.nama||'-')}</b>${
+                l.durasi_menit?`<i>${l.durasi_menit} menit</i>`:''}${
+                l.harga?`<u>${rp(l.harga)}</u>`:''}</span>`;}).join('')
+          : '<span class="pil-layanan semua"><b>Semua layanan</b></span>'}
       </div>
       ${k.syarat?`<p class="syarat-cs">Syarat: ${esc(k.syarat)}</p>`:''}
     </div>`;
