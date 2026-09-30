@@ -609,7 +609,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.24.1";
+const VERSI_APP = "2026.09.24.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -5607,10 +5607,13 @@ function hitungTransportEdit(){
 }
 
 async function simpanUbahBonus(bonusId,pesananId){
-  const nominal=angkaDari(document.getElementById('ub_nominal').value);
-  if(!nominal) return toast('Isi nominalnya');
   const jenis=document.getElementById('ub_jenis').value;
   const km=Number(document.getElementById('ub_km')?.value)||0;
+  const nominal=jenis==='transport'
+    ? Math.round(km*tarifKm())
+    : angkaDari(document.getElementById('ub_nominal').value);
+  if(jenis==='transport'&&!km) return toast('Isi dulu jarak tempuhnya');
+  if(!nominal) return toast('Isi nominalnya');
   let ket=document.getElementById('ub_ket').value.trim();
   if(!ket&&jenis==='transport'&&km) ket=`Transport ${km} km × ${rp(tarifKm())}`;
   const hasil=await simpanSebagian('bonus',bonusId,{
@@ -5628,12 +5631,17 @@ async function hapusBonus(bonusId,pesananId){
 
 async function simpanBonusOrder(pesananId){
   const p=get('pesanan',pesananId);
-  const nominal=angkaDari(document.getElementById('b_nominal').value);
+  const jenis=document.getElementById('b_jenis').value;
+  const km=Number(document.getElementById('b_km')?.value)||0;
+  // bonus transport selalu dihitung dari jaraknya, supaya tidak bergantung
+  // pada isi kolom di layar maupun aturan tarif pelanggan
+  const nominal=jenis==='transport'
+    ? Math.round(km*tarifKm())
+    : angkaDari(document.getElementById('b_nominal').value);
+  if(jenis==='transport'&&!km) return toast('Isi dulu jarak tempuhnya');
   if(!nominal) return toast('Isi nominal bonusnya');
   if(!BON.terapis.length) return toast('Pilih minimal satu terapis');
   const btn=document.getElementById('b_simpan'); btn.disabled=true; btn.textContent='Menyimpan…';
-  const jenis=document.getElementById('b_jenis').value;
-  const km=Number(document.getElementById('b_km')?.value)||0;
   let ket=document.getElementById('b_ket').value.trim();
   if(!ket) ket = jenis==='transport'&&km
     ? `Transport ${km} km × ${rp(tarifKm())}`
