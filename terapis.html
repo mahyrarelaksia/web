@@ -752,7 +752,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.22.5';
+const VERSI_APP='2026.09.24.1';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -1107,15 +1107,35 @@ komisi(){
        sk.fee>0?['Imbalan per orderan selesai',rp(sk.fee)]:null,
        (sk.fee<=0&&sk.persen>0)?['Komisi dari nilai order',sk.persen+'%']:null,
        (sk.potongan>0&&sk.tipe==='training')?['Potongan per hari tidak masuk',rp(sk.potongan)]:null,
-       sk.minimal>0?['Gaji minimal sebulan',rp(sk.minimal)]:null,
+       sk.minimal>0?['Gaji minimal sebulan penuh',rp(sk.minimal)]:null,
+       sk.minimal>0?['Jaminan sampai hari ini',rp(penghasilanSaya().minimal)]:null,
        sk.bonusMotor>0?['Bonus service motor per bulan',rp(sk.bonusMotor)]:null,
        sk.bonusBpjs>0?['BPJS ditanggung perusahaan',rp(sk.bonusBpjs)]:null,
        ['Bonus lainnya','tips, transport, lembur']]
       .filter(Boolean).map(([l,v])=>`<div class="list-item"><div style="flex:1">${l}</div><strong>${v}</strong></div>`).join('')}
-    ${sk.harian>0?`<div class="list-item" style="border-top:2px solid var(--jade);margin-top:4px">
-      <div style="flex:1"><strong>Gaji harian terkumpul</strong>
-        <div class="hint">${hariBln} hari kerja × ${rp(sk.harian)}</div></div>
-      <strong class="rp">${rp(sk.harian*hariBln)}</strong></div>`:''}
+    ${(()=>{const g=penghasilanSaya();
+      const baris=[
+        g.pokok?['Gaji pokok',rp(g.pokok),`sebanding ${g.jatah}/${g.HK} hari`]:null,
+        g.upah?['Upah harian',rp(g.upah),`${g.efektif} hari × ${rp(sk.harian)}`]:null,
+        g.tunj?['Tunjangan',rp(g.tunj),null]:null,
+        g.um?['Uang makan',rp(g.um),null]:null,
+        g.kom?['Komisi',rp(g.kom),`${g.nOrder} order selesai`]:null,
+        g.bon?['Bonus dari kantor',rp(g.bon),'tips, transport, lembur']:null,
+        g.bonusTarget?['Bonus target',rp(g.bonusTarget),'target order tercapai']:null,
+        g.bonusTetap?['Service motor & BPJS',rp(g.bonusTetap),`sebanding ${g.jatah}/${g.HK} hari`]:null,
+        g.pot?['Potongan hari tidak masuk','− '+rp(g.pot),`${Math.max(0,g.jatah-g.efektif)} hari`]:null,
+        g.sesuai?['Penyesuaian gaji minimal','+ '+rp(g.sesuai),`jaminan ${rp(g.minimal)}`]:null
+      ].filter(Boolean);
+      return `<div style="border-top:2px solid var(--jade);margin-top:6px;padding-top:4px">
+        <div class="hint" style="margin:6px 0 2px">Penghasilan bulan ini sampai hari ini</div>
+        ${baris.map(([l,v,k])=>`<div class="list-item" style="padding:7px 0">
+          <div style="flex:1">${l}${k?`<div class="hint">${k}</div>`:''}</div>
+          <strong class="rp">${v}</strong></div>`).join('')}
+        <div class="list-item" style="border-top:1px dashed var(--line)">
+          <div style="flex:1"><strong>Perkiraan diterima</strong>
+            <div class="hint">${g.efektif} hari kerja dari jatah ${g.jatah} hari</div></div>
+          <strong class="rp" style="font-size:17px">${rp(g.total)}</strong></div>
+      </div>`;})()}
     ${(()=>{const lb=liburSaya(periode()).length, iz=izinDibayar(periode()).length;
       const b=[];
       if(lb) b.push(`${lb} hari libur terjadwal — tidak dihitung hari kerja, dan tidak dipotong`);
@@ -1267,6 +1287,54 @@ function absenPerHari(per){
   return peta;
 }
 /* Hari kerja dihitung hanya bila absen masuk dan pulang keduanya ada */
+/* Jatah hari kerja saya pada sebuah periode: prorata sejak tanggal masuk,
+   lalu dikurangi hari libur terjadwal. Rumusnya sama dengan yang dipakai
+   kantor saat menghitung gaji. */
+function jatahKerjaSaya(per,tanggal){
+  const sk=skemaGaji(), HK=sk.hariKerja||26;
+  const [y,m]=per.split('-').map(Number);
+  const awal=`${per}-01`, akhirBln=tglLokal(new Date(y,m,0));
+  const hariSebulan=new Date(y,m,0).getDate();
+  const masuk=(ME.tgl_masuk&&String(ME.tgl_masuk).slice(0,10)>awal)?String(ME.tgl_masuk).slice(0,10):awal;
+  const sampai=(tanggal||today())<akhirBln?(tanggal||today()):akhirBln;
+  if(sampai<masuk) return 0;
+  const hariKalender=Math.round((new Date(sampai+'T12:00:00+07:00')-new Date(masuk+'T12:00:00+07:00'))/864e5)+1;
+  let jatah=Math.round(HK*hariKalender/hariSebulan);
+  jatah-=Math.round(liburSaya(per).filter(t=>t>=masuk&&t<=sampai).length*HK/hariSebulan);
+  return Math.max(0,Math.min(jatah,HK));
+}
+
+/* Penghasilan bulan berjalan menurut skema saya — angka yang sama dengan
+   yang dilihat kantor di menu Penggajian. */
+function penghasilanSaya(per){
+  const p=per||periode(), sk=skemaGaji(), HK=sk.hariKerja||26;
+  const jatah=jatahKerjaSaya(p), rasio=HK?jatah/HK:0;
+  const efektif=Math.min(hariKerjaSaya(p),HK);
+  const kerja=myItem().filter(i=>i.status==='selesai'&&String(i.jam_selesai||'').slice(0,7)===p);
+  const nOrder=kerja.length;
+  const kom=kerja.reduce((a,i)=>a+komisiSaya(i),0);
+  const bon=sum((DB.bonus||[]).filter(b=>b.karyawan_id===ME.id&&b.periode===p&&b.status==='disetujui'),'nominal');
+
+  let bonusTarget=0;
+  if(sk.bonusT2Order>0&&nOrder>=sk.bonusT2Order)      bonusTarget=sk.bonusT2Nominal;
+  else if(sk.bonusT1Order>0&&nOrder>=sk.bonusT1Order) bonusTarget=sk.bonusT1Nominal;
+  const bonusTetap=efektif>0?Math.round((sk.bonusMotor+sk.bonusBpjs)*rasio):0;
+
+  let pokok=0, upah=0, pot=0;
+  if(sk.tipe==='harian'){ upah=sk.harian*efektif; }
+  else if(sk.tipe==='training'){ pokok=Math.round(sk.pokok*rasio); upah=sk.harian*efektif;
+    pot=Math.max(0,sk.potongan*(jatah-efektif)); }
+  else { pokok=Math.round(sk.pokok*rasio);
+    pot=HK?Math.round(sk.pokok/HK)*Math.max(0,jatah-efektif):0; }
+
+  const tunj=Math.round(sk.tunjangan*rasio), um=sk.uangMakan*efektif;
+  const hitung=pokok+upah+tunj+um+kom+bon+bonusTarget+bonusTetap-pot;
+  const minimal=sk.minimal>0&&HK?Math.round(sk.minimal*efektif/HK):0;
+  const sesuai=Math.max(0,minimal-hitung);
+  return {sk,HK,jatah,efektif,nOrder,pokok,upah,tunj,um,kom,bon,bonusTarget,bonusTetap,pot,
+    minimal,sesuai,total:Math.max(hitung,minimal)};
+}
+
 /* Hari kerja: hari dengan absen masuk sekaligus pulang, ditambah hari
    izin atau cuti yang disetujui dan tetap dibayar. Aturannya sama dengan
    yang dipakai kantor saat menghitung gaji. */
