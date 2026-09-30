@@ -134,6 +134,8 @@ body.panel-buka .tabbar{transform:translateX(-50%) translateY(110%)}
 .blok-oranye{background:linear-gradient(165deg,#FFF8EE,#FFF1DE);border:1px solid #F3DFC1}
 .blok-oranye .empty .disp{color:#8A5714}
 .blok-oranye .empty{color:#A97434}
+.catatan-slip{background:#FFF8EC;border:1px solid #F0E0C4;border-radius:11px;padding:10px 12px;
+ margin-top:10px;font-size:12.5px;line-height:1.5}
 .kartu-tugas{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;background:#fff}
 .kartu-tugas.sorot{box-shadow:0 0 0 3px rgba(242,169,59,.55);animation:sorot 2.4s ease}
 @keyframes sorot{0%,40%{background:#FFF4E0}100%{background:#fff}}
@@ -572,6 +574,8 @@ const tglLokal=d=>_fmtTgl.format(new Date(d));
 const periode=()=>today().slice(0,7);
 const jam=()=>_fmtJam.format(new Date());
 /* Menerima '09:15', '09:15:00', atau cap waktu penuh -> selalu 'HH.MM' */
+const namaBulan=p=>/^\d{4}-\d{2}$/.test(String(p||''))
+  ? new Date(p+'-01T00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'}) : (p||'-');
 const jamDari=v=>{ if(!v) return '--.--';
   const s=String(v);
   if(/^\d{2}:\d{2}/.test(s)) return s.slice(0,5).replace(':','.');
@@ -752,7 +756,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.24.1';
+const VERSI_APP='2026.09.25.1';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -1169,9 +1173,11 @@ bonus(){
   ${bonusSkemaSaya(sel.length)}`;
 },
 slip(){
-  const my=DB.gaji.filter(g=>g.karyawan_id===ME.id&&g.status!=='draft');
+  // hanya slip yang sudah dikirim kantor yang boleh dilihat
+  const my=DB.gaji.filter(g=>g.karyawan_id===ME.id&&(g.dikirim||g.status!=='draft'))
+    .slice().sort((a,b)=>String(a.periode).localeCompare(String(b.periode)));
   if(!my.length) return `<div class="card empty"><div class="disp">Slip belum terbit</div>
-    <div>Slip muncul setelah bagian keuangan menutup periode.</div></div>`;
+    <div>Slip muncul setelah bagian keuangan mengirimkannya.</div></div>`;
   const g=my[my.length-1];
   const baris=[
    g.gaji_pokok?['Gaji pokok',g.gaji_pokok]:null,
@@ -1180,19 +1186,31 @@ slip(){
    g.uang_makan?[`Uang makan (${g.hari_efektif||g.hari_hadir} hari)`,g.uang_makan]:null,
    ['Komisi / imbalan orderan'+(g.jml_order?` (${g.jml_order} order)`:''),g.total_komisi],
    ['Bonus (tips, transport, lembur)',g.total_bonus],
-   g.potongan_absen?['Potongan hari tanpa orderan',-g.potongan_absen]:null,
-   g.potongan_kasbon?['Cicilan kasbon',-g.potongan_kasbon]:null
+   g.lembur?['Lembur',g.lembur]:null,
+   g.penyesuaian?['Penyesuaian gaji minimal',g.penyesuaian]:null,
+   g.potongan_absen?['Potongan hari tidak masuk',-g.potongan_absen]:null,
+   g.potongan_kasbon?['Cicilan kasbon',-g.potongan_kasbon]:null,
+   g.potongan_lain?['Potongan lain',-g.potongan_lain]:null
   ].filter(Boolean);
-  return `<div class="card"><div class="head"><h3>Slip gaji ${g.periode}</h3>${tagHtml(g.status)}</div>
-    <p class="hint">${esc(ME.nama)} · ${esc(nm('jabatan',ME.jabatan_id))} · ${esc(nm('cabang',ME.cabang_id))}</p>
+  return `<div class="card"><div class="head"><h3>Slip gaji ${namaBulan(g.periode)}</h3>
+      <div class="row">${Number(g.revisi)>0?`<span class="tag warn">Revisi ${g.revisi}</span>`:''}${tagHtml(g.status)}</div></div>
+    <p class="hint">${esc(ME.nama)} · ${esc(nm('jabatan',ME.jabatan_id))} · ${esc(nm('cabang',ME.cabang_id))}
+      ${g.tgl_kirim?'<br>Diterbitkan '+tgl(String(g.tgl_kirim).slice(0,10)):''}</p>
+    ${Number(g.revisi)>0?`<div class="catatan-slip">Slip ini diperbarui oleh kantor.
+      Angka di bawah adalah yang terbaru.</div>`:''}
+    ${g.catatan?`<div class="catatan-slip">${esc(g.catatan)}</div>`:''}
     <div style="margin-top:14px">${baris.map(([l,v])=>`<div class="list-item"><div style="flex:1">${l}</div>
       <span class="rp" style="color:${v<0?'var(--bad)':'inherit'}">${rp(v)}</span></div>`).join('')}
       <div class="list-item" style="border-top:2px solid var(--jade);margin-top:6px">
         <div style="flex:1"><strong>Total diterima</strong></div>
         <span class="rp" style="font-size:19px">${rp(g.total_terima)}</span></div></div>
-    <p class="hint" style="margin-top:10px">Transfer ke ${esc(ME.bank_nama||'-')} ${esc(ME.bank_rekening||'-')}.</p></div>
+    <p class="hint" style="margin-top:10px">Transfer ke ${esc(ME.bank_nama||'-')} ${esc(ME.bank_rekening||'-')}.
+      ${g.hari_efektif||g.hari_hadir?` Dihitung dari ${g.hari_efektif||g.hari_hadir} hari kerja${
+        g.hari_kerja?' dari jatah '+g.hari_kerja+' hari':''}.`:''}</p></div>
   <div class="card" style="margin-top:14px"><div class="head"><h3>Riwayat slip</h3></div>
-    ${tableHtml(my,[{k:'periode'},{k:'hari_efektif',l:'Hari efektif',fn:r=>(r.hari_efektif??r.hari_hadir)+' hari'},
+    ${tableHtml(my.slice().reverse(),[
+      {k:'periode',l:'Periode',fn:r=>namaBulan(r.periode)+(Number(r.revisi)>0?` <span class="tag warn">revisi ${r.revisi}</span>`:'')},
+      {k:'hari_efektif',l:'Hari efektif',fn:r=>(r.hari_efektif??r.hari_hadir)+' hari'},
       {k:'jml_order',l:'Order',fn:r=>(r.jml_order||0)},{k:'total_komisi',l:'Komisi',t:'rp'},
       {k:'total_bonus',l:'Bonus',t:'rp'},{k:'total_terima',l:'Diterima',t:'rp'},{k:'status',t:'tag'}])}</div>`;
 },
