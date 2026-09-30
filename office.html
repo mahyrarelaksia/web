@@ -420,6 +420,7 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .opsi-pilih span em{display:block;font-style:normal;font-size:11px;color:var(--muted);font-weight:400}
 
 .syarat-cs{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5}
+.isian-rp{font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .pilih-banyak{border:1px solid var(--line);border-radius:13px;padding:11px;background:#fff}
 .pilih-banyak .aksi-pilih{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
 .pilih-banyak .kotak-pilih{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;
@@ -518,6 +519,11 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .kartu-order dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px;margin:8px 0}
 .kartu-order dt{color:var(--muted)}
 .kartu-order dd{text-align:right}
+.bonus-order{background:#FFF8EC;border:1px solid #F0E0C4;border-radius:11px;padding:9px 11px;margin-top:10px}
+.baris-bonus{display:flex;gap:9px;align-items:baseline;font-size:12.5px;padding:3px 0}
+.baris-bonus span{font-weight:600;min-width:0;flex:none}
+.baris-bonus em{font-style:normal;color:var(--muted);flex:1;min-width:0}
+.baris-bonus b{font-variant-numeric:tabular-nums;white-space:nowrap}
 .kartu-order .kaki{display:flex;gap:7px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:11px;margin-top:6px}
 .kartu-order .kaki .btn{flex:1;min-width:106px;padding:11px 14px;font-size:13px;border-radius:12px}
 .list-item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:flex-start}
@@ -603,7 +609,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.23.5";
+const VERSI_APP = "2026.09.24.1";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -901,6 +907,28 @@ function ikon(nama, ukuran){
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
 /* Rupiah selalu dibulatkan: rata-rata dan persen tidak boleh menghasilkan
    angka seperti 1.456.000,234 yang sekilas terbaca miliaran. */
+/* ---------- Angka dengan titik ribuan ----------
+   Dipakai pada semua isian nominal: diketik apa adanya, titiknya muncul
+   sendiri, dan yang tersimpan tetap angka murni. */
+const angkaTitik=n=>{
+  const s=String(n??'').replace(/[^0-9-]/g,'');
+  if(s===''||s==='-') return s;
+  const negatif=s.startsWith('-');
+  const angka=s.replace(/-/g,'');
+  return (negatif?'-':'')+angka.replace(/^0+(?=\d)/,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+};
+const angkaDari=v=>Number(String(v??'').replace(/[^0-9-]/g,''))||0;
+
+function ketikRupiah(el){
+  const sebelum=el.value, posisi=el.selectionStart??sebelum.length;
+  const titikSebelum=(sebelum.slice(0,posisi).match(/\./g)||[]).length;
+  el.value=angkaTitik(sebelum);
+  const titikSesudah=(el.value.slice(0,posisi).match(/\./g)||[]).length;
+  const baru=Math.max(0, posisi+(titikSesudah-titikSebelum));
+  try{ el.setSelectionRange(baru,baru); }catch(_){}
+  if(el.dataset.hitung) window[el.dataset.hitung]?.();
+}
+
 const rp=n=>{ const v=Math.round(Number(n)||0);
   return (v<0?'− Rp ':'Rp ')+Math.abs(v).toLocaleString('id-ID',{maximumFractionDigits:0}); };
 /* ===================== WAKTU WIB =====================
@@ -1989,7 +2017,9 @@ function fieldHtml(f,v){
   }
   else if(t==='date')inp=`<input id="${id}" type="date" value="${v?String(v).slice(0,10):today()}">`;
   else if(t==='time')inp=`<input id="${id}" type="time" value="${v||''}">`;
-  else if(t==='num'||t==='rp')inp=`<input id="${id}" type="number" value="${v??''}">`;
+  else if(t==='rp')inp=`<input id="${id}" type="text" inputmode="numeric" class="isian-rp"
+    value="${v!=null&&v!==''?angkaTitik(v):''}" oninput="ketikRupiah(this)" placeholder="0">`;
+  else if(t==='num')inp=`<input id="${id}" type="number" value="${v??''}">`;
   else inp=`<input id="${id}" value="${esc(v||'')}">`;
   return `<div class="field"><label for="${id}">${f.l}</label>${inp}</div>`;
 }
@@ -2018,7 +2048,9 @@ async function saveForm(){
       return;
     }
     let v=el.value;
-    if(f.t==='bool')v=v==='true'; else if(f.t==='num'||f.t==='rp')v=Number(v)||0;
+    if(f.t==='bool')v=v==='true';
+    else if(f.t==='rp')v=angkaDari(v);
+    else if(f.t==='num')v=Number(v)||0;
     else if(f.t==='ref'&&v==='')v=null;
     else if(f.t==='skema'){ obj.tanpa_gaji=(v==='__tanpa'); v=(v===''||v==='__tanpa')?null:v; }
     obj[f.k]=v;});
@@ -2399,6 +2431,12 @@ dash(){
     <div class="head"><h3>Omzet ${judulRentang.toLowerCase()}</h3>
       <span class="tag ${FIL.mode==='semua'?'info':'ok'}">${dataOmzet.length} order</span></div>
     ${barisFilter()}
+    <div class="row" style="margin:-4px 0 12px">
+      <input id="cariBox" placeholder="Cari nomor, pelanggan, layanan, atau terapis…"
+        style="flex:1;min-width:200px" autocomplete="off" value="${esc(SEARCH)}" oninput="cariKetik(this.value)">
+      ${SEARCH?`<button class="btn ghost sm" onclick="SEARCH='';render()">Hapus</button>
+        <span class="hint" style="align-self:center">${rows.length} order cocok</span>`:''}
+    </div>
     <div class="omzet-nilai">${rp(sum(dataOmzet,'total'))}</div>
     <div class="omzet-rinci">
       <div><span>Sudah dibayar</span><b>${rp(sum(dataOmzet.filter(x=>x.status_bayar==='lunas'),'total'))}</b></div>
@@ -2610,7 +2648,17 @@ audit(){
     </div>`;
 },
 order(){
-  const rows=DB.pesanan.filter(p=>dalamLingkup(p,'pesanan')&&dalamFilter(p.tgl_kerja||p.tanggal))
+  const cari=(SEARCH||'').toLowerCase().trim();
+  const cocok=p=>{
+    if(!cari) return true;
+    const it=DB.item.filter(i=>i.pesanan_id===p.id);
+    return [p.nomor,nm('pelanggan',p.pelanggan_id),nm('cabang',p.cabang_id),
+      get('pelanggan',p.pelanggan_id)?.telepon,statusOrder(p),p.catatan,
+      ...it.map(i=>nm('layanan',i.layanan_id)),
+      ...it.map(i=>i.terapis_id?nm('karyawan',i.terapis_id):'')]
+      .join(' ').toLowerCase().includes(cari);
+  };
+  const rows=DB.pesanan.filter(p=>dalamLingkup(p,'pesanan')&&dalamFilter(tglOrder(p))&&cocok(p))
     .map(p=>{const it=DB.item.filter(i=>i.pesanan_id===p.id);
     return {...p,pel:nm('pelanggan',p.pelanggan_id),cab:nm('cabang',p.cabang_id),
       lay:it.map(i=>nm('layanan',i.layanan_id)).join(', '),ter:it.map(i=>nm('karyawan',i.terapis_id)).join(', ')}})
@@ -2633,6 +2681,10 @@ order(){
       {k:'ter',l:'Terapis',fn:r=>r.ter?esc(r.ter):'<span class="tag warn">Belum ditugaskan</span>'},
       {k:'total',t:'rp'},
       {k:'metode_bayar',l:'Bayar ke',fn:r=>esc(labelBayar(r))},
+      {k:'bns',l:'Bonus',fn:r=>{const b=DB.bonus.filter(x=>x.pesanan_id===r.id);
+        return b.length?`${rp(sum(b,'nominal'))}<div class="hint">${
+          b.map(x=>esc(nm('karyawan',x.karyawan_id))+' · '+esc(x.jenis)).join('<br>')}</div>`
+          :'<span class="hint">—</span>';}},
       {k:'status',l:'Status',fn:r=>lencanaOrder(r)},
       {k:'aksi',l:'Tindakan',fn:r=>tombolOrder(r.id)}])}</div>
     <div class="hanya-mobil">${rows.length?rows.map((r,i)=>kartuOrder(r,i)).join('')
@@ -4681,7 +4733,8 @@ function formOrder(){
      <div class="field"><label for="o_room">Ruangan / catatan lokasi</label><input id="o_room" value="Rumah pelanggan"></div>
      <div class="field"><label for="o_disk">Diskon</label>
        <div class="row" style="flex-wrap:nowrap;gap:6px">
-         <input id="o_disk" type="number" value="0" oninput="hitungOrder()" style="flex:1">
+         <input id="o_disk" type="text" inputmode="numeric" class="isian-rp" value="0"
+           oninput="ketikRupiah(this);hitungOrder()" style="flex:1">
          <select id="o_diskMode" style="width:auto;padding:9px 10px" onchange="hitungOrder()">
            <option value="nominal">Rupiah</option><option value="persen">Persen</option></select>
        </div>
@@ -4720,7 +4773,7 @@ function tambahBaris(){
 }
 function hapusBaris(i){ ORD.baris.splice(i,1); gambarBaris(); hitungOrder(); }
 function ubahBaris(i,kunci,nilai){
-  ORD.baris[i][kunci] = kunci==='harga' ? (Number(nilai)||0) : (nilai||null);
+  ORD.baris[i][kunci] = kunci==='harga' ? angkaDari(nilai) : (nilai||null);
   if(kunci==='harga') hitungOrder();
 }
 
@@ -4744,8 +4797,9 @@ function gambarBaris(){
       ${l.catatan_kasir?`<p class="petunjuk">${esc(l.catatan_kasir)}</p>`:''}
       <div class="isian">
         <div><label>Nominal</label>
-          <input type="number" value="${b.harga}" ${l.harga_manual?'':'readonly'}
-            oninput="ubahBaris(${i},'harga',this.value)"
+          <input type="text" inputmode="numeric" class="isian-rp" value="${angkaTitik(b.harga)}"
+            ${l.harga_manual?'':'readonly'}
+            oninput="ketikRupiah(this);ubahBaris(${i},'harga',this.value)"
             placeholder="${l.harga_manual?'isi nominal':''}"></div>
         ${perluTerapis?`<div><label>Terapis</label>
           <select onchange="ubahBaris(${i},'terapis_id',this.value)">
@@ -4770,7 +4824,7 @@ function hitungOrder(){
   const kotak=document.getElementById('o_total'); if(!kotak) return;
   const sub=ORD.baris.reduce((a,b)=>a+Number(b.harga||0),0);
   const mode=document.getElementById('o_diskMode')?.value||'nominal';
-  const isi=Number(document.getElementById('o_disk')?.value)||0;
+  const isi=angkaDari(document.getElementById('o_disk')?.value);
   const disk=nilaiDiskon(sub,isi,mode);
   const ket=document.getElementById('o_diskKet');
   if(ket) ket.innerHTML = !isi ? 'Kosongkan bila tidak ada potongan.'
@@ -4862,7 +4916,7 @@ async function simpanOrder(){
 
   const sub=ORD.baris.reduce((a,b)=>a+Number(b.harga||0),0);
   const modeDisk=document.getElementById('o_diskMode')?.value||'nominal';
-  const isiDisk=Number(document.getElementById('o_disk').value)||0;
+  const isiDisk=angkaDari(document.getElementById('o_disk').value);
   const disk=nilaiDiskon(sub,isiDisk,modeDisk);
   const cab=get('cabang',document.getElementById('o_cab').value||ME.cabang_id);
   const n=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()).length+1;
@@ -5106,6 +5160,15 @@ function kartuOrder(r, urut){
       <dt>Bayar ke</dt><dd>${esc(labelBayar(r))}</dd>
       <dt>Total</dt><dd><span class="rp">${rp(r.total)}</span></dd>
     </dl>
+    ${(()=>{const b=DB.bonus.filter(x=>x.pesanan_id===r.id);
+      if(!b.length) return '';
+      return `<div class="bonus-order">
+        <div class="hint">Bonus diberikan · total ${rp(sum(b,'nominal'))}</div>
+        ${b.map(x=>`<div class="baris-bonus">
+          <span>${esc(nm('karyawan',x.karyawan_id))}</span>
+          <em>${esc(cap(x.jenis))}${x.jarak_km?` ${x.jarak_km} km`:''}</em>
+          <b>${rp(x.nominal)}</b></div>`).join('')}
+      </div>`;})()}
     <div class="kaki">
       <button class="btn ghost" onclick="waPelanggan('${r.id}')">WA Customer</button>
       <button class="btn ghost" onclick="waTerapis('${r.id}')">WA Terapis</button>
@@ -5114,6 +5177,7 @@ function kartuOrder(r, urut){
         ? `<button class="btn amber" onclick="formBayar('${r.id}')">Pembayaran</button>`
         : `<button class="btn ghost" onclick="formBayar('${r.id}')">Rincian bayar</button>`}
       <button class="btn amber" onclick="bonusOrder('${r.id}')">Bonus</button>
+      ${boleh('order','hapus')?`<button class="btn rose" onclick="konfirmasiHapusOrder('${r.id}')">Hapus</button>`:''}
     </div></div>`;
 }
 function tombolOrder(id){
@@ -5122,7 +5186,8 @@ function tombolOrder(id){
     <button class="btn ghost sm" onclick="waPelanggan('${id}')">WA</button>
     <button class="btn sm" onclick="ubahOrder('${id}')">Ubah</button>
     <button class="btn ${p.status_bayar==='belum'?'amber':'ghost'} sm" onclick="formBayar('${id}')">Bayar</button>
-    <button class="btn amber sm" onclick="bonusOrder('${id}')">Bonus</button></div>`;
+    <button class="btn amber sm" onclick="bonusOrder('${id}')">Bonus</button>
+    ${boleh('order','hapus')?`<button class="btn rose sm" onclick="konfirmasiHapusOrder('${id}')">Hapus</button>`:''}</div>`;
 }
 
 
@@ -5417,7 +5482,7 @@ function bonusOrder(pesananId){
 
 /* Simpan tarif transport dari halaman Profil Usaha */
 async function simpanTarifKm(){
-  const n=Number(document.getElementById('set_tarifkm')?.value)||0;
+  const n=angkaDari(document.getElementById('set_tarifkm')?.value);
   if(n<=0) return toast('Isi tarif per kilometer');
   const lama=(DB.pengaturan||[])[0];
   const hasil=lama
@@ -5443,30 +5508,29 @@ function ubahJenisBonus(){
       <div class="field"><label for="b_km">Jarak tempuh (kilometer)</label>
         <input type="number" id="b_km" step="0.1" min="0" placeholder="2" oninput="hitungTransport()"></div>
       <div class="field"><label>Nominal per terapis</label>
-        <input id="b_nominal" type="number" readonly></div>
+        <input id="b_nominal" type="text" class="isian-rp" readonly
+          title="Dihitung otomatis dari jarak, tidak bisa diubah"></div>
     </div>
     <p class="hint" id="b_hitung" style="margin:-4px 0 14px">
       Tarif ${rp(tarifKm())} per kilometer. Isi jaraknya, nominalnya dihitung sendiri.</p>`;
     hitungTransport();
   }else{
     kotak.innerHTML=`<div class="field"><label for="b_nominal">Nominal per terapis</label>
-      <input type="number" id="b_nominal" placeholder="50000"></div>`;
+      <input type="text" inputmode="numeric" class="isian-rp" id="b_nominal"
+        oninput="ketikRupiah(this)" placeholder="50.000"></div>`;
   }
 }
 
 function hitungTransport(){
   const km=Number(document.getElementById('b_km')?.value)||0;
-  const nominal=biayaTransport(km, ME?.cabang_id);
+  // bonus transport terapis dihitung per kilometer, bukan dari tarif customer
+  const nominal=Math.round(km*tarifKm());
   const isi=document.getElementById('b_nominal');
-  if(isi) isi.value=nominal||'';
+  if(isi) isi.value=nominal?angkaTitik(nominal):'';
   const ket=document.getElementById('b_hitung');
-  const daftar=daftarTarif(ME?.cabang_id);
-  const aturan=daftar.length?daftar.map(x=>`${rentangKm(x)} ${Number(x.biaya)>0?rp(x.biaya):'gratis'}`).join(' · ')
-    :`${rp(tarifKm())} per kilometer`;
   if(ket) ket.innerHTML=km
-    ? `${km} km → <strong class="rp">${rp(nominal)}</strong> untuk tiap terapis yang dipilih.<br>
-       <span class="hint">Aturan: ${aturan}</span>`
-    : `Aturan transport: ${aturan}. Isi jaraknya, nominalnya dihitung sendiri.`;
+    ? `${km} km × ${rp(tarifKm())} = <strong class="rp">${rp(nominal)}</strong> untuk tiap terapis yang dipilih.`
+    : `Tarif ${rp(tarifKm())} per kilometer. Cukup isi jaraknya — nominalnya dihitung sendiri dan tidak bisa diubah manual.`;
 }
 
 function gambarTerapisBonus(pesananId){
@@ -5522,27 +5586,28 @@ function ubahJenisBonusEdit(){
       <div class="field"><label for="ub_km">Jarak tempuh (kilometer)</label>
         <input type="number" id="ub_km" step="0.1" min="0" value="${km||''}" oninput="hitungTransportEdit()"></div>
       <div class="field"><label>Nominal</label>
-        <input id="ub_nominal" type="number" readonly value="${b.nominal||0}"></div>
+        <input id="ub_nominal" type="text" class="isian-rp" readonly value="${angkaTitik(b.nominal||0)}"></div>
     </div>
     <p class="hint" id="ub_hitung" style="margin:-4px 0 14px"></p>`;
     hitungTransportEdit();
   }else{
     kotak.innerHTML=`<div class="field"><label for="ub_nominal">Nominal</label>
-      <input type="number" id="ub_nominal" value="${b.nominal||0}"></div>`;
+      <input type="text" inputmode="numeric" class="isian-rp" id="ub_nominal"
+        oninput="ketikRupiah(this)" value="${angkaTitik(b.nominal||0)}"></div>`;
   }
 }
 function hitungTransportEdit(){
   const km=Number(document.getElementById('ub_km')?.value)||0;
-  const nominal=biayaTransport(km, ME?.cabang_id);
+  const nominal=Math.round(km*tarifKm());
   const isi=document.getElementById('ub_nominal');
-  if(isi) isi.value=nominal||'';
+  if(isi) isi.value=nominal?angkaTitik(nominal):'';
   const ket=document.getElementById('ub_hitung');
-  if(ket) ket.innerHTML=km?`${km} km → <strong class="rp">${rp(nominal)}</strong>`
-    :`Isi jaraknya, biayanya dihitung dari aturan transport.`;
+  if(ket) ket.innerHTML=km?`${km} km × ${rp(tarifKm())} = <strong class="rp">${rp(nominal)}</strong>`
+    :`Tarif ${rp(tarifKm())} per kilometer.`;
 }
 
 async function simpanUbahBonus(bonusId,pesananId){
-  const nominal=Number(document.getElementById('ub_nominal').value)||0;
+  const nominal=angkaDari(document.getElementById('ub_nominal').value);
   if(!nominal) return toast('Isi nominalnya');
   const jenis=document.getElementById('ub_jenis').value;
   const km=Number(document.getElementById('ub_km')?.value)||0;
@@ -5563,7 +5628,7 @@ async function hapusBonus(bonusId,pesananId){
 
 async function simpanBonusOrder(pesananId){
   const p=get('pesanan',pesananId);
-  const nominal=Number(document.getElementById('b_nominal').value)||0;
+  const nominal=angkaDari(document.getElementById('b_nominal').value);
   if(!nominal) return toast('Isi nominal bonusnya');
   if(!BON.terapis.length) return toast('Pilih minimal satu terapis');
   const btn=document.getElementById('b_simpan'); btn.disabled=true; btn.textContent='Menyimpan…';
@@ -5609,7 +5674,7 @@ async function gantiLayanan(itemId, layananBaru){
 /* Ubah nominal sebuah pekerjaan */
 async function ubahHargaItem(itemId, pesananId, nilai){
   const i=get('item',itemId); if(!i) return;
-  const harga=Number(nilai)||0;
+  const harga=angkaDari(nilai);
   if(harga===Number(i.harga)) return;
   const l=get('layanan',i.layanan_id)||{};
   const hasil=await simpanSebagian('item',itemId,{harga,
@@ -5767,8 +5832,9 @@ function ubahOrder(pesananId){
             </select></div>
         </div>
         <div style="margin-top:8px"><label class="mini">Nominal</label>
-          <input type="number" value="${i.harga}" ${l.harga_manual?'':'readonly'}
-            onchange="ubahHargaItem('${i.id}','${p.id}',this.value)"></div>
+          <input type="text" inputmode="numeric" class="isian-rp" value="${angkaTitik(i.harga)}"
+            ${l.harga_manual?'':'readonly'}
+            oninput="ketikRupiah(this)" onchange="ubahHargaItem('${i.id}','${p.id}',this.value)"></div>
         ${l.harga_manual?`<div style="margin-top:7px"><label class="mini">Keterangan</label>
           <input value="${esc(i.catatan||'')}" onchange="ubahCatatanItem('${i.id}',this.value)"
             placeholder="Contoh: Klojen ke Singosari, 12 km"></div>`:''}
@@ -5787,7 +5853,9 @@ function ubahOrder(pesananId){
     <div class="grid g2">
       <div class="field"><label for="u_disk">Diskon</label>
         <div class="row" style="flex-wrap:nowrap;gap:6px">
-          <input type="number" id="u_disk" value="${p.diskon_persen>0?p.diskon_persen:(p.diskon||0)}" style="flex:1">
+          <input type="text" inputmode="numeric" class="isian-rp" id="u_disk"
+            value="${angkaTitik(p.diskon_persen>0?p.diskon_persen:(p.diskon||0))}"
+            oninput="ketikRupiah(this)" style="flex:1">
           <select id="u_diskMode" style="width:auto;padding:9px 10px">
             <option value="nominal" ${p.diskon_persen>0?'':'selected'}>Rupiah</option>
             <option value="persen" ${p.diskon_persen>0?'selected':''}>Persen</option></select>
@@ -5821,6 +5889,69 @@ function ubahOrder(pesananId){
 /* Keterangan pada pos berharga manual, misalnya asal dan tujuan transport */
 async function ubahCatatanItem(itemId, teks){
   await simpanSebagian('item',itemId,{catatan:teks.trim()||null});
+}
+
+/* ---------- Hapus order beserta seluruh jejaknya ---------- */
+function konfirmasiHapusOrder(pesananId){
+  const p=get('pesanan',pesananId); if(!p) return;
+  const item=DB.item.filter(i=>i.pesanan_id===p.id);
+  const komisi=DB.komisi.filter(c=>item.some(i=>i.id===(c.pesanan_item_id||c.item_id)));
+  const bonus=DB.bonus.filter(b=>b.pesanan_id===p.id||item.some(i=>i.id===b.pesanan_item_id));
+  const absen=DB.absen_log.filter(a=>item.some(i=>i.id===a.pesanan_item_id));
+  const kas=DB.kas.filter(k=>k.sumber==='pesanan'&&k.ref_id===p.id);
+  const terkunci=komisi.some(c=>c.dibayar)||bonus.some(b=>b.dibayar);
+
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Hapus order ini?</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(p.nomor)} · ${esc(nm('pelanggan',p.pelanggan_id))}
+      · ${hariTgl(p.tgl_kerja||p.tanggal)}</p>
+
+    <div class="peringatan">Order dan seluruh data yang menempel padanya akan dihapus permanen.
+      Tindakan ini tidak bisa dibatalkan.</div>
+
+    <div class="card" style="background:var(--mist);box-shadow:none;padding:13px;margin-top:12px">
+      <div class="hint" style="margin-bottom:8px">Yang ikut terhapus</div>
+      ${[['Pekerjaan terapis',item.length],['Catatan komisi',komisi.length],
+         ['Bonus',bonus.length],['Catatan check in & foto',absen.length],
+         ['Kas masuk',kas.length]]
+        .map(([l,n])=>`<div class="row" style="justify-content:space-between;font-size:13px;padding:3px 0">
+          <span class="hint">${l}</span><b>${n?n+' data':'—'}</b></div>`).join('')}
+      <div class="row" style="justify-content:space-between;border-top:1px dashed var(--line);margin-top:8px;padding-top:8px">
+        <strong>Nilai order</strong><strong class="rp">${rp(p.total)}</strong></div>
+    </div>
+
+    ${terkunci?`<div class="peringatan" style="margin-top:12px">Komisi atau bonus order ini sudah masuk
+      slip gaji yang dibayarkan, jadi tidak bisa dihapus. Batalkan pembayaran slipnya lebih dulu.</div>`:''}
+    ${kas.length?`<p class="hint" style="margin-top:10px">Kas masuk ${rp(sum(kas,'nominal'))} ikut ditarik
+      dari buku kas, jadi saldo rekening menyesuaikan.</p>`:''}`,
+    {kaki:terkunci
+      ? `<button class="btn ghost" onclick="closeModal()">Tutup</button>`
+      : `<button class="btn rose" onclick="hapusOrder('${p.id}')">Ya, hapus permanen</button>
+         <button class="btn ghost" onclick="closeModal()">Batal</button>`});
+}
+
+async function hapusOrder(pesananId){
+  const p=get('pesanan',pesananId); if(!p) return;
+  const nomor=p.nomor;
+
+  if(LIVE){
+    const {data,error}=await sb.rpc('hapus_order',{p_pesanan:pesananId});
+    if(error){ closeModal(); return toast(error.message); }
+    await muatTabel(['pesanan','item','komisi','bonus','kas','absen_log','notifikasi','pelanggan']);
+    closeModal(); render();
+    return toast(`Order ${nomor} dihapus · ${data?.pekerjaan||0} pekerjaan, ${data?.komisi||0} komisi, ${data?.bonus||0} bonus`);
+  }
+
+  const item=DB.item.filter(i=>i.pesanan_id===pesananId);
+  const idItem=new Set(item.map(i=>i.id));
+  DB.absen_log=DB.absen_log.filter(a=>!idItem.has(a.pesanan_item_id));
+  DB.komisi=DB.komisi.filter(c=>!idItem.has(c.pesanan_item_id||c.item_id));
+  DB.bonus=DB.bonus.filter(b=>b.pesanan_id!==pesananId&&!idItem.has(b.pesanan_item_id));
+  DB.kas=DB.kas.filter(k=>!(k.sumber==='pesanan'&&k.ref_id===pesananId));
+  DB.notifikasi=(DB.notifikasi||[]).filter(n=>n.ref_id!==pesananId&&!idItem.has(n.ref_id));
+  DB.item=DB.item.filter(i=>i.pesanan_id!==pesananId);
+  DB.pesanan=DB.pesanan.filter(x=>x.id!==pesananId);
+  closeModal(); render();
+  toast('Order '+nomor+' dihapus beserta data terkaitnya');
 }
 
 /* Diskon disebar ulang ke tiap pekerjaan, lalu komisinya dihitung ulang */
@@ -5862,7 +5993,7 @@ async function simpanUbahOrder(pesananId){
   const item=DB.item.filter(i=>i.pesanan_id===p.id&&i.status!=='batal');
   const kotor=item.reduce((a,i)=>a+Number(i.harga||0),0);
   const modeDisk=document.getElementById('u_diskMode')?.value||'nominal';
-  const isiDisk=Number(document.getElementById('u_disk').value)||0;
+  const isiDisk=angkaDari(document.getElementById('u_disk').value);
   const disk=nilaiDiskon(kotor,isiDisk,modeDisk);
 
   const hasil=await simpanSebagian('pesanan',pesananId,{
@@ -5975,7 +6106,7 @@ function formKas(){
      <button class="btn ghost" onclick="closeModal()">Batal</button>`})
 }
 async function simpanKas(){
-  const n=Number(k_nom.value); if(!n) return toast('Isi nominal');
+  const n=angkaDari(k_nom.value); if(!n) return toast('Isi nominal');
   const rek=document.getElementById('k_rek').value, jenis=k_jns.value;
   const dasar={tanggal:k_tgl.value,cabang_id:k_cab.value||ME.cabang_id,nominal:n,dibuat_oleh:ME.id};
 
