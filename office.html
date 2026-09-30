@@ -623,7 +623,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.24.3";
+const VERSI_APP = "2026.09.25.1";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -2888,7 +2888,8 @@ gaji(){
   <div class="card" style="margin-top:14px">
     <div class="head"><h3>Rincian per karyawan</h3>
       <div class="row">
-        ${boleh('gaji','tambah')||boleh('gaji','ubah')?`<button class="btn ghost" onclick="hitungGaji()">Simpan sebagai slip</button>`:''}
+        ${boleh('gaji','tambah')||boleh('gaji','ubah')?`<button class="btn ghost" onclick="hitungGaji()">Hitung & simpan slip</button>`:''}
+        ${boleh('gaji','ubah')&&Object.keys(slip).length?`<button class="btn ghost" onclick="kirimSemuaSlip()">Kirim slip</button>`:''}
         ${draft.length&&boleh('gaji','ubah')?`<button class="btn amber" onclick="bayarGaji()">Tandai dibayar (${draft.length})</button>`:''}
       </div></div>
     ${tableHtml(baris.map(g=>({...g,id:g.k.id})),[
@@ -2907,12 +2908,24 @@ gaji(){
       {k:'total',l:berjalan?'Per hari ini':'Total',fn:r=>`<strong class="rp">${rp(r.total)}</strong>`},
       {k:'slip',l:'Slip',fn:r=>{const g=slip[r.k.id];
         if(!g) return '<span class="hint">belum disimpan</span>';
-        const beda=g.status==='draft'&&Math.abs(Number(g.total_terima)-r.total)>=1;
-        return tagHtml(g.status)+(beda?`<div class="hint" style="color:var(--warn)">slip ${rp(g.total_terima)}, perlu disimpan ulang</div>`:'');}},
-      {k:'aksi',l:'',fn:r=>`<button class="btn ghost sm" onclick="rincianGajiPanel('${r.k.id}')">Rincian</button>`}
+        const beda=g.status==='draft'&&!g.manual&&Math.abs(Number(g.total_terima)-r.total)>=1;
+        return tagHtml(g.status)
+          +(g.manual?' <span class="tag info">manual</span>':'')
+          +(g.dikirim?`<div class="hint" style="color:var(--ok)">terkirim${Number(g.revisi)>0?' · revisi '+g.revisi:''}</div>`
+                     :'<div class="hint">belum dikirim</div>')
+          +(beda?`<div class="hint" style="color:var(--warn)">slip ${rp(g.total_terima)}, perlu disimpan ulang</div>`:'');}},
+      {k:'aksi',l:'',fn:r=>{const g=slip[r.k.id];
+        return `<div class="row" style="flex-wrap:nowrap">
+          <button class="btn ghost sm" onclick="rincianGajiPanel('${r.k.id}')">Rincian</button>
+          ${boleh('gaji','ubah')?`<button class="btn ghost sm" onclick="formSlipManual('${r.k.id}')">
+            ${g&&g.manual?'Ubah manual':'Slip manual'}</button>`:''}
+          ${g&&boleh('gaji','ubah')?`<button class="btn ${g.dikirim?'ghost':'amber'} sm" onclick="kirimSlip('${g.id}')">
+            ${g.dikirim?'Kirim ulang':'Kirim'}</button>`:''}
+        </div>`;}}
     ])}
     <div class="row" style="margin-top:12px;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <span class="hint">${dibayar.length} slip sudah dibayar · ${draft.length} slip draft</span>
+      <span class="hint">${dibayar.length} slip dibayar · ${draft.length} draft ·
+        ${Object.values(slip).filter(g=>g.dikirim).length} terkirim ke terapis</span>
       <strong>Total: <span class="rp">${rp(total)}</span></strong></div>
   </div>`;
 },
@@ -4644,6 +4657,177 @@ async function beriBonusKinerja(karyawanId, per){
   if(ok){ render(); toast('Bonus kinerja '+rp(s.bonusKinerja)+' diberikan ke '+k.nama); }
 }
 
+
+/* ===================== SLIP MANUAL & PENGIRIMAN =====================
+   Slip manual: semua komponen diisi tangan dan tidak ditimpa perhitungan
+   otomatis. Satu periode satu slip per karyawan, jadi mengirim ulang
+   setelah perbaikan hanya memperbarui slip yang sama. */
+const KOMPONEN_SLIP=[
+  ['gaji_pokok','Gaji pokok',1],['upah_harian','Upah harian',1],
+  ['tunjangan','Tunjangan',1],['uang_makan','Uang makan',1],
+  ['total_komisi','Komisi',1],['total_bonus','Bonus',1],['lembur','Lembur',1],
+  ['penyesuaian','Penyesuaian / rapel',1],
+  ['potongan_absen','Potongan kehadiran',-1],['potongan_kasbon','Cicilan kasbon',-1],
+  ['potongan_lain','Potongan lain',-1]
+];
+
+function slipKaryawan(karyawanId,per){
+  return DB.gaji.find(g=>g.karyawan_id===karyawanId&&g.periode===(per||GAJI_FIL.periode))||null;
+}
+
+function formSlipManual(karyawanId){
+  const per=GAJI_FIL.periode, k=get('karyawan',karyawanId);
+  const lama=slipKaryawan(karyawanId,per);
+  const otomatis=rincianGaji(k,per);
+  const isi=lama||{hari_kerja:otomatis.HK,hari_efektif:otomatis.efektif,jml_order:otomatis.nOrder,
+    gaji_pokok:otomatis.pokok,upah_harian:otomatis.upah,tunjangan:otomatis.tunj,uang_makan:otomatis.um,
+    total_komisi:otomatis.kom,total_bonus:otomatis.bon+otomatis.bonusTarget+otomatis.bonusTetap,
+    lembur:0,penyesuaian:otomatis.sesuai,potongan_absen:otomatis.pot,
+    potongan_kasbon:otomatis.ksb,potongan_lain:0};
+  const terkunci=lama&&lama.status!=='draft';
+
+  bukaPanel(`<h3 style="font-size:20px;margin-bottom:4px">Slip manual ${namaPeriode(per)}</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(k.nama)} · ${esc(nm('jabatan',k.jabatan_id))}
+      · ${esc(nm('cabang',k.cabang_id))}</p>
+
+    ${terkunci?`<div class="peringatan">Slip ini sudah ditandai dibayar, jadi nominalnya tidak bisa diubah.</div>`:
+      `<p class="hint" style="margin-bottom:14px">Isian sudah diisi dari perhitungan otomatis — ubah seperlunya.
+        Slip manual tidak akan ditimpa lagi saat tombol hitung ulang ditekan.</p>`}
+
+    <div class="grid g3">
+      <div class="field"><label for="sm_hk">Hari kerja</label>
+        <input type="number" id="sm_hk" value="${isi.hari_kerja||0}" ${terkunci?'disabled':''}></div>
+      <div class="field"><label for="sm_ef">Hari efektif</label>
+        <input type="number" id="sm_ef" value="${isi.hari_efektif||0}" ${terkunci?'disabled':''}></div>
+      <div class="field"><label for="sm_or">Jumlah order</label>
+        <input type="number" id="sm_or" value="${isi.jml_order||0}" ${terkunci?'disabled':''}></div>
+    </div>
+
+    <div class="bagian">Penerimaan</div>
+    ${KOMPONEN_SLIP.filter(([,,arah])=>arah>0).map(([k2,l])=>`
+      <div class="field"><label for="sm_${k2}">${l}</label>
+        <input type="text" inputmode="numeric" class="isian-rp" id="sm_${k2}"
+          value="${angkaTitik(isi[k2]||0)}" ${terkunci?'disabled':''}
+          oninput="ketikRupiah(this);hitungSlipManual()"></div>`).join('')}
+
+    <div class="bagian">Potongan</div>
+    ${KOMPONEN_SLIP.filter(([,,arah])=>arah<0).map(([k2,l])=>`
+      <div class="field"><label for="sm_${k2}">${l}</label>
+        <input type="text" inputmode="numeric" class="isian-rp" id="sm_${k2}"
+          value="${angkaTitik(isi[k2]||0)}" ${terkunci?'disabled':''}
+          oninput="ketikRupiah(this);hitungSlipManual()"></div>`).join('')}
+
+    <div class="field"><label for="sm_catatan">Catatan pada slip</label>
+      <input id="sm_catatan" value="${esc(isi.catatan||'')}" ${terkunci?'disabled':''}
+        placeholder="Misalnya: termasuk rapel bulan lalu"></div>
+
+    <div class="card" style="background:var(--mist);box-shadow:none;padding:14px">
+      <div id="sm_ringkas"></div>
+      <div class="field" style="margin:10px 0 0"><label for="sm_total">Total diterima</label>
+        <input type="text" inputmode="numeric" class="isian-rp" id="sm_total"
+          value="${angkaTitik(isi.total_terima||0)}" ${terkunci?'disabled':''} oninput="ketikRupiah(this)">
+        <p class="hint" style="margin-top:6px">Terisi sendiri dari komponen di atas. Boleh ditimpa bila perlu.</p></div>
+    </div>`,
+    {kaki:terkunci
+      ? `<button class="btn ghost" onclick="closeModal()">Tutup</button>`
+      : `<button class="btn" onclick="simpanSlipManual('${karyawanId}',false)">Simpan</button>
+         <button class="btn amber" onclick="simpanSlipManual('${karyawanId}',true)">Simpan & kirim</button>
+         <button class="btn ghost" onclick="closeModal()">Batal</button>`});
+  hitungSlipManual(true);
+}
+
+function hitungSlipManual(pertama){
+  const nilai={}; let masuk=0, keluar=0;
+  KOMPONEN_SLIP.forEach(([k,l,arah])=>{
+    const v=angkaDari(document.getElementById('sm_'+k)?.value);
+    nilai[k]=v; if(arah>0) masuk+=v; else keluar+=v;
+  });
+  const total=Math.max(0,masuk-keluar);
+  const ring=document.getElementById('sm_ringkas');
+  if(ring) ring.innerHTML=`
+    <div class="row" style="justify-content:space-between;font-size:13px"><span class="hint">Jumlah penerimaan</span>
+      <b class="rp">${rp(masuk)}</b></div>
+    <div class="row" style="justify-content:space-between;font-size:13px"><span class="hint">Jumlah potongan</span>
+      <b class="rp" style="color:var(--bad)">− ${rp(keluar)}</b></div>`;
+  const isiTotal=document.getElementById('sm_total');
+  if(isiTotal&&!isiTotal.disabled&&(pertama||!isiTotal.dataset.diubah)) isiTotal.value=angkaTitik(total);
+  return {nilai,total};
+}
+
+async function simpanSlipManual(karyawanId,langsungKirim){
+  const per=GAJI_FIL.periode, lama=slipKaryawan(karyawanId,per);
+  const {nilai}=hitungSlipManual();
+  const k=get('karyawan',karyawanId), s=skemaKaryawan(k);
+  const isi={
+    periode:per, karyawan_id:karyawanId, manual:true, status:lama?.status||'draft',
+    tipe_gaji:s.tipe, skema_nama:(s.nama||'')+' · manual',
+    hari_kerja:Number(document.getElementById('sm_hk').value)||0,
+    hari_hadir:Number(document.getElementById('sm_ef').value)||0,
+    hari_efektif:Number(document.getElementById('sm_ef').value)||0,
+    jml_order:Number(document.getElementById('sm_or').value)||0,
+    ...nilai,
+    total_terima:angkaDari(document.getElementById('sm_total').value),
+    catatan:document.getElementById('sm_catatan').value.trim()||null
+  };
+
+  const hasil=lama
+    ? await simpanSebagian('gaji',lama.id,isi)
+    : await simpan('gaji',{id:uid(),...isi});
+  if(!hasil) return;
+
+  if(langsungKirim) return kirimSlip(hasil.id||lama?.id,true);
+  closeModal(); render(); toast('Slip manual tersimpan sebagai draft');
+}
+
+/* Kirim atau kirim ulang slip ke portal terapis */
+async function kirimSlip(gajiId,dariForm){
+  const g=DB.gaji.find(x=>x.id===gajiId); if(!g) return;
+  const ulang=!!g.dikirim;
+
+  if(LIVE){
+    const {data,error}=await sb.rpc('kirim_slip',{p_gaji:gajiId});
+    if(error){ if(dariForm) closeModal(); return toast(error.message); }
+    const i=DB.gaji.findIndex(x=>x.id===gajiId); if(i>=0&&data) DB.gaji[i]=data;
+  }else{
+    await simpanSebagian('gaji',gajiId,{dikirim:true,tgl_kirim:new Date().toISOString(),
+      revisi:ulang?(Number(g.revisi||0)+1):0,dikirim_oleh:ME.id});
+    await simpan('notifikasi',{id:uid(),karyawan_id:g.karyawan_id,
+      judul:ulang?`Slip gaji ${g.periode} diperbarui`:`Slip gaji ${g.periode} sudah terbit`,
+      pesan:`Jumlah diterima ${rp(g.total_terima)}. Buka menu Slip Gaji untuk rinciannya.`,
+      tipe:'info',ref_id:gajiId,created_at:new Date().toISOString(),dibaca:false});
+  }
+  closeModal(); render();
+  toast(ulang?`Slip ${namaPeriode(g.periode)} dikirim ulang — slip lama diperbarui, bukan ditambah`
+             :`Slip ${namaPeriode(g.periode)} dikirim ke ${nm('karyawan',g.karyawan_id)}`);
+}
+
+async function kirimSemuaSlip(){
+  const per=GAJI_FIL.periode;
+  const daftar=DB.gaji.filter(g=>g.periode===per&&dalamLingkup(get('karyawan',g.karyawan_id)||{},'karyawan'));
+  const belum=daftar.filter(g=>!g.dikirim);
+  if(!daftar.length) return toast('Belum ada slip pada periode ini');
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Kirim slip ${namaPeriode(per)}</h3>
+    <p class="hint" style="margin-bottom:14px">${daftar.length} slip · ${belum.length} belum pernah dikirim</p>
+    <div class="card" style="background:var(--mist);box-shadow:none;padding:13px">
+      ${daftar.map(g=>`<div class="row" style="justify-content:space-between;font-size:13px;padding:3px 0">
+        <span>${esc(nm('karyawan',g.karyawan_id))}${g.manual?' <span class="tag info">manual</span>':''}</span>
+        <span>${rp(g.total_terima)} ${g.dikirim?'<span class="tag ok">terkirim</span>':'<span class="tag warn">belum</span>'}</span>
+      </div>`).join('')}
+    </div>
+    <p class="hint" style="margin-top:10px">Slip yang sudah terkirim tidak digandakan — isinya diperbarui
+      dan terapis diberi tahu bahwa slipnya direvisi.</p>`,
+    {kaki:`<button class="btn" onclick="jalankanKirimSemua()">Kirim semua</button>
+      <button class="btn ghost" onclick="closeModal()">Batal</button>`});
+}
+async function jalankanKirimSemua(){
+  const per=GAJI_FIL.periode;
+  const daftar=DB.gaji.filter(g=>g.periode===per&&dalamLingkup(get('karyawan',g.karyawan_id)||{},'karyawan'));
+  closeModal();
+  let n=0;
+  for(const g of daftar){ await kirimSlip(g.id); n++; }
+  render(); toast(n+' slip dikirim ke portal terapis');
+}
+
 /* Simpan hitungan hari ini sebagai slip draft */
 async function hitungGaji(){
   const per=GAJI_FIL.periode;
@@ -4657,14 +4841,17 @@ async function hitungGaji(){
     const g=rincianGaji(k,per);
     if(!g.ada) continue;
     const lama=DB.gaji.find(x=>x.periode===per&&x.karyawan_id===k.id);
-    if(lama&&lama.status!=='draft') continue;
+    // slip manual dan slip yang sudah dibayar tidak ditimpa perhitungan otomatis
+    if(lama&&(lama.manual||lama.status!=='draft')) continue;
     await simpan('gaji',{id:lama?.id||uid(),periode:per,karyawan_id:k.id,tipe_gaji:g.s.tipe,
       skema_nama:g.s.nama,hari_kerja:g.HK,hari_hadir:g.efektif,hari_efektif:g.efektif,jml_order:g.nOrder,
       gaji_pokok:g.pokok,upah_harian:g.upah,tunjangan:g.tunj,uang_makan:g.um,
       total_komisi:g.kom,total_bonus:g.bon+g.bonusTarget+g.bonusTetap,potongan_absen:g.pot,
       potongan_kasbon:g.ksb,gaji_minimal:g.minimal,penyesuaian:g.sesuai,total_terima:g.total,status:'draft'});
   }
-  render(); toast('Slip periode '+per+' disimpan');
+  const manual=DB.gaji.filter(x=>x.periode===per&&x.manual).length;
+  render();
+  toast('Slip periode '+per+' disimpan'+(manual?` · ${manual} slip manual dibiarkan apa adanya`:''));
 }
 
 
