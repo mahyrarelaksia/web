@@ -420,6 +420,20 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .opsi-pilih span em{display:block;font-style:normal;font-size:11px;color:var(--muted);font-weight:400}
 
 .syarat-cs{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5}
+.ringkas-saring{display:grid;grid-template-columns:minmax(200px,1fr) minmax(220px,1.2fr);gap:12px;
+ margin-bottom:14px;align-items:start}
+.ringkas-saring .utama{background:linear-gradient(150deg,#F2F8FF,#E8F1FC);border:1px solid #CFE0F5;
+ border-radius:14px;padding:14px}
+.ringkas-saring .nilai{font-family:Fraunces,serif;font-size:27px;color:var(--laut,#1B4A82);line-height:1.15;margin:3px 0}
+.per-orang{display:flex;flex-direction:column;gap:5px;max-height:190px;overflow-y:auto}
+.baris-orang{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;
+ border:1px solid var(--line);background:#fff;border-radius:11px;padding:8px 11px;cursor:pointer;
+ font:inherit;font-size:12.5px;text-align:left}
+.baris-orang:hover{border-color:var(--jade);background:#F7FAFF}
+.baris-orang span{font-weight:600;min-width:0}
+.baris-orang i{display:block;font-style:normal;font-weight:400;font-size:11px;color:var(--muted)}
+.baris-orang b{font-variant-numeric:tabular-nums;white-space:nowrap}
+@media(max-width:700px){.ringkas-saring{grid-template-columns:1fr}}
 .isian-rp{font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .pilih-banyak{border:1px solid var(--line);border-radius:13px;padding:11px;background:#fff}
 .pilih-banyak .aksi-pilih{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
@@ -609,7 +623,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.24.2";
+const VERSI_APP = "2026.09.24.3";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1673,7 +1687,7 @@ const F={
    {k:'keperluan',l:'Keperluan',t:'area'},{k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
   cols:[{k:'tanggal',t:'date'},{k:'kry',l:'Karyawan',fn:r=>nm('karyawan',r.karyawan_id)},{k:'nominal',t:'rp'},
    {k:'cicilan',t:'rp'},{k:'sisa',t:'rp'},{k:'status',t:'tag'}]},
- bonus:{title:'Bonus',sub:'Pemberian bonus per periode; otomatis masuk slip gaji.',
+ bonus:{title:'Bonus',saringKaryawan:true,sub:'Pemberian bonus per periode; otomatis masuk slip gaji.',
   fields:[{k:'karyawan_id',l:'Karyawan',t:'ref',ref:'karyawan'},{k:'jenis',l:'Jenis bonus',t:'sel',o:['tips','transport','lembur','kinerja','target','kehadiran','rating','referral','manual']},
    {k:'periode',l:'Periode (YYYY-MM)'},{k:'deskripsi',l:'Keterangan'},{k:'nominal',l:'Nominal',t:'rp'},
    {k:'status',l:'Status',t:'sel',o:['menunggu','disetujui','ditolak']}],
@@ -1691,7 +1705,7 @@ const F={
    {k:'syarat',l:'Syarat',t:'area'},{k:'target',l:'Target',t:'num'},{k:'nominal',l:'Nominal bonus',t:'rp'},{k:'aktif',l:'Aktif',t:'bool'}],
   cols:[{k:'nama'},{k:'jenis',t:'tag'},{k:'syarat'},{k:'target'},{k:'nominal',t:'rp'},
    {k:'ak',l:'Status',fn:r=>r.aktif?'<span class="tag ok">Aktif</span>':'<span class="tag">Nonaktif</span>'}]},
- komisi:{title:'Komisi',sub:'Terbentuk otomatis saat terapis menyelesaikan order.',
+ komisi:{title:'Komisi',saringKaryawan:true,sub:'Terbentuk otomatis saat terapis menyelesaikan order.',
   fields:[{k:'karyawan_id',l:'Terapis',t:'ref',ref:'karyawan'},{k:'tanggal',l:'Tanggal',t:'date'},{k:'periode',l:'Periode'},
    {k:'dasar',l:'Dasar hitung',t:'rp'},{k:'persen',l:'Persen',t:'num'},{k:'nominal',l:'Nominal',t:'rp'}],
   cols:[{k:'tanggal',t:'date'},
@@ -1940,6 +1954,7 @@ function go(p){
   // halaman hak akses selalu memakai izin terbaru dari database, supaya
   // kotak centang mencerminkan isi sebenarnya sebelum diubah
   if(p==='akses'&&LIVE) muatTabel(['hak_akses','jabatan']).then(()=>{ if(PAGE==='akses') render(); });
+  if(p!==PAGE) SARING={karyawan:'',periode:''};
   PAGE=p; SEARCH='';
   document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
   document.getElementById('nv_'+p)?.classList.add('on');
@@ -2110,16 +2125,78 @@ function cariKetik(nilai){
   },250);
 }
 
+/* Penyaring per karyawan dan per periode, dipakai modul Komisi dan Bonus */
+let SARING={karyawan:'',periode:''};
+function setSaring(apa,nilai){ SARING[apa]=nilai; render(); }
+
 function renderModule(key){
   // baris ringkas (hanya nama) tidak ditampilkan sebagai data lengkap
   const m=F[key]; let rows=DB[key].filter(r=>!r._ringkas&&dalamLingkup(r,key));
   if(SEARCH) rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(SEARCH.toLowerCase()));
+
+  let saringan='', ringkasan='';
+  if(m.saringKaryawan){
+    const semua=rows;
+    if(SARING.karyawan) rows=rows.filter(r=>r.karyawan_id===SARING.karyawan);
+    if(SARING.periode)  rows=rows.filter(r=>periodeBaris(r)===SARING.periode);
+
+    // daftar orang dan periode diambil dari data yang ada
+    const orang=[...new Set(semua.map(r=>r.karyawan_id))].filter(Boolean)
+      .map(id=>({id,nama:nm('karyawan',id)})).sort((a,b)=>a.nama.localeCompare(b.nama));
+    const periodeAda=[...new Set(semua.map(periodeBaris))].filter(Boolean).sort().reverse();
+
+    saringan=`<div class="filter" style="margin-bottom:12px">
+      <select style="width:auto;padding:7px 11px;font-size:12.5px" onchange="setSaring('karyawan',this.value)">
+        <option value="">Semua karyawan</option>
+        ${orang.map(o=>`<option value="${o.id}" ${SARING.karyawan===o.id?'selected':''}>${esc(o.nama)}</option>`).join('')}
+      </select>
+      <select style="width:auto;padding:7px 11px;font-size:12.5px" onchange="setSaring('periode',this.value)">
+        <option value="">Semua periode</option>
+        ${periodeAda.map(p=>`<option value="${p}" ${SARING.periode===p?'selected':''}>${namaPeriode(p)}</option>`).join('')}
+      </select>
+      ${(SARING.karyawan||SARING.periode)?`<button class="btn ghost sm"
+        onclick="SARING={karyawan:'',periode:''};render()">Tampilkan semua</button>`:''}
+    </div>`;
+
+    const total=sum(rows,'nominal');
+    const perOrang=[...new Set(rows.map(r=>r.karyawan_id))].filter(Boolean)
+      .map(id=>({id,nama:nm('karyawan',id),
+        n:rows.filter(r=>r.karyawan_id===id).length,
+        total:sum(rows.filter(r=>r.karyawan_id===id),'nominal')}))
+      .sort((a,b)=>b.total-a.total);
+
+    ringkasan=`<div class="ringkas-saring">
+      <div class="utama">
+        <div class="hint">${m.title} ${SARING.karyawan?'· '+esc(nm('karyawan',SARING.karyawan)):'semua karyawan'}
+          ${SARING.periode?'· '+namaPeriode(SARING.periode):''}</div>
+        <div class="nilai">${rp(total)}</div>
+        <div class="hint">${rows.length} catatan${rows.length&&!SARING.karyawan?` · ${perOrang.length} orang`:''}
+          ${rows.some(r=>r.dibayar)?` · ${rp(sum(rows.filter(r=>r.dibayar),'nominal'))} sudah dibayar`:''}</div>
+      </div>
+      ${!SARING.karyawan&&perOrang.length>1?`<div class="per-orang">
+        ${perOrang.slice(0,8).map(o=>`<button class="baris-orang" onclick="setSaring('karyawan','${o.id}')">
+          <span>${esc(o.nama)}<i>${o.n} catatan</i></span><b>${rp(o.total)}</b></button>`).join('')}
+        ${perOrang.length>8?`<div class="hint" style="padding:6px 2px">dan ${perOrang.length-8} orang lain</div>`:''}
+      </div>`:''}
+    </div>`;
+  }
+
   const bawah=m.bawah?m.bawah():'';
   return `<div class="card"><div class="head"><h3>${m.title}</h3>
     <div class="row"><input id="cariBox" placeholder="Cari…" style="width:180px" value="${esc(SEARCH)}"
       autocomplete="off" oninput="cariKetik(this.value)">
       ${boleh(key,'tambah')?`<button class="btn" onclick="openForm('${key}')">Tambah</button>`:''}</div></div>
+    ${saringan}${ringkasan}
     ${tableHtml(rows,m.cols,boleh(key,'ubah')?key:null,boleh(key,'ubah')?m.extra:null)}</div>${bawah}`;
+}
+
+/* Periode sebuah catatan komisi atau bonus */
+function periodeBaris(r){
+  return String(r.periode||r.tanggal||r.created_at||'').slice(0,7);
+}
+function namaPeriode(p){
+  if(!/^\d{4}-\d{2}$/.test(p)) return p||'-';
+  return new Date(p+'-01T00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'});
 }
 function tableHtml(rows,cols,key,extra){
   if(!rows.length) return `<div class="empty"><div class="disp">Belum ada data</div><div>Tambahkan entri pertama lewat tombol di atas.</div></div>`;
