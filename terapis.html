@@ -756,7 +756,7 @@ async function keluar(){ if(LIVE) await sb.auth.signOut(); simpanan('hapus'); lo
 
 /* Penanda versi aplikasi. Ubah nilainya setiap kali berkas ini diperbarui;
    semua terapis akan diminta masuk ulang sekali, lalu tetap login lagi. */
-const VERSI_APP='2026.09.25.1';
+const VERSI_APP='2026.09.25.2';
 function simpanan(aksi,kunci,nilai){
   try{
     if(aksi==='hapus'){ localStorage.removeItem('mahyra_versi'); localStorage.removeItem('mahyra_sidik'); return; }
@@ -1324,9 +1324,9 @@ function jatahKerjaSaya(per,tanggal){
 
 /* Penghasilan bulan berjalan menurut skema saya — angka yang sama dengan
    yang dilihat kantor di menu Penggajian. */
-function penghasilanSaya(per){
+function penghasilanSaya(per,tanggal){
   const p=per||periode(), sk=skemaGaji(), HK=sk.hariKerja||26;
-  const jatah=jatahKerjaSaya(p), rasio=HK?jatah/HK:0;
+  const jatah=jatahKerjaSaya(p,tanggal), rasio=HK?jatah/HK:0;
   const efektif=Math.min(hariKerjaSaya(p),HK);
   const kerja=myItem().filter(i=>i.status==='selesai'&&String(i.jam_selesai||'').slice(0,7)===p);
   const nOrder=kerja.length;
