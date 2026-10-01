@@ -634,7 +634,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.26.1";
+const VERSI_APP = "2026.09.26.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1187,7 +1187,14 @@ async function simpanSebagian(key,id,patch){
   if(LIVE){
     const bersih=bersihkan(key,{...patch});
     delete bersih.id;
-    const {data,error}=await sb.from(TBL[key]).update(bersih).eq('id',id).select().single();
+    let {data,error}=await sb.from(TBL[key]).update(bersih).eq('id',id).select().single();
+    // kolom yang belum ada di database dilepas, lalu dicoba lagi
+    while(error&&kolomHilang(error.message)&&kolomHilang(error.message) in bersih){
+      const kol=kolomHilang(error.message);
+      console.warn('Kolom '+kol+' belum ada di tabel '+TBL[key]+', dilewati.');
+      delete bersih[kol];
+      ({data,error}=await sb.from(TBL[key]).update(bersih).eq('id',id).select().single());
+    }
     if(error){
       console.error('Gagal memperbarui '+TBL[key]+':',error,patch);
       if(/row-level security/i.test(error.message||'')) jelaskanPenolakan(key,{id,...patch});
@@ -1203,8 +1210,22 @@ async function simpanSebagian(key,id,patch){
   return null;
 }
 
+/* Kolom yang belum ada di database dilepas, lalu penyimpanan diulang.
+   Berguna bila sebuah skrip SQL belum sempat dijalankan. */
+function kolomHilang(pesan){
+  const m=/column ["']?([a-z0-9_]+)["']? of|Could not find the ['"]([a-z0-9_]+)['"] column/i.exec(pesan||'');
+  return m?(m[1]||m[2]):null;
+}
+
 async function simpan(key,row){
-  if(LIVE){ const {data,error}=await sb.from(TBL[key]).upsert(bersihkan(key,row)).select().single();
+  if(LIVE){ let kirim=bersihkan(key,row), dilepas=[];
+    let {data,error}=await sb.from(TBL[key]).upsert(kirim).select().single();
+    while(error&&kolomHilang(error.message)&&kolomHilang(error.message) in kirim){
+      const kol=kolomHilang(error.message);
+      delete kirim[kol]; dilepas.push(kol);
+      ({data,error}=await sb.from(TBL[key]).upsert(kirim).select().single());
+    }
+    if(dilepas.length) console.warn('Kolom belum ada di tabel '+TBL[key]+', dilewati:',dilepas.join(', '));
     if(error){ console.error('Gagal menyimpan ke '+TBL[key]+':',error,row);
       const rls=/row-level security/i.test(error.message||'');
       if(rls) jelaskanPenolakan(key,row); else toast('Gagal menyimpan ('+TBL[key]+'): '+error.message);
@@ -4868,9 +4889,9 @@ function formSlipManual(karyawanId){
         <input type="number" id="sm_or" value="${isi.jml_order||0}" ${terkunci?'disabled':''}></div>
     </div>
 
-    <div class="field"><label for="sm_harian">Gaji harian (pengali)</label>
+    <div class="field"><label for="sm_harian">Upah harian (pengali per hari)</label>
       <input type="text" inputmode="numeric" class="isian-rp" id="sm_harian"
-        value="${angkaTitik(isi.gaji_harian||s.harian||0)}" ${terkunci?'disabled':''}
+        value="${angkaTitik(pengaliHarian(isi,s))}" ${terkunci?'disabled':''}
         oninput="ketikRupiah(this);hitungUpahManual()">
       <p class="hint" id="sm_upahKet" style="margin-top:6px"></p></div>
 
@@ -4907,7 +4928,16 @@ function formSlipManual(karyawanId){
   hitungUpahManual();
 }
 
-/* Upah harian = hari kerja efektif × gaji harian, langsung masuk total */
+/* Pengali per hari: dihitung mundur dari upah yang tersimpan, atau dari
+   skema bila slipnya baru. Nominalnya sendiri tidak disimpan terpisah —
+   yang masuk tabel gaji hanya hasil kalinya di kolom Upah harian. */
+function pengaliHarian(isi,s){
+  const ef=Number(isi.hari_efektif||0), upah=Number(isi.upah_harian||0);
+  if(ef>0&&upah>0) return Math.round(upah/ef);
+  return Number(s?.harian||0);
+}
+
+/* Upah harian = hari kerja efektif × pengali per hari, langsung masuk total */
 function hitungUpahManual(){
   const ef=Number(document.getElementById('sm_ef')?.value)||0;
   const harian=angkaDari(document.getElementById('sm_harian')?.value);
@@ -4919,7 +4949,7 @@ function hitungUpahManual(){
   if(ket) ket.innerHTML=harian
     ? `${ef} hari × ${rp(harian)} = <strong class="rp">${rp(upah)}</strong>, langsung masuk Upah harian di bawah${
         hk?` · tampil sebagai ${ef}/${hk} hari`:''}`
-    : 'Kosongkan bila skema ini tidak memakai gaji harian.';
+    : 'Kosongkan bila skema ini tidak memakai upah harian.';
   hitungSlipManual(true);
 }
 
@@ -4952,7 +4982,6 @@ async function simpanSlipManual(karyawanId,langsungKirim){
     hari_hadir:Number(document.getElementById('sm_ef').value)||0,
     hari_efektif:Number(document.getElementById('sm_ef').value)||0,
     jml_order:Number(document.getElementById('sm_or').value)||0,
-    gaji_harian:angkaDari(document.getElementById('sm_harian')?.value),
     ...nilai,
     total_terima:angkaDari(document.getElementById('sm_total').value),
     catatan:document.getElementById('sm_catatan').value.trim()||null
