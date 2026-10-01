@@ -434,6 +434,13 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .baris-orang i{display:block;font-style:normal;font-weight:400;font-size:11px;color:var(--muted)}
 .baris-orang b{font-variant-numeric:tabular-nums;white-space:nowrap}
 @media(max-width:700px){.ringkas-saring{grid-template-columns:1fr}}
+.bagian{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+ margin:16px 0 6px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.tangga-omzet{display:flex;flex-direction:column;gap:6px}
+.anak-tangga{display:flex;justify-content:space-between;align-items:center;gap:12px;
+ border:1px solid var(--line);border-radius:11px;padding:9px 12px;background:#fff;font-size:13px}
+.anak-tangga.jumlah{background:#E8F1FC;border-color:#CFE0F5}
+.anak-tangga b{font-variant-numeric:tabular-nums;white-space:nowrap}
 .isian-rp{font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .pilih-banyak{border:1px solid var(--line);border-radius:13px;padding:11px;background:#fff}
 .pilih-banyak .aksi-pilih{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
@@ -623,7 +630,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.25.1";
+const VERSI_APP = "2026.09.25.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -4878,9 +4885,89 @@ function ringkasHariGaji(k,per){
   return b.length?b.join(' · '):'Tidak ada libur atau izin pada periode ini.';
 }
 
+/* Rincian khusus customer service: omzet bertingkat, bonus per order,
+   target, dan sisa menuju tingkat berikutnya. */
+/* Ringkasan bonus seseorang pada sebuah periode, per jenis */
+function rincianBonusOrang(karyawanId,per){
+  const b=DB.bonus.filter(x=>x.karyawan_id===karyawanId&&x.periode===per&&x.status==='disetujui');
+  if(!b.length) return 'tips, transport, lembur';
+  const jenis=[...new Set(b.map(x=>x.jenis))];
+  return jenis.map(j=>{
+    const baris=b.filter(x=>x.jenis===j);
+    const km=baris.reduce((a,x)=>a+Number(x.jarak_km||0),0);
+    return `${cap(j)} ${baris.length}× ${rp(sum(baris,'nominal'))}${km?` (${km} km)`:''}`;
+  }).join(' · ');
+}
+
+function rincianPanelCS(k,per){
+  const c=hitungCS(k,per), s=c.s;
+  const b=(l,v,ket,neg)=>v?`<div class="row" style="justify-content:space-between;gap:12px;padding:7px 0;
+      border-bottom:1px solid var(--line);font-size:13px">
+      <span>${l}${ket?`<div class="hint">${ket}</div>`:''}</span>
+      <b class="rp" style="${neg?'color:var(--bad)':''}">${neg?'− ':''}${rp(v)}</b></div>`:'';
+
+  const dasar=s.dasarCs==='cabang'?'seluruh order cabang '+nm('cabang',k.cabang_id):'order yang dia input sendiri';
+
+  return `<h3 style="font-size:20px;margin-bottom:4px">${esc(k.nama)}</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(nm('jabatan',k.jabatan_id))} · ${esc(nm('cabang',k.cabang_id))}
+      · skema ${esc(s.nama)} (customer service)</p>
+
+    <div class="grid g3" style="margin-bottom:14px">
+      ${stat('Omzet',rp(c.omzet),dasar,'g')}
+      ${stat('Order selesai',c.n,'periode '+namaPeriode(per))}
+      ${stat('Diterima',rp(c.total),per===periode()?'per hari ini':'akhir periode','g')}
+    </div>
+
+    <div class="bagian">Dari omzet</div>
+    ${c.om.rinci.length?`<div class="tangga-omzet">
+      ${c.om.rinci.map(([ps,nilai,hasil],i)=>`<div class="anak-tangga">
+        <div>
+          <strong>Tingkat ${i+1} · ${ps}%</strong>
+          <div class="hint">${rp(nilai)} omzet pada tingkat ini</div>
+        </div>
+        <b class="rp">${rp(Math.round(hasil))}</b>
+      </div>`).join('')}
+      <div class="anak-tangga jumlah">
+        <div><strong>Bonus omzet</strong>
+          <div class="hint">${c.persenOmzet?`setara ${c.persenOmzet.toFixed(2).replace('.',',')}% dari omzet`:''}</div></div>
+        <b class="rp">${rp(c.om.nilai)}</b></div>
+    </div>`:'<p class="hint">Belum ada omzet pada periode ini.</p>'}
+    ${c.tingkatBerikut?`<p class="hint" style="margin-top:8px">Kurang ${rp(c.tingkatBerikut[0])} lagi
+      untuk masuk tingkat ${c.tingkatBerikut[1]}%.</p>`:''}
+
+    <div class="bagian">Dari jumlah order</div>
+    ${b('Bonus per order',c.bonusOrder,`${c.n} order × ${rp(s.feeOrderCs)}`)}
+    ${b('Bonus target order',c.bonusTarget,
+       [[s.bonusT1Order,s.bonusT1Nominal],[s.bonusT2Order,s.bonusT2Nominal]]
+         .filter(x=>x[0]>0&&c.n>=x[0]).map(x=>`${x[0]} order → ${rp(x[1])}`).join(' · ')
+       ||'target tercapai')}
+    ${!c.bonusTarget&&c.berikut?`<p class="hint">Target terdekat: ${c.berikut[0]} order → ${rp(c.berikut[1])}
+      · kurang ${c.berikut[0]-c.n} order lagi.</p>`:''}
+    ${c.berikut&&c.bonusTarget?`<p class="hint">Target berikutnya: ${c.berikut[0]} order → ${rp(c.berikut[1])}
+      · kurang ${c.berikut[0]-c.n} order lagi.</p>`:''}
+
+    <div class="bagian">Tetap & lainnya</div>
+    ${b('Gaji pokok',c.pokok,s.pokok?`${rp(s.pokok)} × ${c.jatah}/${c.HK} hari`:'')}
+    ${b('Tunjangan',c.tunj,s.tunjangan?`${rp(s.tunjangan)} × ${c.jatah}/${c.HK} hari`:'')}
+    ${b('Service motor & BPJS',c.tetap,`sebanding ${c.jatah}/${c.HK} hari`)}
+    ${b('Bonus kinerja',c.bonusKinerja,'diberikan kantor')}
+    ${b('Bonus lain',c.bonLain,'tips, transport, lembur')}
+    ${b('Cicilan kasbon',c.ksb,'',true)}
+
+    <p class="hint" style="margin-top:10px">${ringkasHariGaji(k,per)}</p>
+    <div class="row" style="justify-content:space-between;padding:12px 0 2px;
+      border-top:2px solid var(--jade);margin-top:8px">
+      <strong>Diterima</strong><strong class="rp" style="font-size:18px">${rp(c.total)}</strong></div>`;
+}
+
 function rincianGajiPanel(karyawanId){
   const k=get('karyawan',karyawanId); if(!k) return;
-  const per=GAJI_FIL.periode, g=rincianGaji(k,per), s=g.s;
+  const per=GAJI_FIL.periode;
+  if(skemaKaryawan(k).tipe==='cs'){
+    return bukaPanel(rincianPanelCS(k,per),
+      {kaki:`<button class="btn ghost" onclick="closeModal()">Tutup</button>`});
+  }
+  const g=rincianGaji(k,per), s=g.s;
   const b=(l,v,ket,neg)=>v?`<div class="row" style="justify-content:space-between;gap:12px;padding:6px 0;
       border-bottom:1px solid var(--line);font-size:13px">
       <span>${l}${ket?`<div class="hint">${ket}</div>`:''}</span>
@@ -4897,9 +4984,12 @@ function rincianGajiPanel(karyawanId){
     ${b('Upah harian',g.upah,s.harian?`${rp(s.harian)} × ${g.efektif} hari`:'')}
     ${b('Tunjangan',g.tunj,s.tunjangan?`${rp(s.tunjangan)} × ${g.jatah}/${g.HK} hari`:'')}
     ${b('Uang makan',g.um,s.uangMakan?`${rp(s.uangMakan)} × ${g.efektif} hari`:'')}
-    ${b('Komisi',g.kom,g.nOrder+' order selesai')}
-    ${b('Bonus order',g.bon,'tips, transport, lembur')}
-    ${b('Bonus target',g.bonusTarget,'target order tercapai')}
+    ${b('Komisi',g.kom,`${g.nOrder} order selesai${s.persen?` · ${s.persen}% dari harga bersih`:''}`)}
+    ${b('Bonus order',g.bon,rincianBonusOrang(k.id,per))}
+    ${b('Bonus target',g.bonusTarget,
+       [[s.bonusT1Order,s.bonusT1Nominal],[s.bonusT2Order,s.bonusT2Nominal]]
+         .filter(x=>x[0]>0&&g.nOrder>=x[0]).map(x=>`${x[0]} order → ${rp(x[1])}`).join(' · ')
+       ||'target order tercapai')}
     ${b('Service motor & BPJS',g.bonusTetap,`sebanding ${g.jatah}/${g.HK} hari`)}
     ${b('Potongan hari tidak masuk',g.pot,`${Math.max(0,g.jatah-g.efektif)} hari`,true)}
     ${b('Cicilan kasbon',g.ksb,'',true)}
