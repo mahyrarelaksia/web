@@ -441,6 +441,10 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
  border:1px solid var(--line);border-radius:11px;padding:9px 12px;background:#fff;font-size:13px}
 .anak-tangga.jumlah{background:#E8F1FC;border-color:#CFE0F5}
 .anak-tangga b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.nilai-manual{font-size:11.5px;font-weight:600;color:#8A6520;background:#FFF4E0;border:1px solid #F0E0C4;
+ border-radius:7px;padding:2px 6px;margin-top:3px;display:inline-block;white-space:nowrap}
+.nilai-manual.tebal{font-size:12.5px}
+.nilai-manual::before{content:'manual ';font-weight:400;opacity:.75}
 .isian-rp{font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .pilih-banyak{border:1px solid var(--line);border-radius:13px;padding:11px;background:#fff}
 .pilih-banyak .aksi-pilih{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
@@ -630,7 +634,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.25.2";
+const VERSI_APP = "2026.09.26.1";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -818,7 +822,7 @@ const TBL={cabang:'cabang',jabatan:'jabatan',karyawan:'karyawan',layanan:'layana
 
 /* ------------------ MODUL & MESIN HAK AKSES ------------------ */
 const MODUL=[
- ['dash','Dashboard'],['order','Order'],['audit','Audit Order'],['kasbank','Kas Bank'],['ketentuan','Ketentuan & Diskon'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
+ ['dash','Dashboard'],['order','Order'],['audit','Audit Order'],['kasbank','Kas Bank'],['slipgaji','Daftar Slip Gaji'],['ketentuan','Ketentuan & Diskon'],['pelanggan','Pelanggan'],['layanan','Layanan & Tarif'],
  ['jadwal','Jadwal Kerja'],['shift','Shift Kerja'],['karyawan','Karyawan'],['jabatan','Jabatan'],
  ['cabang','Cabang'],['absensi','Absensi'],['izin','Izin & Cuti'],['kasbon','Kasbon'],
  ['kas','Kas'],['pengeluaran','Pengeluaran'],['komisi','Komisi'],['bonus','Bonus'],['gaji','Penggajian'],['skema_gaji','Skema Gaji'],['libur','Tanggal Libur'],
@@ -1633,6 +1637,7 @@ const F={
    {k:'telepon',l:'Telepon (nomor luar negeri pakai + dan kode negara)'},{k:'email',l:'Email'},
    {k:'alamat',l:'Alamat',t:'area'},{k:'tgl_masuk',l:'Tanggal masuk',t:'date'},
    {k:'bank_nama',l:'Bank'},{k:'bank_rekening',l:'No. rekening'},
+   {k:'bank_atas_nama',l:'Rekening atas nama (bila berbeda)'},
    {k:'status',l:'Status',t:'sel',o:['aktif','nonaktif','cuti_panjang']}],
   info:'Pilih <b>skema gaji</b> tiap karyawan di sini. Bila dibiarkan "Ikuti jabatan", sistem memakai skema yang dipasang untuk jabatan dan cabangnya. Isi dan angka skemanya diatur di Keuangan → Skema Gaji.',
   cols:[{k:'nik'},{k:'nama'},{k:'jab',l:'Jabatan',fn:r=>nm('jabatan',r.jabatan_id)},
@@ -1865,7 +1870,7 @@ const MENU=[
    ['m_jadwal','jadwal','Jadwal Kerja'],['m_libur','libur','Tanggal Libur'],['m_shift','shift','Shift Kerja']]],
  ['SDM',[['m_karyawan','karyawan','Karyawan'],['m_jabatan','jabatan','Jabatan'],['m_cabang','cabang','Cabang'],
    ['m_absensi','absensi','Absensi'],['izin','izin','Izin & Cuti'],['m_kasbon','kasbon','Kasbon']]],
- ['Keuangan',[['audit','audit','Audit Order'],['kasbank','bank','Kas Bank'],['kas','kas','Buku Kas'],['m_pengeluaran','pengeluaran','Pengeluaran'],['m_komisi','komisi','Komisi'],
+ ['Keuangan',[['audit','audit','Audit Order'],['slipgaji','gaji','Slip Gaji'],['kasbank','bank','Kas Bank'],['kas','kas','Buku Kas'],['m_pengeluaran','pengeluaran','Pengeluaran'],['m_komisi','komisi','Komisi'],
    ['m_bonus','bonus','Bonus'],['m_skema_gaji','skema_gaji','Skema Gaji'],['gaji','gaji','Penggajian']]],
  ['Analitik',[['laporan','laporan','Laporan'],['biaya','biaya','Struktur Biaya & Laba']]],
  ['Pengaturan',[['ketentuan','bonus','Ketentuan & Diskon'],['m_aturan_bonus','aturan_bonus','Aturan Bonus'],['m_target','target','Target'],
@@ -2415,6 +2420,7 @@ const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang
  order:['Order','Buat order baru dan pantau yang sedang berjalan.'],
  targetsaya:['Gaji & Target Saya','Skema gaji, target order, dan perkiraan gaji bulan ini.'],
  ketentuan:['Ketentuan & Diskon','Promo yang berlaku dan aturan biaya transport.'],
+ slipgaji:['Slip Gaji','Daftar gaji tiap karyawan beserta rekening tujuan transfer.'],
  kasbank:['Kas Bank','Saldo dan mutasi tiap rekening: BCA, Mandiri, dan kas tunai.'],
  audit:['Audit Order','Periksa order dan bukti pembayaran seluruh cabang, lalu setujui atau kembalikan.'],
  izin:['Izin & Cuti','Pengajuan yang menunggu keputusan HRD.'],
@@ -2627,6 +2633,72 @@ ketentuan(){
           `<div><span>${km} km</span><b>${rp(biayaTransport(km))}</b></div>`).join('')}</div>`
         :'<div class="empty"><div class="disp">Belum ada aturan transport</div><div>Tambahkan tingkat jarak dan biayanya.</div></div>'}
     </div>`;
+},
+slipgaji(){
+  const per=GAJI_FIL.periode;
+  const daftar=DB.gaji.filter(g=>g.periode===per)
+    .map(g=>({...g,k:get('karyawan',g.karyawan_id)}))
+    .filter(g=>g.k&&dalamLingkup(g.k,'karyawan')
+      &&(!GAJI_FIL.cabang||g.k.cabang_id===GAJI_FIL.cabang))
+    .sort((a,b)=>String(nm('cabang',a.k.cabang_id)+a.k.nama).localeCompare(nm('cabang',b.k.cabang_id)+b.k.nama));
+
+  const total=sum(daftar,'total_terima');
+  const belumBayar=daftar.filter(g=>g.status!=='dibayar');
+  const tanpaRekening=daftar.filter(g=>!g.k.bank_rekening);
+
+  const opsiPer=[...Array(6)].map((_,i)=>{const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-i);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');});
+
+  return `<div class="card omzet-utama">
+    <div class="head"><h3>Gaji ${namaPeriode(per)}</h3>
+      <span class="tag ${belumBayar.length?'warn':'ok'}">${belumBayar.length?belumBayar.length+' belum dibayar':'semua dibayar'}</span></div>
+    <div class="filter" style="margin-top:2px">
+      <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="GAJI_FIL.periode=this.value;render()">
+        ${opsiPer.map(p=>`<option value="${p}" ${p===per?'selected':''}>${namaPeriode(p)}</option>`).join('')}</select>
+      <select style="width:auto;padding:6px 10px;font-size:12.5px" onchange="GAJI_FIL.cabang=this.value;render()">
+        <option value="">Semua cabang</option>
+        ${DB.cabang.filter(c=>dalamLingkup(c,'cabang')).map(c=>
+          `<option value="${c.id}" ${GAJI_FIL.cabang===c.id?'selected':''}>${esc(c.nama)}</option>`).join('')}</select>
+      <button class="btn ghost sm" onclick="salinDaftarTransfer()">Salin daftar transfer</button>
+    </div>
+    <div class="omzet-nilai">${rp(total)}</div>
+    <div class="omzet-rinci">
+      <div><span>${daftar.length} karyawan</span><b>${rp(total)}</b></div>
+      <div><span>Belum dibayar · ${belumBayar.length}</span><b>${rp(sum(belumBayar,'total_terima'))}</b></div>
+      <div><span>Sudah dibayar · ${daftar.length-belumBayar.length}</span>
+        <b>${rp(total-sum(belumBayar,'total_terima'))}</b></div>
+    </div>
+  </div>
+
+  ${tanpaRekening.length?`<div class="card" style="margin-top:14px;border-left:4px solid var(--amber)">
+    <strong>${tanpaRekening.length} karyawan belum punya data rekening</strong>
+    <p class="hint" style="margin-top:4px">${tanpaRekening.map(g=>esc(g.k.nama)).join(', ')} —
+      lengkapi di menu Karyawan agar bisa ditransfer.</p></div>`:''}
+
+  <div class="card" style="margin-top:14px">
+    <div class="head"><h3>Daftar transfer</h3>
+      <span class="hint">${daftar.length} slip tersimpan</span></div>
+    ${daftar.length?tableHtml(daftar,[
+      {k:'nama',l:'Karyawan',fn:r=>`<strong>${esc(r.k.nama)}</strong>
+        <div class="hint">${esc(nm('jabatan',r.k.jabatan_id))} · ${esc(nm('cabang',r.k.cabang_id))}</div>`},
+      {k:'bank',l:'Bank',fn:r=>r.k.bank_nama?esc(r.k.bank_nama):'<span class="tag warn">belum diisi</span>'},
+      {k:'rek',l:'Nomor rekening',fn:r=>r.k.bank_rekening
+        ? `<span class="rp">${esc(r.k.bank_rekening)}</span>
+           <div class="hint">a.n. ${esc(r.k.bank_atas_nama||r.k.nama)}</div>`
+        : '<span class="tag warn">belum diisi</span>'},
+      {k:'hari',l:'Hari kerja',fn:r=>`${r.hari_efektif??r.hari_hadir??0} / ${r.hari_kerja||0}`},
+      {k:'total_terima',l:'Jumlah gaji',fn:r=>`<strong class="rp">${rp(r.total_terima)}</strong>
+        ${r.manual?'<div class="hint">slip manual</div>':''}`},
+      {k:'status',l:'Status',fn:r=>tagHtml(r.status)
+        +(r.dikirim?'<div class="hint" style="color:var(--ok)">terkirim ke terapis</div>'
+                   :'<div class="hint">belum dikirim</div>')},
+      {k:'aksi',l:'',fn:r=>`<div class="row" style="flex-wrap:nowrap">
+        <button class="btn ghost sm" onclick="rincianGajiPanel('${r.karyawan_id}')">Rincian</button>
+        ${r.status!=='dibayar'&&boleh('gaji','ubah')
+          ?`<button class="btn amber sm" onclick="bayarSatuSlip('${r.id}')">Tandai dibayar</button>`:''}
+      </div>`}])
+    :'<div class="empty"><div class="disp">Belum ada slip</div><div>Simpan slip dulu di menu Penggajian.</div></div>'}
+  </div>`;
 },
 kasbank(){
   const rek=daftarRekening();
@@ -2904,15 +2976,27 @@ gaji(){
         <div class="hint">${esc(nm('jabatan',r.k.jabatan_id))} · ${esc(nm('cabang',r.k.cabang_id))}</div>`},
       {k:'skema',l:'Skema',fn:r=>`${tagHtml(r.s.tipe)}<div class="hint">${esc(r.s.nama)}</div>`},
       {k:'hari',l:'Hari kerja',fn:r=>`${r.efektif} <span class="hint">/ ${r.jatah}</span>
+        ${bedaManual(slip[r.k.id],g=>`${g.hari_efektif??g.hari_hadir??0} / ${g.hari_kerja||r.HK}`,
+           `${r.efektif} / ${r.jatah}`)}
         ${r.k.tgl_masuk&&String(r.k.tgl_masuk).slice(0,7)===GAJI_FIL.periode
           ?`<div class="hint">mulai ${tgl(r.k.tgl_masuk)}</div>`:''}`},
-      {k:'nOrder',l:'Order',fn:r=>r.nOrder||'—'},
-      {k:'tetap',l:'Pokok & upah',fn:r=>rp(r.pokok+r.upah+r.tunj+r.um)},
-      {k:'kom',l:'Komisi',fn:r=>rp(r.kom)},
-      {k:'bonus',l:'Bonus',fn:r=>rp(r.bon+r.bonusTarget+r.bonusTetap)},
-      {k:'potong',l:'Potongan',fn:r=>(r.pot+r.ksb)?`<span style="color:var(--bad)">− ${rp(r.pot+r.ksb)}</span>`:'—'},
-      {k:'sesuai',l:'Penyesuaian',fn:r=>r.sesuai>0?`<span class="tag warn">+ ${rp(r.sesuai)}</span>`:'—'},
-      {k:'total',l:berjalan?'Per hari ini':'Total',fn:r=>`<strong class="rp">${rp(r.total)}</strong>`},
+      {k:'nOrder',l:'Order',fn:r=>`${r.nOrder||'—'}
+        ${bedaManual(slip[r.k.id],g=>String(g.jml_order||0),String(r.nOrder||0))}`},
+      {k:'tetap',l:'Pokok & upah',fn:r=>`${rp(r.pokok+r.upah+r.tunj+r.um)}
+        ${bedaManual(slip[r.k.id],g=>rp(Number(g.gaji_pokok||0)+Number(g.upah_harian||0)
+          +Number(g.tunjangan||0)+Number(g.uang_makan||0)), rp(r.pokok+r.upah+r.tunj+r.um))}`},
+      {k:'kom',l:'Komisi',fn:r=>`${rp(r.kom)}
+        ${bedaManual(slip[r.k.id],g=>rp(g.total_komisi||0),rp(r.kom))}`},
+      {k:'bonus',l:'Bonus',fn:r=>`${rp(r.bon+r.bonusTarget+r.bonusTetap)}
+        ${bedaManual(slip[r.k.id],g=>rp(Number(g.total_bonus||0)+Number(g.lembur||0)),
+          rp(r.bon+r.bonusTarget+r.bonusTetap))}`},
+      {k:'potong',l:'Potongan',fn:r=>`${(r.pot+r.ksb)?`<span style="color:var(--bad)">− ${rp(r.pot+r.ksb)}</span>`:'—'}
+        ${bedaManual(slip[r.k.id],g=>'− '+rp(Number(g.potongan_absen||0)+Number(g.potongan_kasbon||0)
+          +Number(g.potongan_lain||0)), (r.pot+r.ksb)?'− '+rp(r.pot+r.ksb):'− '+rp(0))}`},
+      {k:'sesuai',l:'Penyesuaian',fn:r=>`${r.sesuai>0?`<span class="tag warn">+ ${rp(r.sesuai)}</span>`:'—'}
+        ${bedaManual(slip[r.k.id],g=>'+ '+rp(g.penyesuaian||0),r.sesuai>0?'+ '+rp(r.sesuai):'+ '+rp(0))}`},
+      {k:'total',l:berjalan?'Per hari ini':'Total',fn:r=>`<strong class="rp">${rp(r.total)}</strong>
+        ${bedaManual(slip[r.k.id],g=>rp(g.total_terima||0),rp(r.total),true)}`},
       {k:'slip',l:'Slip',fn:r=>{const g=slip[r.k.id];
         if(!g) return '<span class="hint">belum disimpan</span>';
         const beda=g.status==='draft'&&!g.manual&&Math.abs(Number(g.total_terima)-r.total)>=1;
@@ -2926,7 +3010,7 @@ gaji(){
           <button class="btn ghost sm" onclick="rincianGajiPanel('${r.k.id}')">Rincian</button>
           ${boleh('gaji','ubah')?`<button class="btn ghost sm" onclick="formSlipManual('${r.k.id}')">
             ${g&&g.manual?'Ubah manual':'Slip manual'}</button>`:''}
-          ${g&&boleh('gaji','ubah')?`<button class="btn ${g.dikirim?'ghost':'amber'} sm" onclick="kirimSlip('${g.id}')">
+          ${g&&boleh('gaji','ubah')?`<button class="btn ${g.dikirim?'ghost':'amber'} sm" onclick="pilihVersiSlip('${g.id}')">
             ${g.dikirim?'Kirim ulang':'Kirim'}</button>`:''}
         </div>`;}}
     ])}
@@ -4678,6 +4762,77 @@ const KOMPONEN_SLIP=[
   ['potongan_lain','Potongan lain',-1]
 ];
 
+/* Menyalin teks ke papan klip, dengan cadangan untuk peramban lama */
+async function salinTeks(teks,pesan){
+  try{
+    await navigator.clipboard.writeText(teks);
+    return toast(pesan||'Disalin');
+  }catch(_){
+    bukaPanel(`<h3 style="font-size:18px;margin-bottom:8px">Salin manual</h3>
+      <p class="hint" style="margin-bottom:10px">Peramban ini tidak mengizinkan penyalinan otomatis.
+        Tekan lama pada teks di bawah lalu salin.</p>
+      <textarea rows="14" readonly style="font-size:12.5px">${esc(teks)}</textarea>`,
+      {kaki:`<button class="btn ghost" onclick="closeModal()">Tutup</button>`});
+  }
+}
+
+/* Daftar transfer siap tempel ke aplikasi bank atau WhatsApp */
+async function salinDaftarTransfer(){
+  const per=GAJI_FIL.periode;
+  const daftar=DB.gaji.filter(g=>g.periode===per)
+    .map(g=>({...g,k:get('karyawan',g.karyawan_id)}))
+    .filter(g=>g.k&&dalamLingkup(g.k,'karyawan')&&(!GAJI_FIL.cabang||g.k.cabang_id===GAJI_FIL.cabang));
+  if(!daftar.length) return toast('Belum ada slip pada periode ini');
+
+  const teks=[`DAFTAR TRANSFER GAJI ${namaPeriode(per).toUpperCase()}`,
+    GAJI_FIL.cabang?nm('cabang',GAJI_FIL.cabang):'Semua cabang','']
+    .concat(daftar.map((g,i)=>`${i+1}. ${g.k.nama}\n   ${g.k.bank_nama||'(bank belum diisi)'} ${
+      g.k.bank_rekening||'(rekening belum diisi)'}\n   a.n. ${g.k.bank_atas_nama||g.k.nama}\n   ${rp(g.total_terima)}`))
+    .concat(['',`Total ${daftar.length} karyawan: ${rp(sum(daftar,'total_terima'))}`]).join('\n');
+
+  return salinTeks(teks,'Daftar transfer disalin');
+}
+
+async function bayarSatuSlip(gajiId){
+  const g=DB.gaji.find(x=>x.id===gajiId); if(!g) return;
+  const k=get('karyawan',g.karyawan_id);
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Tandai gaji sudah dibayar</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(k.nama)} · ${namaPeriode(g.periode)}</p>
+    <div class="card" style="background:var(--mist);box-shadow:none;padding:13px">
+      <div class="row" style="justify-content:space-between"><span class="hint">Jumlah</span>
+        <strong class="rp">${rp(g.total_terima)}</strong></div>
+      <div class="row" style="justify-content:space-between"><span class="hint">Rekening</span>
+        <span>${esc(k.bank_nama||'-')} ${esc(k.bank_rekening||'-')}</span></div>
+    </div>
+    <div class="field" style="margin-top:14px"><label for="bs_rek">Dibayar dari</label>
+      <select id="bs_rek">${opsiRekening(rekeningKode('BCA')?.id)}</select></div>`,
+    {kaki:`<button class="btn amber" onclick="jalankanBayarSatu('${gajiId}')">Tandai dibayar</button>
+      <button class="btn ghost" onclick="closeModal()">Batal</button>`});
+}
+async function jalankanBayarSatu(gajiId){
+  const rek=document.getElementById('bs_rek')?.value;
+  const g=DB.gaji.find(x=>x.id===gajiId);
+  const ok=await simpanSebagian('gaji',gajiId,{status:'dibayar',tgl_bayar:today(),rekening_id:rek});
+  closeModal();
+  if(!ok) return;
+  if(!LIVE&&!DB.kas.some(x=>x.sumber==='gaji'&&x.ref_id===gajiId)){
+    await simpan('kas',{id:uid(),tanggal:today(),cabang_id:get('karyawan',g.karyawan_id)?.cabang_id,
+      jenis:'keluar',kategori:'Gaji & Tunjangan',sumber:'gaji',ref_id:gajiId,nominal:g.total_terima,
+      rekening_id:rek,metode:metodeDari(rek),keterangan:'Gaji '+g.periode+' — '+nm('karyawan',g.karyawan_id)});
+  }
+  if(LIVE) await muatTabel(['kas','gaji','komisi','bonus']);
+  render(); toast('Gaji '+nm('karyawan',g.karyawan_id)+' ditandai dibayar');
+}
+
+/* Bila slip manual berbeda dari hitungan otomatis, angkanya ditampilkan
+   di bawah angka otomatis supaya keduanya terlihat berdampingan. */
+function bedaManual(g,ambil,otomatis,tebal){
+  if(!g||!g.manual) return '';
+  const nilai=ambil(g);
+  if(String(nilai)===String(otomatis)) return '';
+  return `<div class="nilai-manual ${tebal?'tebal':''}" title="Nilai pada slip manual">${nilai}</div>`;
+}
+
 function slipKaryawan(karyawanId,per){
   return DB.gaji.find(g=>g.karyawan_id===karyawanId&&g.periode===(per||GAJI_FIL.periode))||null;
 }
@@ -4686,6 +4841,7 @@ function formSlipManual(karyawanId){
   const per=GAJI_FIL.periode, k=get('karyawan',karyawanId);
   const lama=slipKaryawan(karyawanId,per);
   const otomatis=rincianGaji(k,per);
+  const s=skemaKaryawan(k);                      // skema yang berlaku, untuk pengali harian
   const isi=lama||{hari_kerja:otomatis.HK,hari_efektif:otomatis.efektif,jml_order:otomatis.nOrder,
     gaji_pokok:otomatis.pokok,upah_harian:otomatis.upah,tunjangan:otomatis.tunj,uang_makan:otomatis.um,
     total_komisi:otomatis.kom,total_bonus:otomatis.bon+otomatis.bonusTarget+otomatis.bonusTetap,
@@ -4702,13 +4858,21 @@ function formSlipManual(karyawanId){
         Slip manual tidak akan ditimpa lagi saat tombol hitung ulang ditekan.</p>`}
 
     <div class="grid g3">
-      <div class="field"><label for="sm_hk">Hari kerja</label>
-        <input type="number" id="sm_hk" value="${isi.hari_kerja||0}" ${terkunci?'disabled':''}></div>
-      <div class="field"><label for="sm_ef">Hari efektif</label>
-        <input type="number" id="sm_ef" value="${isi.hari_efektif||0}" ${terkunci?'disabled':''}></div>
+      <div class="field"><label for="sm_ef">Hari kerja efektif</label>
+        <input type="number" id="sm_ef" value="${isi.hari_efektif||0}" ${terkunci?'disabled':''}
+          oninput="hitungUpahManual()"></div>
+      <div class="field"><label for="sm_hk">Dari jatah (hari)</label>
+        <input type="number" id="sm_hk" value="${isi.hari_kerja||otomatis.HK}" ${terkunci?'disabled':''}
+          oninput="hitungUpahManual()"></div>
       <div class="field"><label for="sm_or">Jumlah order</label>
         <input type="number" id="sm_or" value="${isi.jml_order||0}" ${terkunci?'disabled':''}></div>
     </div>
+
+    <div class="field"><label for="sm_harian">Gaji harian (pengali)</label>
+      <input type="text" inputmode="numeric" class="isian-rp" id="sm_harian"
+        value="${angkaTitik(isi.gaji_harian||s.harian||0)}" ${terkunci?'disabled':''}
+        oninput="ketikRupiah(this);hitungUpahManual()">
+      <p class="hint" id="sm_upahKet" style="margin-top:6px"></p></div>
 
     <div class="bagian">Penerimaan</div>
     ${KOMPONEN_SLIP.filter(([,,arah])=>arah>0).map(([k2,l])=>`
@@ -4740,6 +4904,22 @@ function formSlipManual(karyawanId){
       : `<button class="btn" onclick="simpanSlipManual('${karyawanId}',false)">Simpan</button>
          <button class="btn amber" onclick="simpanSlipManual('${karyawanId}',true)">Simpan & kirim</button>
          <button class="btn ghost" onclick="closeModal()">Batal</button>`});
+  hitungUpahManual();
+}
+
+/* Upah harian = hari kerja efektif × gaji harian, langsung masuk total */
+function hitungUpahManual(){
+  const ef=Number(document.getElementById('sm_ef')?.value)||0;
+  const harian=angkaDari(document.getElementById('sm_harian')?.value);
+  const hk=Number(document.getElementById('sm_hk')?.value)||0;
+  const upah=ef*harian;
+  const isi=document.getElementById('sm_upah_harian');
+  if(isi&&!isi.disabled) isi.value=angkaTitik(upah);
+  const ket=document.getElementById('sm_upahKet');
+  if(ket) ket.innerHTML=harian
+    ? `${ef} hari × ${rp(harian)} = <strong class="rp">${rp(upah)}</strong>, langsung masuk Upah harian di bawah${
+        hk?` · tampil sebagai ${ef}/${hk} hari`:''}`
+    : 'Kosongkan bila skema ini tidak memakai gaji harian.';
   hitungSlipManual(true);
 }
 
@@ -4772,6 +4952,7 @@ async function simpanSlipManual(karyawanId,langsungKirim){
     hari_hadir:Number(document.getElementById('sm_ef').value)||0,
     hari_efektif:Number(document.getElementById('sm_ef').value)||0,
     jml_order:Number(document.getElementById('sm_or').value)||0,
+    gaji_harian:angkaDari(document.getElementById('sm_harian')?.value),
     ...nilai,
     total_terima:angkaDari(document.getElementById('sm_total').value),
     catatan:document.getElementById('sm_catatan').value.trim()||null
@@ -4787,6 +4968,51 @@ async function simpanSlipManual(karyawanId,langsungKirim){
 }
 
 /* Kirim atau kirim ulang slip ke portal terapis */
+/* Bila ada slip manual, tanyakan dulu versi mana yang dikirim */
+function pilihVersiSlip(gajiId){
+  const g=DB.gaji.find(x=>x.id===gajiId); if(!g) return;
+  const k=get('karyawan',g.karyawan_id);
+  if(!g.manual) return kirimSlip(gajiId);
+
+  const oto=rincianGaji(k,g.periode);
+  const sama=Math.abs(Number(g.total_terima)-oto.total)<1;
+  bukaPanel(`<h3 style="font-size:19px;margin-bottom:4px">Kirim slip ${namaPeriode(g.periode)}</h3>
+    <p class="hint" style="margin-bottom:14px">${esc(k.nama)}${g.dikirim
+      ? ' · slip ini sudah pernah dikirim, jadi isinya akan diperbarui'
+      : ''}</p>
+    <div class="pilih-gaji">
+      <label class="opsi terpilih">
+        <input type="radio" name="versi_slip" value="manual" checked>
+        <div><strong>Versi manual — ${rp(g.total_terima)}</strong>
+          <div class="hint">Angka yang Anda isi sendiri${g.catatan?' · '+esc(g.catatan):''}.
+            ${g.hari_efektif||0} hari kerja dari jatah ${g.hari_kerja||0} hari.</div></div></label>
+      <label class="opsi">
+        <input type="radio" name="versi_slip" value="otomatis">
+        <div><strong>Versi otomatis — ${rp(oto.total)}</strong>
+          <div class="hint">Hitungan sistem dari skema gaji: ${oto.efektif} hari kerja dari jatah ${oto.jatah} hari,
+            ${oto.nOrder} order. Memilih ini menimpa isian manual.</div></div></label>
+    </div>
+    ${sama?'<p class="hint" style="margin-top:10px">Kedua versi bernilai sama.</p>':''}`,
+    {kaki:`<button class="btn amber" onclick="kirimVersiTerpilih('${gajiId}')">Kirim ke terapis</button>
+      <button class="btn ghost" onclick="closeModal()">Batal</button>`});
+}
+
+async function kirimVersiTerpilih(gajiId){
+  const pilih=document.querySelector('input[name="versi_slip"]:checked')?.value||'manual';
+  if(pilih==='otomatis'){
+    const g=DB.gaji.find(x=>x.id===gajiId);
+    const k=get('karyawan',g.karyawan_id), o=rincianGaji(k,g.periode);
+    const ok=await simpanSebagian('gaji',gajiId,{manual:false,
+      hari_kerja:o.HK,hari_hadir:o.efektif,hari_efektif:o.efektif,jml_order:o.nOrder,
+      gaji_pokok:o.pokok,upah_harian:o.upah,tunjangan:o.tunj,uang_makan:o.um,
+      total_komisi:o.kom,total_bonus:o.bon+o.bonusTarget+o.bonusTetap,
+      potongan_absen:o.pot,potongan_kasbon:o.ksb,penyesuaian:o.sesuai,
+      gaji_minimal:o.minimal,total_terima:o.total});
+    if(!ok) return;
+  }
+  await kirimSlip(gajiId);
+}
+
 async function kirimSlip(gajiId,dariForm){
   const g=DB.gaji.find(x=>x.id===gajiId); if(!g) return;
   const ulang=!!g.dikirim;
