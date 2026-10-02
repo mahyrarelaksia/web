@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mahyra Relaksia — Pijat Panggilan Surabaya</title>
+<meta name="description" content="Pijat panggilan ke rumah khusus area Surabaya kota. Terapis bersertifikat, datang membawa peralatan sendiri, bayar setelah sesi.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- ====================================================================
+     PENGATURAN — ubah hanya bagian ini. Semua teks bisa diganti.
+     ==================================================================== -->
+<script>
+window.KONFIG = {
+
+  /* ---- Pixel Meta. Bisa lebih dari satu. Kosongkan untuk mematikan pixel. */
+  PIXEL_IDS: [
+    // "1234567890123456"
+  ],
+
+  /* ---- WhatsApp (tanpa tanda + dan tanpa spasi) */
+  NOMOR_WA: "6285778082138",
+
+  /* ---- Identitas. Semua teks di bawah bebas diganti. */
+  NAMA_BISNIS: "Mahyra Relaksia",
+  TAGLINE: "Pijat panggilan ke rumah, khusus area Surabaya kota",
+  BARIS_JAM: "Buka 09.00 – 21.00 WIB setiap hari",
+  LOGO: "",                 // foto/logo bulat di tengah atas, contoh: "logo.jpg"
+
+  /* ---- Foto latar bagian atas. Maksimal 4, bergantian otomatis.
+         Warna gelap di atas foto tetap dipertahankan supaya teks terbaca. */
+  FOTO_ATAS: [
+    // "foto1.jpg",
+    // "foto2.jpg",
+    // "foto3.jpg",
+    // "foto4.jpg"
+  ],
+
+  /* ---- Layanan. Semua baris bisa diklik dan langsung membuka WhatsApp.
+         harga boleh dikosongkan: tulis "" */
+  JUDUL_LAYANAN: "Layanan & harga",
+  SUB_LAYANAN: "Ketuk layanan yang Anda mau, pesanan langsung tersusun di WhatsApp.",
+  LAYANAN: [
+    { nama: "Full Body Massage",    ket: "Pijat seluruh badan, 90 menit",              harga: "Rp 130.000" },
+    { nama: "Paket Tiga Perawatan", ket: "150 menit, tiga perawatan sekaligus",        harga: "Rp 160.000" },
+    { nama: "Couple",               ket: "Dua terapis datang bersamaan ke satu rumah", harga: "Rp 260.000" },
+    { nama: "Pijat Wajah",          ket: "60 menit, relaksasi wajah dan leher",        harga: "" }
+  ],
+
+  /* ---- Poin kepercayaan. Judul dan isinya bebas diganti.
+         Kosongkan POIN: [] untuk menyembunyikan bagian ini. */
+  JUDUL_POIN: "Kenapa Mahyra",
+  POIN: [
+    "Terapis bersertifikat, ada pria dan wanita",
+    "Terapis membawa matras, minyak, dan handuk bersih",
+    "Bayar setelah sesi selesai",
+    "Tanpa biaya transport di dalam area layanan"
+  ],
+
+  /* ---- Tombol WhatsApp. Nama tombol dan isi pesan bebas diubah.
+         {kode} diganti kode iklan, {layanan} diganti nama layanan. */
+  JUDUL_PESAN: "Pesan sekarang",
+  SUB_PESAN: "Admin membalas pada jam layanan. Sebutkan kecamatan dan jam yang diinginkan.",
+  TOMBOL_WA: [
+    { label: "Booking Sekarang via WhatsApp",
+      pesan: "Halo {bisnis}, saya mau booking pijat.\nKode: {kode}\nKecamatan saya: \nJam yang diinginkan: \nLayanan: ",
+      utama: true },
+    { label: "Tanya Harga & Jadwal Terapis",
+      pesan: "Halo {bisnis}, saya mau tanya harga dan jadwal terapis hari ini.\nKode: {kode}\nKecamatan saya: ",
+      utama: false }
+  ],
+  /* Pesan yang terkirim saat salah satu baris layanan diketuk */
+  PESAN_LAYANAN: "Halo {bisnis}, saya mau booking {layanan}.\nKode: {kode}\nKecamatan saya: \nJam yang diinginkan: ",
+
+  /* ---- Media sosial */
+  JUDUL_SOSIAL: "Media sosial",
+  SUB_SOSIAL: "Lihat ulasan dan kegiatan kami sehari-hari.",
+  SOSIAL: [
+    { nama: "Instagram", url: "https://instagram.com/mahyra.massage" },
+    { nama: "TikTok",    url: "https://tiktok.com/@mahyra.massage" },
+    { nama: "Website",   url: "" }
+  ],
+
+  /* ---- Video. Boleh link YouTube atau Instagram. Judul bebas diganti. */
+  VIDEO: [
+    { judul: "Pijat wajah", url: "" },
+    { judul: "", url: "" }
+  ],
+
+  /* ---- Nilai rata-rata satu booking, dipakai di event Purchase */
+  NILAI_DEFAULT: 130000
+};
+</script>
+
+<style>
+:root{
+  --langit:#9CCBEE;--biru:#2A6AB8;--laut:#14406F;--malam:#081A2F;
+  --emas:#B08343;--emas-2:#E9D5AC;--gading:#FAF7F2;--kabut:#EDF3FA;
+  --tinta:#0F1D33;--redup:#4B5D77;--garis:#DCE4EE;--putih:#fff;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--gading);color:var(--tinta);font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+ font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+ padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:600;line-height:1.15;letter-spacing:-.015em}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+.app{max-width:520px;margin:0 auto;background:var(--gading);min-height:100vh;box-shadow:0 0 60px rgba(8,26,47,.07)}
+
+/* ---------- bagian atas dengan foto ---------- */
+.hero{position:relative;color:#fff;overflow:hidden;background:var(--malam)}
+.hero .bg{position:absolute;inset:0}
+.hero .bg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.2s ease}
+.hero .bg img.on{opacity:1}
+.hero .bg.kosong{background:
+  radial-gradient(120% 90% at 20% 0%,rgba(156,203,238,.4),transparent 60%),
+  radial-gradient(90% 80% at 90% 20%,rgba(176,131,67,.45),transparent 60%),
+  linear-gradient(160deg,var(--laut),var(--malam))}
+.hero .tirai{position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(8,26,47,.55) 0%,rgba(8,26,47,.72) 45%,rgba(8,26,47,.93) 100%)}
+.hero .isi{position:relative;z-index:2;padding:34px 22px 28px;text-align:center;min-height:300px;
+ display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.hero .logo{width:92px;height:92px;border-radius:50%;object-fit:cover;background:#fff;margin-bottom:16px;
+ border:3px solid rgba(255,255,255,.92);box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.hero h1{font-size:30px;margin-bottom:8px;text-shadow:0 2px 14px rgba(0,0,0,.5)}
+.hero p.tag{color:#F3E7D2;font-size:15.5px;text-shadow:0 1px 10px rgba(0,0,0,.55);max-width:28ch}
+.jam{display:inline-flex;align-items:center;gap:8px;margin-top:16px;background:rgba(255,255,255,.14);
+ border:1px solid rgba(233,213,172,.4);border-radius:999px;padding:7px 15px;font-size:13.5px;color:#fff;
+ backdrop-filter:blur(4px)}
+.jam i{width:7px;height:7px;border-radius:50%;background:#63D297;display:block;flex:none}
+.titik{position:absolute;z-index:3;bottom:10px;left:0;right:0;display:flex;gap:6px;justify-content:center}
+.titik b{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);transition:background .3s}
+.titik b.on{background:var(--emas-2)}
+
+/* ---------- isi ---------- */
+.sec{padding:26px 22px}
+.sec h2{font-size:20px;margin-bottom:4px}
+.sec .sub{color:var(--redup);font-size:14px;margin-bottom:16px}
+.kartu{background:var(--putih);border:1px solid var(--garis);border-radius:16px;overflow:hidden}
+.baris{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;
+ border-bottom:1px solid var(--garis);transition:background .15s;cursor:pointer}
+.baris:last-child{border-bottom:0}
+.baris:active{background:var(--kabut)}
+.baris .kiri{min-width:0}
+.baris .nama{font-weight:600;font-size:15px}
+.baris .ket{color:var(--redup);font-size:13px;margin-top:1px}
+.baris .kanan{display:flex;align-items:center;gap:9px;flex:none}
+.baris .harga{font-family:Fraunces,Georgia,serif;font-weight:600;color:var(--laut);white-space:nowrap;font-size:15px}
+.baris .pesan{font-size:12px;font-weight:600;color:#1faa4e;background:#E8F8EE;border-radius:999px;padding:4px 10px;white-space:nowrap}
+.baris .panah{width:8px;height:8px;border-right:2px solid var(--langit);border-top:2px solid var(--langit);
+ transform:rotate(45deg);flex:none}
+.poin{list-style:none;display:grid;gap:9px;margin-top:4px}
+.poin li{display:flex;gap:10px;font-size:14.5px}
+.poin li:before{content:"";flex:none;width:18px;height:18px;margin-top:2px;border-radius:50%;
+ background:var(--kabut) url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232A6AB8' stroke-width='3'%3E%3Cpath d='M4 12l5 5L20 6'/%3E%3C/svg%3E") center/11px no-repeat}
+.tbl{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+ font-weight:600;font-size:15.5px;padding:15px 20px;border-radius:999px;border:1.5px solid transparent;
+ cursor:pointer;transition:transform .15s;font-family:inherit;text-align:center}
+.tbl:active{transform:scale(.98)}
+.tbl-wa{background:linear-gradient(135deg,#34c759,#1faa4e);color:#fff;box-shadow:0 10px 22px rgba(31,170,78,.3)}
+.tbl-wa2{background:var(--putih);color:var(--laut);border-color:var(--garis)}
+.tombol-grup{display:grid;gap:10px}
+.sosial{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.sos{display:flex;align-items:center;gap:10px;background:var(--putih);border:1px solid var(--garis);
+ border-radius:14px;padding:13px 14px;font-size:14.5px;font-weight:500}
+.sos i{width:30px;height:30px;border-radius:9px;background:var(--kabut);display:grid;place-items:center;
+ font-style:normal;font-weight:700;font-size:12px;color:var(--laut);flex:none}
+.video-grup{display:grid;gap:14px}
+.video-judul{font-weight:600;font-size:15px;margin-bottom:7px}
+.video{position:relative;border-radius:16px;overflow:hidden;background:var(--malam);aspect-ratio:16/9}
+.video img{width:100%;height:100%;object-fit:cover;opacity:.85}
+.video .play{position:absolute;inset:0;display:grid;place-items:center;cursor:pointer;border:0;background:none;width:100%}
+.video .play span{width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.95);display:grid;place-items:center;
+ box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.video .play span:after{content:"";border-left:16px solid var(--laut);border-top:10px solid transparent;
+ border-bottom:10px solid transparent;margin-left:4px}
+.video iframe{width:100%;height:100%;border:0;display:block}
+.video.ig{aspect-ratio:auto;background:linear-gradient(135deg,#833AB4,#E1306C 55%,#F77737);padding:22px 18px;color:#fff;text-align:center}
+.video.ig b{display:block;font-size:15px;margin-bottom:4px}
+.video.ig small{opacity:.9;font-size:13px}
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(250,247,242,.94);
+ backdrop-filter:blur(10px);border-top:1px solid var(--garis);
+ padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));max-width:520px;margin:0 auto}
+.kaki{text-align:center;color:var(--redup);font-size:12.5px;padding:22px 22px 6px}
+.kode{font-size:11px;color:#9AA8BC;text-align:center;padding-bottom:8px;letter-spacing:.04em}
+.admin{background:var(--malam);color:#fff;padding:22px;margin-top:10px}
+.admin h2{color:var(--emas-2);font-size:18px;margin-bottom:10px}
+.admin label{display:block;font-size:12.5px;color:#A9BDD6;margin:10px 0 4px}
+.admin input,.admin select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid #27425F;
+ background:#0D2238;color:#fff;font:inherit;font-size:14px}
+.admin .btn{margin-top:14px;width:100%;padding:13px;border-radius:999px;border:0;background:var(--emas);
+ color:#1A1206;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
+.admin .btn.alt{background:transparent;color:var(--emas-2);border:1px solid #2F4D6D;margin-top:8px}
+.admin table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:14px}
+.admin th,.admin td{text-align:left;padding:7px 6px;border-bottom:1px solid #1D3550}
+.admin th{color:#8FA6C2;font-weight:600}
+.admin td{color:#D8E4F2}
+.admin .log{max-height:260px;overflow:auto;margin-top:6px}
+.admin .ket{font-size:12px;color:#8FA6C2;margin-top:10px;line-height:1.5}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--malam);color:#fff;
+ padding:11px 18px;border-radius:999px;font-size:13.5px;z-index:60;opacity:0;pointer-events:none;transition:opacity .25s}
+.toast.on{opacity:1}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="hero">
+    <div class="bg" id="heroBg"></div>
+    <div class="tirai"></div>
+    <div class="isi">
+      <img id="logo" class="logo" alt="" hidden>
+      <h1 id="namaBisnis">Mahyra Relaksia</h1>
+      <p class="tag" id="tagline"></p>
+      <div class="jam"><i></i><span id="jam"></span></div>
+    </div>
+    <div class="titik" id="titik"></div>
+  </header>
+
+  <section class="sec" id="secLayanan">
+    <h2 id="judulLayanan"></h2>
+    <p class="sub" id="subLayanan"></p>
+    <div class="kartu" id="layanan"></div>
+  </section>
+
+  <section class="sec" id="secPoin" style="padding-top:4px">
+    <h2 id="judulPoin"></h2>
+    <ul class="poin" id="poin"></ul>
+  </section>
+
+  <section class="sec" id="secPesan" style="padding-top:4px">
+    <h2 id="judulPesan"></h2>
+    <p class="sub" id="subPesan"></p>
+    <div class="tombol-grup" id="tombolWA"></div>
+  </section>
+
+  <section class="sec" id="secVideo" style="padding-top:4px" hidden>
+    <div class="video-grup" id="videoGrup"></div>
+  </section>
+
+  <section class="sec" id="secSosial" style="padding-top:4px">
+    <h2 id="judulSosial"></h2>
+    <p class="sub" id="subSosial"></p>
+    <div class="sosial" id="sosial"></div>
+  </section>
+
+  <p class="kaki" id="kaki"></p>
+  <p class="kode" id="kodeInfo"></p>
+
+  <section class="admin" id="admin" hidden>
+    <h2>Catat booking (khusus admin)</h2>
+    <p class="ket" style="margin-top:0">Isi setiap kali booking dikonfirmasi. Ini mengirim event <b>Purchase</b> ke pixel, sumber data untuk Lookalike dan kampanye konversi.</p>
+    <label for="aKode">Kode iklan (dari pesan pelanggan)</label>
+    <input id="aKode" placeholder="contoh: A-Statis-Harga">
+    <label for="aNilai">Nilai booking (Rp)</label>
+    <input id="aNilai" type="number" inputmode="numeric">
+    <label for="aLayanan">Layanan</label>
+    <select id="aLayanan"></select>
+    <label for="aCatatan">Catatan (opsional, misal nama atau kecamatan)</label>
+    <input id="aCatatan" placeholder="Bu Sinta, Gubeng">
+    <button class="btn" id="aKirim">Kirim event Purchase</button>
+    <button class="btn alt" id="aUnduh">Unduh catatan booking (CSV)</button>
+    <button class="btn alt" id="aHapus">Hapus semua catatan</button>
+    <div class="log"><table id="aTabel"></table></div>
+    <p class="ket">Catatan tersimpan di browser perangkat ini saja. Unduh CSV secara berkala supaya tidak hilang.</p>
+  </section>
+</div>
+
+<div class="sticky" id="sticky"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+const K = window.KONFIG || {};
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- 1. Tangkap asal pengunjung ---------- */
+const q = new URLSearchParams(location.search);
+const simpan=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const ambil=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+
+const dariIklan = q.get('utm_content') || q.get('ad') || q.get('adid') || '';
+const kampanye  = q.get('utm_campaign') || '';
+const adset     = q.get('utm_medium') || q.get('adset') || '';
+const placement = q.get('plc') || q.get('placement') || '';
+const fbclid    = q.get('fbclid') || '';
+if (dariIklan || fbclid) {
+  simpan('mhy_kode', dariIklan || 'fbclid');
+  simpan('mhy_kampanye', kampanye);
+  simpan('mhy_adset', adset);
+  simpan('mhy_waktu', new Date().toISOString());
+}
+const KODE = ambil('mhy_kode') || dariIklan || 'organik';
+const KAMPANYE = ambil('mhy_kampanye') || kampanye || '-';
+const ADSET = ambil('mhy_adset') || adset || '-';
+
+/* ---------- 2. Pixel Meta ---------- */
+const PIXELS = (K.PIXEL_IDS||[]).filter(Boolean);
+if (PIXELS.length) {
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+  (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  PIXELS.forEach(id=>fbq('init', id));
+  fbq('track','PageView');
+} else {
+  console.warn('[Mahyra] PIXEL_IDS masih kosong. Isi di bagian KONFIG untuk mengaktifkan pelacakan.');
+}
+const eid = p => p+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+function lacak(nama, data, custom){
+  const isi = Object.assign({ content_name: KODE, content_category: KAMPANYE }, data||{});
+  const id = eid(nama.toLowerCase());
+  if (!window.fbq) { console.log('[pixel mati]', nama, isi); return id; }
+  PIXELS.forEach(function(pid){
+    try{
+      if (custom) fbq('trackSingleCustom', pid, nama, isi, {eventID:id});
+      else fbq('trackSingle', pid, nama, isi, {eventID:id});
+    }catch(e){ custom ? fbq('trackCustom',nama,isi,{eventID:id}) : fbq('track',nama,isi,{eventID:id}) }
+  });
+  return id;
+}
+
+/* ---------- 3. Isi halaman ---------- */
+$('namaBisnis').textContent = K.NAMA_BISNIS || '';
+$('tagline').textContent = K.TAGLINE || '';
+$('jam').textContent = K.BARIS_JAM || '';
+if (!K.BARIS_JAM) document.querySelector('.jam').hidden = true;
+document.title = (K.NAMA_BISNIS||'') + (K.TAGLINE ? ' — ' + K.TAGLINE : '');
+
+/* foto latar bergantian */
+const fotos = (K.FOTO_ATAS||[]).filter(Boolean).slice(0,4);
+if (fotos.length) {
+  $('heroBg').innerHTML = fotos.map((f,i)=>'<img src="'+esc(f)+'" alt="" class="'+(i===0?'on':'')+'" aria-hidden="true">').join('');
+  if (fotos.length > 1) {
+    $('titik').innerHTML = fotos.map((_,i)=>'<b class="'+(i===0?'on':'')+'"></b>').join('');
+    const gbr = $('heroBg').querySelectorAll('img'), dot = $('titik').querySelectorAll('b');
+    let n = 0;
+    const diam = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!diam) setInterval(function(){
+      gbr[n].classList.remove('on'); dot[n].classList.remove('on');
+      n = (n+1) % fotos.length;
+      gbr[n].classList.add('on'); dot[n].classList.add('on');
+    }, 4500);
+  }
+} else {
+  $('heroBg').className = 'bg kosong';
+}
+if (K.LOGO) { const l=$('logo'); l.src=K.LOGO; l.alt=K.NAMA_BISNIS||''; l.hidden=false; }
+
+function pesanWA(tpl, layanan){
+  return (tpl||'Halo, saya mau booking.')
+    .replace(/\{kode\}/g, KODE)
+    .replace(/\{bisnis\}/g, K.NAMA_BISNIS||'')
+    .replace(/\{layanan\}/g, layanan||'');
+}
+const linkWA = (tpl, layanan) => 'https://wa.me/'+(K.NOMOR_WA||'')+'?text='+encodeURIComponent(pesanWA(tpl, layanan));
+
+/* layanan: tiap baris bisa diklik */
+$('judulLayanan').textContent = K.JUDUL_LAYANAN || 'Layanan';
+$('subLayanan').textContent = K.SUB_LAYANAN || '';
+if (!K.SUB_LAYANAN) $('subLayanan').hidden = true;
+const layanan = (K.LAYANAN||[]);
+$('layanan').innerHTML = layanan.map(function(s,i){
+  return '<a class="baris" href="'+linkWA(K.PESAN_LAYANAN, s.nama)+'" target="_blank" rel="noopener" data-lay="'+i+'">'+
+    '<div class="kiri"><div class="nama">'+esc(s.nama)+'</div>'+(s.ket?'<div class="ket">'+esc(s.ket)+'</div>':'')+'</div>'+
+    '<div class="kanan">'+(s.harga?'<span class="harga">'+esc(s.harga)+'</span>':'<span class="pesan">Pesan</span>')+
+    '<span class="panah"></span></div></a>';
+}).join('');
+if (!layanan.length) $('secLayanan').hidden = true;
+
+/* poin */
+$('judulPoin').textContent = K.JUDUL_POIN || '';
+$('poin').innerHTML = (K.POIN||[]).map(p=>'<li>'+esc(p)+'</li>').join('');
+if (!(K.POIN||[]).length) $('secPoin').hidden = true;
+
+/* tombol WA */
+$('judulPesan').textContent = K.JUDUL_PESAN || 'Pesan sekarang';
+$('subPesan').textContent = K.SUB_PESAN || '';
+if (!K.SUB_PESAN) $('subPesan').hidden = true;
+const tombol = (K.TOMBOL_WA||[]);
+$('tombolWA').innerHTML = tombol.map(function(t,i){
+  return '<a class="tbl '+(t.utama?'tbl-wa':'tbl-wa2')+'" data-wa="'+i+'" href="'+linkWA(t.pesan)+'" target="_blank" rel="noopener">'+esc(t.label)+'</a>';
+}).join('');
+const tUtama = tombol.find(t=>t.utama) || tombol[0];
+if (tUtama) $('sticky').innerHTML = '<a class="tbl tbl-wa" data-wa="sticky" href="'+linkWA(tUtama.pesan)+'" target="_blank" rel="noopener">'+esc(tUtama.label)+'</a>';
+else $('sticky').hidden = true;
+
+/* satu penangan klik untuk semua tautan WhatsApp */
+document.addEventListener('click', function(e){
+  const lay = e.target.closest('[data-lay]');
+  if (lay) {
+    const s = layanan[Number(lay.getAttribute('data-lay'))] || {};
+    lacak('Lead', { value: 0, currency:'IDR', content_type:'service', layanan: s.nama, sumber:'baris-layanan' });
+    lacak('KlikLayanan', { layanan: s.nama, harga: s.harga||'-', kampanye: KAMPANYE, adset: ADSET }, true);
+    simpan('mhy_lead_terakhir', new Date().toISOString());
+    return;
+  }
+  const wa = e.target.closest('[data-wa]');
+  if (wa) {
+    const i = wa.getAttribute('data-wa');
+    const t = (i==='sticky') ? tUtama : (tombol[Number(i)] || tUtama);
+    lacak('Lead', { value: 0, currency:'IDR', tombol: t && t.label, sumber: i==='sticky' ? 'tombol-melayang' : 'tombol' });
+    lacak('KlikWhatsApp', { tombol: t && t.label, kampanye: KAMPANYE, adset: ADSET }, true);
+    simpan('mhy_lead_terakhir', new Date().toISOString());
+    return;
+  }
+  const sos = e.target.closest('[data-sos]');
+  if (sos) lacak('KlikSosmed', { platform: sos.getAttribute('data-sos') }, true);
+});
+
+/* media sosial */
+$('judulSosial').textContent = K.JUDUL_SOSIAL || 'Media sosial';
+$('subSosial').textContent = K.SUB_SOSIAL || '';
+if (!K.SUB_SOSIAL) $('subSosial').hidden = true;
+const sos = (K.SOSIAL||[]).filter(s=>s && s.url);
+if (sos.length) {
+  $('sosial').innerHTML = sos.map(function(s){
+    return '<a class="sos" href="'+esc(s.url)+'" target="_blank" rel="noopener" data-sos="'+esc(s.nama)+'">'+
+      '<i>'+esc(String(s.nama).slice(0,2).toUpperCase())+'</i>'+esc(s.nama)+'</a>';
+  }).join('');
+} else $('secSosial').hidden = true;
+
+/* video: YouTube atau Instagram */
+function idYouTube(u){
+  const m = String(u).match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([A-Za-z0-9_-]{6,})/);
+  return m ? m[1] : null;
+}
+const videos = (K.VIDEO||[]).filter(v=>v && v.url);
+if (videos.length) {
+  $('secVideo').hidden = false;
+  $('videoGrup').innerHTML = videos.map(function(v,i){
+    const yt = idYouTube(v.url);
+    const judul = v.judul ? '<div class="video-judul">'+esc(v.judul)+'</div>' : '';
+    if (yt) {
+      return '<div>'+judul+'<div class="video" data-yt="'+esc(yt)+'" data-i="'+i+'">'+
+        '<img src="https://i.ytimg.com/vi/'+esc(yt)+'/hqdefault.jpg" alt="Pratinjau video">'+
+        '<button class="play" aria-label="Putar video"><span></span></button></div></div>';
+    }
+    return '<div>'+judul+'<a class="video ig" href="'+esc(v.url)+'" target="_blank" rel="noopener" data-ig="'+i+'">'+
+      '<b>Lihat video di Instagram</b><small>Ketuk untuk membuka</small></a></div>';
+  }).join('');
+  $('videoGrup').addEventListener('click', function(e){
+    const yt = e.target.closest('[data-yt]');
+    if (yt) {
+      const id = yt.getAttribute('data-yt');
+      lacak('PutarVideo', { video: id, judul: (videos[Number(yt.getAttribute('data-i'))]||{}).judul || '-' }, true);
+      yt.innerHTML = '<iframe src="https://www.youtube.com/embed/'+id+'?autoplay=1&rel=0" title="Video" allow="autoplay; encrypted-media" allowfullscreen></iframe>';
+      return;
+    }
+    const ig = e.target.closest('[data-ig]');
+    if (ig) lacak('PutarVideo', { platform:'instagram', judul: (videos[Number(ig.getAttribute('data-ig'))]||{}).judul || '-' }, true);
+  });
+}
+
+$('kaki').textContent = [K.NAMA_BISNIS, K.BARIS_JAM].filter(Boolean).join(' · ');
+$('kodeInfo').textContent = 'Ref: ' + KODE;
+
+/* ---------- 4. Event otomatis ---------- */
+lacak('ViewContent', { content_type:'service', kampanye:KAMPANYE, adset:ADSET, placement:placement||'-' });
+let p50=false, p75=false;
+addEventListener('scroll', function(){
+  const d = document.documentElement;
+  const persen = (d.scrollTop + innerHeight) / d.scrollHeight;
+  if (!p50 && persen >= .5) { p50=true; lacak('Scroll50',{},true); }
+  if (!p75 && persen >= .75) { p75=true; lacak('Scroll75',{},true); }
+}, {passive:true});
+setTimeout(()=>lacak('BacaSerius', { detik: 30 }, true), 30000);
+
+/* ---------- 5. Panel admin ---------- */
+if (q.get('admin') === '1') {
+  const adm = $('admin'); adm.hidden = false;
+  $('aNilai').value = K.NILAI_DEFAULT || 0;
+  $('aLayanan').innerHTML = layanan.map(s=>'<option>'+esc(s.nama)+'</option>').join('') || '<option>Umum</option>';
+  const catatan = () => { try { return JSON.parse(ambil('mhy_booking')||'[]') } catch(e){ return [] } };
+  const tulis = arr => simpan('mhy_booking', JSON.stringify(arr));
+  function tabel(){
+    const arr = catatan().slice().reverse();
+    $('aTabel').innerHTML = '<tr><th>Waktu</th><th>Kode</th><th>Nilai</th><th>Pixel</th></tr>' +
+      (arr.length ? arr.map(b => '<tr><td>'+new Date(b.waktu).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+
+        '</td><td>'+esc(b.kode)+'</td><td>'+Number(b.nilai).toLocaleString('id-ID')+'</td><td>'+esc(b.pixel||'-')+'</td></tr>').join('')
+      : '<tr><td colspan="4" style="color:#8FA6C2">Belum ada catatan.</td></tr>');
+  }
+  function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('on'); setTimeout(()=>el.classList.remove('on'),2200) }
+  $('aKirim').addEventListener('click', function(){
+    const kode = ($('aKode').value||'').trim() || 'tidak-diketahui';
+    const nilai = Number($('aNilai').value) || K.NILAI_DEFAULT || 0;
+    const id = lacak('Purchase', { value: nilai, currency:'IDR', content_name: kode,
+      content_category: $('aLayanan').value, num_items: 1 });
+    const arr = catatan();
+    arr.push({ waktu:new Date().toISOString(), kode, nilai, layanan:$('aLayanan').value,
+      catatan:$('aCatatan').value||'', pixel:PIXELS.join('|')||'-', eventID:id });
+    tulis(arr); tabel();
+    $('aCatatan').value=''; $('aKode').value='';
+    toast(PIXELS.length ? 'Event Purchase terkirim' : 'Tercatat (pixel belum diisi)');
+  });
+  $('aUnduh').addEventListener('click', function(){
+    const csv = 'waktu,kode_iklan,nilai,layanan,catatan,pixel,event_id\n' + catatan().map(b =>
+      [b.waktu,b.kode,b.nilai,b.layanan,'"'+(b.catatan||'').replace(/"/g,'""')+'"',b.pixel,b.eventID].join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download = 'booking-mahyra.csv'; a.click(); URL.revokeObjectURL(a.href);
+  });
+  $('aHapus').addEventListener('click', function(){
+    if (confirm('Hapus semua catatan booking di perangkat ini?')) { tulis([]); tabel(); }
+  });
+  tabel();
+}
+})();
+</script>
+</body>
+</html>
