@@ -634,7 +634,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.26.4";
+const VERSI_APP = "2026.09.26.6";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -5694,21 +5694,23 @@ function pesanPelanggan(p){
   if (potongan > 0) bagian.push(`Anda hemat ${rp(potongan)} pada pesanan ini.`);
   bagian.push(GARIS);
 
-  // pembayaran: rekening yang dipilih kasir
+  // pembayaran: rekening bank selalu dicantumkan semuanya
   const rek = rekeningOrder(p);
-  if (rek && rek.jenis === 'qris') {
-    bagian.push(`*PEMBAYARAN*\nQRIS — silakan pindai kode yang ditunjukkan terapis.\n\n` +
-      `Mohon kirimkan bukti pembayaran setelah selesai.`);
-  } else if (rek && rek.jenis === 'bank') {
-    bagian.push(`*PEMBAYARAN*\nTransfer ke rekening berikut:\n\n` +
-      `*${rek.nama}*\n${rek.nomor || '-'}\na.n. ${rek.atas_nama || REKENING.nama}\n\n` +
-      `Mohon kirimkan bukti transfer setelah pembayaran.`);
-  } else {
-    const bank = daftarRekening().filter(r => r.jenis === 'bank');
-    bagian.push(`*PEMBAYARAN*\nTunai kepada terapis.` +
-      (bank.length ? `\n\nAtau bila lebih nyaman, transfer ke:\n*${bank[0].atas_nama || REKENING.nama}*\n` +
-        bank.map(r => `${r.nama} — ${r.nomor}`).join('\n') : ''));
-  }
+  const bank = daftarRekening().filter(r => r.jenis === 'bank');
+
+  const pembuka = rek && rek.jenis === 'tunai'
+    ? 'Pembayaran dicatat *tunai* kepada terapis.'
+    : rek && rek.jenis === 'qris'
+      ? 'Pembayaran dicatat lewat *QRIS*.'
+      : rek ? `Pembayaran dicatat ke rekening *${rek.nama}*.` : '';
+
+  const daftarBank = bank.map(r =>
+    `${rek && r.id === rek.id ? '✅ ' : ''}*${r.nama}*\n${r.nomor || '-'}\na.n. ${r.atas_nama || REKENING.nama}`);
+
+  bagian.push(`*PEMBAYARAN*\n${pembuka ? pembuka + '\n\n' : ''}` +
+    `Transfer dapat dilakukan ke salah satu rekening berikut:\n\n` +
+    daftarBank.join('\n\n') +
+    `\n\nMohon kirimkan bukti pembayaran setelah selesai, agar pesanan langsung kami tandai lunas.`);
   bagian.push(GARIS);
 
   bagian.push(`Terapis akan menghubungi sebelum berangkat.\n` +
