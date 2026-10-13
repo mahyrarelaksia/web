@@ -634,7 +634,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.26.3";
+const VERSI_APP = "2026.09.26.4";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1232,7 +1232,9 @@ function kolomHilang(pesan){
   return m?(m[1]||m[2]):null;
 }
 
-async function simpan(key,row){
+let GALAT_TERAKHIR=null;
+async function simpan(key,row,opsi){
+  GALAT_TERAKHIR=null;
   if(LIVE){ let kirim=bersihkan(key,row), dilepas=[];
     let {data,error}=await sb.from(TBL[key]).upsert(kirim).select().single();
     while(error&&kolomHilang(error.message)&&kolomHilang(error.message) in kirim){
@@ -1242,6 +1244,8 @@ async function simpan(key,row){
     }
     if(dilepas.length) console.warn('Kolom belum ada di tabel '+TBL[key]+', dilewati:',dilepas.join(', '));
     if(error){ console.error('Gagal menyimpan ke '+TBL[key]+':',error,row);
+      GALAT_TERAKHIR=error.message||'';
+      if(opsi&&opsi.diam) return null;
       const rls=/row-level security/i.test(error.message||'');
       if(rls) jelaskanPenolakan(key,row);
       else { const p='Gagal menyimpan '+TBL[key]+': '+error.message; galatPanel(p); toast(p); }
@@ -5526,6 +5530,22 @@ async function simpanOrder(){
     toast('Order gagal disimpan: '+(e.message||e));
   }
 }
+/* Nomor order. Database yang menentukan bila bisa dihubungi, karena hanya
+   database yang melihat seluruh order — aplikasi hanya melihat order yang
+   boleh dibaca akun ini, sehingga nomornya bisa bentrok. */
+async function nomorOrderBaru(cab,tambahan){
+  if(LIVE){
+    const {data,error}=await sb.rpc('nomor_pesanan',{p_cabang:cab.id,p_tanggal:today()});
+    if(!error&&data) return data;
+    if(error) console.warn('Penomoran dari database belum tersedia (jalankan skrip 48):',error.message);
+  }
+  const awalan='MHR-'+cab.kode+'-'+today().slice(2).replace(/-/g,'')+'-';
+  const dipakai=DB.pesanan.filter(p=>String(p.nomor||'').startsWith(awalan))
+    .map(p=>Number(String(p.nomor).slice(-4))||0);
+  const urut=(dipakai.length?Math.max(...dipakai):0)+1+(tambahan||0);
+  return awalan+String(urut).padStart(4,'0');
+}
+
 async function simpanOrderInti(){
   const nama=document.getElementById('o_nama').value.trim();
   if(!nama) return toast('Isi nama pelanggan dulu');
@@ -5555,9 +5575,9 @@ async function simpanOrderInti(){
   const isiDisk=angkaDari(document.getElementById('o_disk').value);
   const disk=nilaiDiskon(sub,isiDisk,modeDisk);
   const cab=get('cabang',document.getElementById('o_cab').value||ME.cabang_id);
-  const n=DB.pesanan.filter(p=>String(p.tanggal).slice(0,10)===today()).length+1;
+  const nomor=await nomorOrderBaru(cab);
 
-  const p={id:uid(),nomor:'MHR-'+cab.kode+'-'+today().slice(2).replace(/-/g,'')+'-'+String(n).padStart(4,'0'),
+  const p={id:uid(),nomor,
     tanggal:today(),
     tgl_kerja:document.getElementById('o_tglkerja').value||today(),
     jam:document.getElementById('o_jam').value||jam(),
@@ -5568,7 +5588,12 @@ async function simpanOrderInti(){
     rekening_id:document.getElementById('o_bayar').value,
     metode_bayar:metodeDari(document.getElementById('o_bayar').value),status_bayar:'belum',
     catatan:document.getElementById('o_cat').value};
-  const tersimpan=await simpan('pesanan',p);
+  let tersimpan=await simpan('pesanan',p,{diam:true});
+  // nomor bentrok: ambil nomor berikutnya lalu coba lagi
+  for(let coba=1; !tersimpan && GALAT_TERAKHIR && /duplicate key|pesanan_nomor/i.test(GALAT_TERAKHIR) && coba<=15; coba++){
+    p.nomor=await nomorOrderBaru(cab,coba);
+    tersimpan=await simpan('pesanan',p,{diam:coba<15});
+  }
   if(!tersimpan){
     btn.disabled=false; btn.textContent='Simpan order';
     galatPanel('Order belum tersimpan. Data pelanggan sudah tersimpan, jadi silakan perbaiki penyebab di atas lalu tekan Simpan order lagi.');
