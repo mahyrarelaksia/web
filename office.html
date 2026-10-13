@@ -150,7 +150,7 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
 .pop h5{font-size:14px;font-weight:600}
 .pop p{font-size:12.5px;color:var(--muted);margin-top:2px}
 .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
- padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:99;
+ padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:200;
  pointer-events:none;max-width:calc(100% - 28px);text-align:center}
 .toast.on{opacity:1}
 .hanya-mobil{display:none}
@@ -634,7 +634,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.26.2";
+const VERSI_APP = "2026.09.26.3";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -969,6 +969,21 @@ const periode=()=>today().slice(0,7);
 const jam=()=>_fmtJam.format(new Date());
 const tgl=d=>d?new Date(String(d).slice(0,10)+'T00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* Pesan galat ditampilkan juga di dalam panel yang sedang terbuka,
+   supaya tidak tertutup panel atau terlewat saat mengisi formulir. */
+function galatPanel(pesan){
+  if(!modal||!modal.classList.contains('on')) return false;
+  let kotak=document.getElementById('sheetGalat');
+  if(!kotak){
+    kotak=document.createElement('div');
+    kotak.id='sheetGalat';
+    sheet.prepend(kotak);
+  }
+  kotak.innerHTML=`<div class="peringatan">${esc(pesan)}</div>`;
+  try{ kotak.scrollIntoView({block:'nearest'}); }catch(_){}
+  return true;
+}
+
 const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400)};
 const cap=s=>String(s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 /* Hari, tanggal, bulan, tahun — dipakai pada pesan ke pelanggan dan terapis */
@@ -1198,7 +1213,7 @@ async function simpanSebagian(key,id,patch){
     if(error){
       console.error('Gagal memperbarui '+TBL[key]+':',error,patch);
       if(/row-level security/i.test(error.message||'')) jelaskanPenolakan(key,{id,...patch});
-      else toast('Gagal menyimpan ('+TBL[key]+'): '+error.message);
+      else { const p='Gagal menyimpan '+TBL[key]+': '+error.message; galatPanel(p); toast(p); }
       return null;
     }
     const i=DB[key].findIndex(x=>x.id===id);
@@ -1228,7 +1243,8 @@ async function simpan(key,row){
     if(dilepas.length) console.warn('Kolom belum ada di tabel '+TBL[key]+', dilewati:',dilepas.join(', '));
     if(error){ console.error('Gagal menyimpan ke '+TBL[key]+':',error,row);
       const rls=/row-level security/i.test(error.message||'');
-      if(rls) jelaskanPenolakan(key,row); else toast('Gagal menyimpan ('+TBL[key]+'): '+error.message);
+      if(rls) jelaskanPenolakan(key,row);
+      else { const p='Gagal menyimpan '+TBL[key]+': '+error.message; galatPanel(p); toast(p); }
       return null; }
     const i=DB[key].findIndex(x=>x.id===data.id); i>=0?DB[key][i]=data:DB[key].push(data); return data; }
   const i=DB[key].findIndex(x=>x.id===row.id); i>=0?DB[key][i]=row:DB[key].push(row); return row;
@@ -2115,6 +2131,7 @@ async function delRow(key,id){ if(!await hapus(key,id)) return; closeModal(); re
    Simpan dan Batal selalu terjangkau tanpa perlu menggulir. */
 const _sheet = document.getElementById('sheet');
 function bukaPanel(html, opsi){
+  const galatLama=document.getElementById('sheetGalat'); if(galatLama) galatLama.remove();
   const { kaki, lebar } = opsi || {};
   _sheet.innerHTML =
     '<button class="sheet-tutup" onclick="closeModal()" aria-label="Tutup">'
@@ -5500,6 +5517,16 @@ function cekPelanggan(){
 }
 
 async function simpanOrder(){
+  try{ return await simpanOrderInti(); }
+  catch(e){
+    console.error('Gagal menyimpan order:',e);
+    const btn=document.getElementById('o_simpan');
+    if(btn){ btn.disabled=false; btn.textContent='Simpan order'; }
+    galatPanel('Order gagal disimpan: '+(e.message||e));
+    toast('Order gagal disimpan: '+(e.message||e));
+  }
+}
+async function simpanOrderInti(){
   const nama=document.getElementById('o_nama').value.trim();
   if(!nama) return toast('Isi nama pelanggan dulu');
   if(!ORD.baris.length) return toast('Tambahkan minimal satu layanan');
@@ -5542,7 +5569,11 @@ async function simpanOrder(){
     metode_bayar:metodeDari(document.getElementById('o_bayar').value),status_bayar:'belum',
     catatan:document.getElementById('o_cat').value};
   const tersimpan=await simpan('pesanan',p);
-  if(!tersimpan){ btn.disabled=false; btn.textContent='Simpan order'; return; }
+  if(!tersimpan){
+    btn.disabled=false; btn.textContent='Simpan order';
+    galatPanel('Order belum tersimpan. Data pelanggan sudah tersimpan, jadi silakan perbaiki penyebab di atas lalu tekan Simpan order lagi.');
+    return;
+  }
 
   const ruangan=document.getElementById('o_room').value;
   const bagian=sebarDiskon(ORD.baris,disk);
