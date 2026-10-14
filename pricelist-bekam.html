@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pricelist Bekam — Mahyra Relaksia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --malam:#102A4C;        /* navy Mahyra */
+    --malam-2:#0B1F3A;
+    --kabut:#F6F2EC;        /* kertas hangat */
+    --emas:#C9A36A;         /* aksen hangat untuk harga */
+    --langit:#9FC4EB;
+    --garis:rgba(246,242,236,.22);
+    box-sizing:border-box;
+  }
+  *,*::before,*::after{box-sizing:inherit}
+  body{
+    margin:0;
+    background:#5B6B7F;
+    color:var(--kabut);
+    font-family:Jost,"Segoe UI",system-ui,sans-serif;
+    font-weight:300;
+    display:flex;
+    justify-content:center;
+    padding:24px 12px;
+  }
+
+  /* Kanvas ukuran story Instagram, tetap luwes di layar kecil */
+  .kanvas{
+    width:min(540px,100%);
+    aspect-ratio:9/16;
+    background:
+      radial-gradient(120% 80% at 80% 0%, #1A3C66 0%, transparent 60%),
+      linear-gradient(170deg,var(--malam) 0%, var(--malam-2) 100%);
+    border-radius:20px;
+    padding:38px 34px 30px;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 24px 60px rgba(8,20,38,.45);
+    position:relative;
+    overflow:hidden;
+  }
+  .daftar{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .kanvas::after{             /* sapuan lembut di sudut bawah */
+    content:'';position:absolute;right:-90px;bottom:-120px;width:320px;height:320px;
+    background:radial-gradient(circle,rgba(201,163,106,.18),transparent 65%);
+  }
+
+  header{display:flex;align-items:center;gap:11px;margin-bottom:26px}
+  .kupu{width:30px;height:30px;flex:none;opacity:.95}
+  .merek{font-family:Fraunces,Georgia,serif;font-size:15px;letter-spacing:.14em;font-weight:400}
+  .merek span{display:block;font-family:Jost,sans-serif;font-size:9.5px;letter-spacing:.3em;
+    color:var(--langit);font-weight:400;margin-top:2px}
+
+  h1{
+    font-family:Fraunces,Georgia,serif;
+    font-weight:300;
+    font-size:clamp(36px,9vw,50px);
+    line-height:1.04;
+    margin:0 0 6px;
+    letter-spacing:-.01em;
+  }
+  h1 em{font-style:italic;font-weight:400}
+
+  h2{
+    font-family:Fraunces,Georgia,serif;font-weight:400;font-size:17px;
+    margin:30px 0 14px;display:flex;align-items:baseline;gap:11px;
+  }
+  h1 + h2{margin-top:26px}
+  h2::after{content:'';flex:1;height:1px;background:var(--garis)}
+
+  .baris{
+    display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:6px 14px;
+    padding:12px 0;border-bottom:1px solid var(--garis);
+  }
+  .baris:last-child{border-bottom:0}
+  .nama{font-size:13px;font-weight:400;line-height:1.35}
+  .durasi{font-size:10px;color:var(--langit);letter-spacing:.04em;margin-top:3px}
+  .harga{
+    font-family:Fraunces,Georgia,serif;font-size:16px;font-weight:400;
+    color:var(--emas);font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+  .harga small{font-size:10px;font-family:Jost,sans-serif;color:rgba(246,242,236,.55);
+    display:block;text-align:right;margin-bottom:1px;font-weight:300}
+
+  /* satu layanan dengan dua pilihan durasi */
+  .ganda{display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:baseline;
+    padding:12px 0;border-bottom:1px solid var(--garis)}
+  .ganda .nama{grid-column:1/-1}
+  .ganda .opsi{display:contents}
+  .ganda .opsi .durasi{padding-left:0}
+
+
+
+  /* Siap cetak A4 */
+  @media print{
+    body{background:#fff;padding:0;display:block}
+    .kanvas{width:100%;aspect-ratio:auto;min-height:100vh;border-radius:0;box-shadow:none;
+      padding:48px 54px;background:var(--malam)}
+    @page{size:A4;margin:0}
+  }
+  @media (max-width:430px){
+    .kanvas{aspect-ratio:auto;padding:30px 24px}
+  }
+</style>
+</head>
+<body>
+
+<div class="kanvas">
+  <header>
+    <svg class="kupu" viewBox="0 0 24 24" fill="none" stroke="#F6F2EC" stroke-width="1.1"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 6.5v11"/>
+      <path d="M12 8c-1.4-2.6-3.6-4-5.6-3.4C4.2 5.2 3.4 7.6 4.3 9.8c.8 2 2.9 3.4 5.1 3.4"/>
+      <path d="M12 8c1.4-2.6 3.6-4 5.6-3.4 2.2.6 3 3 2.1 5.2-.8 2-2.9 3.4-5.1 3.4"/>
+      <path d="M12 13.2c-.9 2.3-2.4 3.7-4 4.1-1.4.3-2.4-.6-2.1-1.9.3-1.3 1.8-2.4 3.5-2.6"/>
+      <path d="M12 13.2c.9 2.3 2.4 3.7 4 4.1 1.4.3 2.4-.6 2.1-1.9-.3-1.3-1.8-2.4-3.5-2.6"/>
+    </svg>
+    <div class="merek">MAHYRA RELAKSIA<span>home spa &amp; massage</span></div>
+  </header>
+
+  <h1>Bekam <em>Sunnah</em></h1>
+
+  <div class="daftar">
+  <h2>Bekam</h2>
+
+  <div class="baris">
+    <div><div class="nama">Bekam Basah — Punggung</div><div class="durasi">1 jam</div></div>
+    <div class="harga">135.000</div>
+  </div>
+
+  <div class="baris">
+    <div><div class="nama">Bekam Luncur</div><div class="durasi">30 menit</div></div>
+    <div class="harga">100.000</div>
+  </div>
+
+  <div class="baris">
+    <div><div class="nama">Bekam Kering</div><div class="durasi">30 menit</div></div>
+    <div class="harga">100.000</div>
+  </div>
+
+  <div class="baris">
+    <div><div class="nama">Bekam Basah + Bekam Kaki</div><div class="durasi">1 jam 15 menit</div></div>
+    <div class="harga">200.000</div>
+  </div>
+
+  <div class="baris">
+    <div><div class="nama">Bekam Basah + Bekam Tangan</div><div class="durasi">1 jam 15 menit</div></div>
+    <div class="harga">200.000</div>
+  </div>
+
+  <div class="baris">
+    <div><div class="nama">Bekam Basah + Bekam Kaki &amp; Tangan</div><div class="durasi">1,5 jam</div></div>
+    <div class="harga">235.000</div>
+  </div>
+
+  <h2>Paket bekam &amp; pijat</h2>
+
+  <div class="ganda">
+    <div class="nama">Full Body Massage + Bekam Basah</div>
+    <div class="opsi"><div class="durasi">2 jam</div><div class="harga">225.000</div></div>
+    <div class="opsi"><div class="durasi">2,5 jam</div><div class="harga">250.000</div></div>
+  </div>
+
+  <div class="baris">
+    <div><div class="nama">Full Body Massage + Foot Reflexy + Bekam Basah</div>
+      <div class="durasi">2,5 jam</div></div>
+    <div class="harga">275.000</div>
+  </div>
+
+  <div class="baris">
+    <div><div class="nama">Full Body Massage + Head Massage + Bekam Basah</div>
+      <div class="durasi">2,5 jam</div></div>
+    <div class="harga">275.000</div>
+  </div>
+  </div>
+</div>
+
+</body>
+</html>
