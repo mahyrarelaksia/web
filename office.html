@@ -634,7 +634,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.26.6";
+const VERSI_APP = "2026.09.27.1";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -5404,7 +5404,7 @@ function tambahBaris(){
 function hapusBaris(i){ ORD.baris.splice(i,1); gambarBaris(); hitungOrder(); }
 function ubahBaris(i,kunci,nilai){
   ORD.baris[i][kunci] = kunci==='harga' ? angkaDari(nilai) : (nilai||null);
-  if(kunci==='harga') hitungOrder();
+  hitungOrder();        // ringkasan dan peringatan ikut menyesuaikan, termasuk saat memilih terapis
 }
 
 function gambarBaris(){
@@ -5461,10 +5461,12 @@ function hitungOrder(){
     : mode==='persen' ? `${isi}% dari ${rp(sub)} = <strong class="rp">${rp(disk)}</strong>`
     : `Potongan ${rp(disk)}${sub?` · setara ${(disk/sub*100).toFixed(1).replace('.',',')}%`:''}`;
   const total=Math.max(0,sub-disk);
-  const kosong=ORD.baris.filter(b=>{
+  const kurang=ORD.baris.map((b,i)=>{
     const l=get('layanan',b.layanan_id)||{};
-    return (l.butuh_terapis!==false && !b.terapis_id) || (l.harga_manual && !b.harga);
-  }).length;
+    if(l.butuh_terapis!==false && !b.terapis_id) return `${l.nama||'Baris '+(i+1)}: terapis belum dipilih`;
+    if(l.harga_manual && !Number(b.harga))       return `${l.nama||'Baris '+(i+1)}: nominal belum diisi`;
+    return null;
+  }).filter(Boolean);
 
   const bagian=sebarDiskon(ORD.baris,disk);
   kotak.innerHTML=`
@@ -5480,7 +5482,8 @@ function hitungOrder(){
       <strong>Total</strong><strong class="rp" style="font-size:17px">${rp(total)}</strong></div>
     ${disk?`<p class="hint" style="margin-top:7px">Diskon dibagi ke tiap layanan secara sebanding.
       Komisi terapis dihitung dari harga bersihnya.</p>`:''}
-    ${kosong?`<p class="hint" style="margin-top:7px;color:var(--warn)">${kosong} baris belum lengkap — periksa terapis atau nominalnya.</p>`:''}`;
+    ${kurang.length?`<p class="hint" style="margin-top:7px;color:var(--warn)">
+      Belum lengkap · ${kurang.map(esc).join(' · ')}</p>`:''}`;
 }
 
 /* nama cocok -> isi kontak, alamat, dan tiru order terakhirnya */
@@ -5533,6 +5536,18 @@ async function simpanOrder(){
 /* Nomor order. Database yang menentukan bila bisa dihubungi, karena hanya
    database yang melihat seluruh order — aplikasi hanya melihat order yang
    boleh dibaca akun ini, sehingga nomornya bisa bentrok. */
+/* Kode pelanggan. Seperti nomor order, database yang paling tahu kode mana
+   yang sudah terpakai — aplikasi hanya melihat pelanggan yang boleh dibacanya. */
+async function kodePelangganBaru(tambahan){
+  if(LIVE){
+    const {data,error}=await sb.rpc('kode_pelanggan');
+    if(!error&&data) return tambahan?data.replace(/\d+$/,m=>String(Number(m)+tambahan).padStart(m.length,'0')):data;
+    if(error) console.warn('Penomoran pelanggan dari database belum tersedia (jalankan skrip 50):',error.message);
+  }
+  const angka=DB.pelanggan.map(p=>Number(String(p.kode||'').replace(/\D/g,''))||0);
+  return 'P-'+String((angka.length?Math.max(...angka):0)+1+(tambahan||0)).padStart(4,'0');
+}
+
 async function nomorOrderBaru(cab,tambahan){
   if(LIVE){
     const {data,error}=await sb.rpc('nomor_pesanan',{p_cabang:cab.id,p_tanggal:today()});
@@ -5551,10 +5566,15 @@ async function simpanOrderInti(){
   if(!nama) return toast('Isi nama pelanggan dulu');
   if(!ORD.baris.length) return toast('Tambahkan minimal satu layanan');
 
-  for(const b of ORD.baris){
-    const l=get('layanan',b.layanan_id)||{};
-    if(l.butuh_terapis!==false && !b.terapis_id) return toast('Pilih terapis untuk '+(l.nama||'layanan'));
-    if(l.harga_manual && !Number(b.harga)) return toast('Isi nominal untuk '+(l.nama||'layanan'));
+  for(let i=0;i<ORD.baris.length;i++){
+    const b=ORD.baris[i], l=get('layanan',b.layanan_id)||{};
+    const sebut=l.nama?`"${l.nama}"`:`baris ${i+1}`;
+    if(l.butuh_terapis!==false && !b.terapis_id){
+      const p='Terapis untuk '+sebut+' belum dipilih.'; galatPanel(p); return toast(p);
+    }
+    if(l.harga_manual && !Number(b.harga)){
+      const p='Nominal untuk '+sebut+' belum diisi.'; galatPanel(p); return toast(p);
+    }
   }
 
   const btn=document.getElementById('o_simpan'); btn.disabled=true; btn.textContent='Menyimpan…';
@@ -5563,8 +5583,12 @@ async function simpanOrderInti(){
 
   let pel=ORD.pelanggan_id?get('pelanggan',ORD.pelanggan_id):null;
   if(!pel){
-    pel=await simpan('pelanggan',{id:uid(),kode:'P-'+String(DB.pelanggan.length+1).padStart(4,'0'),
-      nama,telepon:hp,alamat,member:false,poin:0,total_kunjungan:0});
+    const dasar={id:uid(),nama,telepon:hp,alamat,member:false,poin:0,total_kunjungan:0};
+    pel=await simpan('pelanggan',{...dasar,kode:await kodePelangganBaru()},{diam:true});
+    // kode bentrok dengan pelanggan yang tidak terbaca akun ini: coba kode berikutnya
+    for(let coba=1; !pel && GALAT_TERAKHIR && /duplicate key|pelanggan_kode/i.test(GALAT_TERAKHIR) && coba<=15; coba++){
+      pel=await simpan('pelanggan',{...dasar,kode:await kodePelangganBaru(coba)},{diam:coba<15});
+    }
     if(!pel){ btn.disabled=false; btn.textContent='Simpan order'; return; }
   }else if(hp!==pel.telepon||alamat!==pel.alamat){
     pel=await simpan('pelanggan',{...pel,telepon:hp,alamat})||pel;
