@@ -441,6 +441,12 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:#F7FAFE}.tw{overflow-
  border:1px solid var(--line);border-radius:11px;padding:9px 12px;background:#fff;font-size:13px}
 .anak-tangga.jumlah{background:#E8F1FC;border-color:#CFE0F5}
 .anak-tangga b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar-simpan{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+ border:1px solid var(--line);border-radius:13px;padding:11px 13px;margin:12px 0 4px;background:var(--mist)}
+.bar-simpan.aktif{background:#FFF8EC;border-color:#F0E0C4}
+.bar-simpan .hint{flex:1;min-width:200px;line-height:1.5}
+tr.baris-ubah{background:#FFF8EC}
+tr.baris-ubah td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 .nilai-manual{font-size:11.5px;font-weight:600;color:#8A6520;background:#FFF4E0;border:1px solid #F0E0C4;
  border-radius:7px;padding:2px 6px;margin-top:3px;display:inline-block;white-space:nowrap}
 .nilai-manual.tebal{font-size:12.5px}
@@ -634,7 +640,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.27.1";
+const VERSI_APP = "2026.09.27.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -2511,7 +2517,13 @@ function render(){
   pgSub.textContent=key?F[key].sub:(JUDUL[PAGE]?.[1]||'');
   if(PAGE==='akses'){
     const p=document.getElementById('pilihJabatan');
-    if(p) AKSES_JBT=p.value;
+    // hanya ikuti pemilih bila isinya memang jabatan yang ada, supaya
+    // rancangan yang sedang disusun tidak berpindah sendiri
+    if(p&&p.value&&get('jabatan',p.value)&&p.value!==AKSES_JBT){
+      if(adaPerubahan(AKSES_JBT).length)
+        setTimeout(()=>toast('Perubahan pada '+nm('jabatan',AKSES_JBT)+' belum disimpan dan masih disimpan sementara'),50);
+      AKSES_JBT=p.value;
+    }
     if(!AKSES_JBT||!get('jabatan',AKSES_JBT)) AKSES_JBT=DB.jabatan[0]?.id||null;
   }
   try{
@@ -3199,12 +3211,27 @@ akses(){
       ${bisaUbah?`<button class="btn ghost sm" onclick="terapkanPreset('kosong')">Kosongkan</button>
         <button class="btn ghost sm" onclick="terapkanPreset('baca')">Lihat semua</button>
         <button class="btn ghost sm" onclick="terapkanPreset('penuh')">Beri penuh</button>`:''}</div></div>
+    ${bisaUbah?(()=>{const ubah=adaPerubahan(AKSES_JBT);
+      return `<div class="bar-simpan ${ubah.length?'aktif':''}">
+        <div class="hint">${ubah.length
+          ? `<strong>${ubah.length} modul diubah</strong> dan belum disimpan: ${
+              ubah.slice(0,4).map(m=>esc(MODUL.find(x=>x[0]===m)?.[1]||m)).join(', ')}${
+              ubah.length>4?` dan ${ubah.length-4} lainnya`:''}`
+          : 'Centang izin yang diinginkan, lalu tekan Simpan perubahan.'}</div>
+        <div class="row" style="flex-wrap:nowrap">
+          ${ubah.length?`<button class="btn ghost sm" onclick="batalkanIzin()">Batalkan</button>`:''}
+          <button class="btn sm" id="aksesSimpan" onclick="simpanIzinJabatan()"
+            ${ubah.length?'':'disabled'}>Simpan perubahan${ubah.length?' ('+ubah.length+')':''}</button>
+        </div>
+      </div>`;})():''}
     ${bisaUbah?'':'<p class="hint">Hanya owner dan admin yang dapat mengubah izin.</p>'}
     <div class="tw" style="margin-top:8px"><table><thead><tr><th>Modul</th>
       ${AKSI.map(([,l])=>`<th style="text-align:center">${l}</th>`).join('')}</tr></thead><tbody>
       ${MODUL.map(([m,label])=>{
-        const h=izinBaris(AKSES_JBT,m);
-        return `<tr><td><strong>${esc(label)}</strong><div class="hint">${m}</div></td>
+        const h=izinTampil(AKSES_JBT,m), asli=izinBaris(AKSES_JBT,m);
+        const beda=AKSI.some(([a])=>!!h[a]!==!!asli[a]);
+        return `<tr class="${beda?'baris-ubah':''}"><td><strong>${esc(label)}</strong>
+          <div class="hint">${m}${beda?' · belum disimpan':''}</div></td>
           ${AKSI.map(([a])=>`<td style="text-align:center">
             <input type="checkbox" style="width:18px;height:18px;accent-color:var(--jade);cursor:pointer"
               ${h[a]?'checked':''} ${bisaUbah?'':'disabled'}
@@ -3595,26 +3622,87 @@ async function simpanIzin(jabatanId,modul,nilai){
   return baris;
 }
 
-async function setIzin(modul,aksi,nilai){
-  if(LIVE&&!DB.hak_akses.some(x=>x.jabatan_id===AKSES_JBT&&x.modul===modul)){
-    const {data}=await sb.from('hak_akses').select('*').eq('jabatan_id',AKSES_JBT).eq('modul',modul).maybeSingle();
-    if(data) DB.hak_akses.push(data);
-  }
-  const lama=izinBaris(AKSES_JBT,modul);
-  const baru={lihat:lama.lihat,tambah:lama.tambah,ubah:lama.ubah,hapus:lama.hapus,[aksi]:nilai};
-  if(!nilai&&aksi==='lihat'){ baru.tambah=false; baru.ubah=false; baru.hapus=false; }
-  const hasil=await simpanIzin(AKSES_JBT,modul,baru);
-  render();
-  if(hasil) toast('Izin '+(MODUL.find(m=>m[0]===modul)?.[1]||modul)+' diperbarui');
+/* Centang hanya mengubah rancangan di layar. Perubahan baru masuk
+   database setelah tombol Simpan ditekan, lalu diperiksa ulang. */
+let AKSES_DRAFT={};        // {jabatan_id: {modul: {lihat,tambah,ubah,hapus}}}
+
+function izinTampil(jabatanId,modul){
+  const draft=AKSES_DRAFT[jabatanId]&&AKSES_DRAFT[jabatanId][modul];
+  return draft||izinBaris(jabatanId,modul);
 }
-async function terapkanPreset(jenis){
+function adaPerubahan(jabatanId){
+  const d=AKSES_DRAFT[jabatanId]; if(!d) return [];
+  return Object.keys(d).filter(m=>{
+    const lama=izinBaris(jabatanId,m), baru=d[m];
+    return AKSI.some(([a])=>!!lama[a]!==!!baru[a]);
+  });
+}
+function tulisDraft(jabatanId,modul,nilai){
+  AKSES_DRAFT[jabatanId]=AKSES_DRAFT[jabatanId]||{};
+  AKSES_DRAFT[jabatanId][modul]={lihat:!!nilai.lihat,tambah:!!nilai.tambah,
+    ubah:!!nilai.ubah,hapus:!!nilai.hapus};
+}
+
+function setIzin(modul,aksi,nilai){
+  const lama=izinTampil(AKSES_JBT,modul);
+  const baru={lihat:lama.lihat,tambah:lama.tambah,ubah:lama.ubah,hapus:lama.hapus,[aksi]:nilai};
+  if(nilai&&aksi!=='lihat') baru.lihat=true;                 // tidak bisa mengubah tanpa melihat
+  if(!nilai&&aksi==='lihat'){ baru.tambah=false; baru.ubah=false; baru.hapus=false; }
+  tulisDraft(AKSES_JBT,modul,baru);
+  render();
+}
+
+function terapkanPreset(jenis){
   const nilai = jenis==='penuh' ? {lihat:true,tambah:true,ubah:true,hapus:true}
               : jenis==='baca'  ? {lihat:true,tambah:false,ubah:false,hapus:false}
               :                   {lihat:false,tambah:false,ubah:false,hapus:false};
-  let gagal=0;
-  for(const [m] of MODUL){ if(!await simpanIzin(AKSES_JBT,m,nilai)) gagal++; }
+  for(const [m] of MODUL) tulisDraft(AKSES_JBT,m,nilai);
   render();
-  toast(gagal?`${gagal} modul gagal disimpan`:'Izin jabatan diperbarui');
+  toast('Rancangan disiapkan — tekan Simpan perubahan untuk menerapkannya');
+}
+
+function batalkanIzin(){
+  delete AKSES_DRAFT[AKSES_JBT];
+  render(); toast('Perubahan dibatalkan');
+}
+
+/* Menyimpan seluruh perubahan sekaligus, lalu memastikan hasilnya
+   benar-benar tercatat di database. */
+async function simpanIzinJabatan(){
+  const jbt=AKSES_JBT, berubah=adaPerubahan(jbt);
+  if(!berubah.length) return toast('Tidak ada perubahan untuk disimpan');
+
+  const tbl=document.getElementById('aksesSimpan');
+  if(tbl){ tbl.disabled=true; tbl.textContent='Menyimpan…'; }
+
+  const gagal=[];
+  for(const m of berubah){
+    const hasil=await simpanIzin(jbt,m,AKSES_DRAFT[jbt][m]);
+    if(!hasil) gagal.push(MODUL.find(x=>x[0]===m)?.[1]||m);
+  }
+
+  // dibaca ulang dari database, lalu dibandingkan dengan yang dicentang
+  if(LIVE){
+    const {data,error}=await sb.from('hak_akses').select('*').eq('jabatan_id',jbt);
+    if(!error&&data){
+      DB.hak_akses=DB.hak_akses.filter(x=>x.jabatan_id!==jbt).concat(data);
+    }
+  }
+  const belumCocok=berubah.filter(m=>{
+    const di=izinBaris(jbt,m), minta=AKSES_DRAFT[jbt][m];
+    return AKSI.some(([a])=>!!di[a]!==!!minta[a]);
+  });
+
+  if(!gagal.length&&!belumCocok.length) delete AKSES_DRAFT[jbt];
+  else belumCocok.forEach(m=>{ /* rancangan dibiarkan agar bisa dicoba lagi */ });
+
+  render();
+  if(gagal.length)
+    toast(gagal.length+' modul gagal disimpan: '+gagal.slice(0,3).join(', '));
+  else if(belumCocok.length)
+    toast(belumCocok.length+' modul belum sesuai di database — coba simpan lagi');
+  else
+    toast(berubah.length+' modul diperbarui untuk '+nm('jabatan',jbt));
 }
 async function setLingkup(jabatanId,nilai){
   const j=get('jabatan',jabatanId);
