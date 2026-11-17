@@ -640,7 +640,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.09.27.2";
+const VERSI_APP = "2026.11.17.1";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -833,7 +833,8 @@ const MODUL=[
  ['cabang','Cabang'],['absensi','Absensi'],['izin','Izin & Cuti'],['kasbon','Kasbon'],
  ['kas','Kas'],['pengeluaran','Pengeluaran'],['komisi','Komisi'],['bonus','Bonus'],['gaji','Penggajian'],['skema_gaji','Skema Gaji'],['libur','Tanggal Libur'],
  ['laporan','Laporan'],['biaya','Struktur Biaya & Laba'],['aturan_bonus','Aturan Bonus'],['target','Target'],
- ['kategori_pengeluaran','Kategori Biaya'],['pengaturan','Profil Usaha'],['akses','Hak Akses & Peran']];
+ ['kategori_pengeluaran','Kategori Biaya'],['pengaturan','Profil Usaha'],['akses','Hak Akses & Peran'],
+ ['leads','Leads Manager']];
 const AKSI=[['lihat','Lihat'],['tambah','Tambah'],['ubah','Ubah'],['hapus','Hapus']];
 const LINGKUP=[['semua','Semua cabang'],['cabang','Cabang sendiri'],['sendiri','Data sendiri']];
 
@@ -908,6 +909,7 @@ const IKON = {
   kategori_pengeluaran: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/>',
   kerja: '<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5a2 2 0 012-2h3a2 2 0 012 2V7"/><path d="M3 12h18"/>',
   komisi: '<path d="M19 6L6 19"/><circle cx="8" cy="8" r="2.6"/><circle cx="17" cy="17" r="2.6"/>',
+  leads: '<path d="M20.5 11.5a8.5 8.5 0 01-12.4 7.5L3.5 20.5l1.5-4.6A8.5 8.5 0 1120.5 11.5z"/><path d="M12.6 7.8l-2.4 3.9h3.8l-2.4 3.9"/>',
   laporan: '<path d="M4 20.5h16"/><rect x="5.5" y="12" width="3.5" height="7"/><rect x="10.5" y="7.5" width="3.5" height="11.5"/><rect x="15.5" y="10" width="3.5" height="9"/>',
   layanan: '<path d="M12 3.5c2.4 3 4 5.4 4 7.6a4 4 0 11-8 0c0-2.2 1.6-4.6 4-7.6z"/><path d="M4 20.5h16"/>',
   libur: '<path d="M20 13.5A8 8 0 1110.5 4a6.5 6.5 0 009.5 9.5z"/>',
@@ -1579,7 +1581,7 @@ function bukaAplikasi(){
   if(mn) mn.textContent=ME.nama;
   if(mp) mp.textContent=nm('jabatan',ME.jabatan_id)+' · '+nm('cabang',ME.cabang_id);
   try{ muatModel(); }catch(e){ console.warn('Model biaya dilewati:',e); }
-  buildSide(); buildTab(); go(halamanPertama());
+  buildSide(); buildTab(); go(halamanPertama(),true);
   muatDilihat(); periksaNotif(true);
   setInterval(()=>periksaNotif(false), 20000);
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) periksaNotif(false); });
@@ -1920,6 +1922,7 @@ const MENU=[
  ['Keuangan',[['audit','audit','Audit Order'],['slipgaji','gaji','Slip Gaji'],['kasbank','bank','Kas Bank'],['kas','kas','Buku Kas'],['m_pengeluaran','pengeluaran','Pengeluaran'],['m_komisi','komisi','Komisi'],
    ['m_bonus','bonus','Bonus'],['m_skema_gaji','skema_gaji','Skema Gaji'],['gaji','gaji','Penggajian']]],
  ['Analitik',[['laporan','laporan','Laporan'],['biaya','biaya','Struktur Biaya & Laba']]],
+ ['Marketing',[['leads','leads','Leads Manager']]],
  ['Pengaturan',[['ketentuan','bonus','Ketentuan & Diskon'],['m_aturan_bonus','aturan_bonus','Aturan Bonus'],['m_target','target','Target'],
    ['m_kategori_pengeluaran','kategori_pengeluaran','Kategori Biaya'],['akses','akses','Hak Akses & Peran'],
    ['pengaturan','pengaturan','Profil Usaha']]]
@@ -1945,8 +1948,8 @@ function buildSide(){
 function halamanPertama(){
   for(const [,isi] of MENU)
     for(const [id] of isi)
-      if(boleh(id.startsWith('m_')?id.slice(2):id,'lihat')) return id;
-  return 'tanpa_akses';
+      if(id!=='leads'&&boleh(id.startsWith('m_')?id.slice(2):id,'lihat')) return id;
+  return boleh('leads','lihat')?'leads':'tanpa_akses';
 }
 /* ---- Tab bawah untuk layar kecil. Isinya menyesuaikan hak akses. ---- */
 /* Lima slot tetap: dua kiri, tombol Order di tengah, satu kanan, lalu Menu. */
@@ -2006,7 +2009,11 @@ function bukaMenuOffice(){
         <span class="ic" style="background:#FAEAEC;color:var(--bad)">${ikon('akses',18)}</span>Keluar dari akun</button></div>`, {kaki: `<button class="btn ghost" style="width:100%;margin-top:12px" onclick="closeModal()">Tutup</button>`})
 }
 
-function go(p){
+function go(p,tanpaPindah){
+  // Leads Manager punya halaman sendiri (leads.html) dengan menu & tampilannya sendiri
+  if(p==='leads'&&!tanpaPindah&&boleh('leads','lihat')){
+    closeModal(); location.href='leads.html'; return;
+  }
   // pengaman: pastikan tidak ada sisa keadaan panel yang menyembunyikan menu
   document.body.classList.remove('panel-buka');
   document.body.style.overflow='';
@@ -2479,7 +2486,8 @@ const JUDUL={dash:['Dashboard','Ringkasan operasional hari ini di seluruh cabang
  akses:['Hak Akses & Peran','Atur izin tiap jabatan dan seberapa luas data yang bisa dilihat.'],
  biaya:['Struktur Biaya & Laba','Dari omzet kotor sampai untung bersih, lengkap dengan anggaran tiap pos.'],
  skema_gaji:['Skema Gaji','Aturan penggajian per jabatan dan cabang.'],
- libur:['Tanggal Libur','Hari libur yang tampil sebagai pemberitahuan di aplikasi terapis.']};
+ libur:['Tanggal Libur','Hari libur yang tampil sebagai pemberitahuan di aplikasi terapis.'],
+ leads:['Leads Manager','Catat lead iklan Click to WhatsApp, follow up, closing, dan kirim ke Meta CAPI.']};
 
 function render(){
   const key=PAGE.startsWith('m_')?PAGE.slice(2):null;
@@ -2540,6 +2548,12 @@ function render(){
 
 const PAGES={
 notif(){ return halamanNotif(); },
+leads(){
+  return `<div class="card empty"><div class="disp">Leads Manager</div>
+    <div>Dashboard lead, Data Leads, Follow Up WhatsApp, Laporan Iklan, CAPI, dan Pengaturan
+      dibuka di halaman tersendiri.</div>
+    <a class="btn" style="margin-top:14px;display:inline-block;text-decoration:none" href="leads.html">Buka Leads Manager</a></div>`;
+},
 dash(){
   const o=DB.pesanan.filter(x=>tglOrder(x)===today()&&dalamLingkup(x,'pesanan'));
   const sel=o.filter(sudahDikerjakan), omzet=sum(sel,'total');
