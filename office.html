@@ -640,7 +640,7 @@ const SUPABASE_URL = "https://jhkidgjeaxqzuyctxlbi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_T10nHuCNq8dEv2xjmEenGg_bA_n_17P";
 
 const NAMA_APP = "Mahyra Office";
-const VERSI_APP = "2026.11.17.1";
+const VERSI_APP = "2026.11.17.2";
 const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* =====================================================================
@@ -1963,8 +1963,13 @@ function daftarTab(){
   if(!boleh('order','tambah')&&boleh('audit','lihat')) bisa=bisa.filter(([id])=>id!=='audit');
   // kasir tidak mengaudit
   if(boleh('order','tambah')&&!boleh('audit','ubah')) bisa=bisa.filter(([id])=>id!=='audit');
-  // CS: menu Target menggantikan Pelanggan; Pelanggan tetap ada di Lainnya
-  if(boleh('targetsaya')) bisa=bisa.filter(([id])=>id!=='m_pelanggan');
+  // CS: menu Target menggantikan Pelanggan; Pelanggan tetap ada di Lainnya.
+  // Dashboard tidak di menu bawah; Leads Manager mengisi slot kanan.
+  // Hasilnya 5 menu: Target · Daftar order · Buat order · Leads · Lainnya
+  if(boleh('targetsaya')){
+    bisa=bisa.filter(([id])=>id!=='m_pelanggan'&&id!=='dash');
+    if(boleh('leads','lihat')) bisa.splice(Math.min(2,bisa.length),0,['leads','leads','Leads']);
+  }
   return { kiri:bisa.slice(0,2), kanan:bisa.slice(2,3),
            buat:boleh('order','tambah'), lihatOrder:boleh('order','lihat') };
 }
